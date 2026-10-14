@@ -76,7 +76,8 @@ scripts/      install.sh, doctor.sh, bench-*.sh, hooks/               docs/, ass
 tests/        datos falsos para pruebas (p. ej. `ssh_config` con hosts ficticios)
 install.sh    (raíz) instalador del kit por curl: descarga/actualiza el repo; NO enlaza nada (eso es scripts/install.sh)
 ```
-Versiones del kit: `CHANGELOG.md` + `python3 tools/release.py vX.Y.Z` (zip reproducible, sumas y notas en `dist/`).
+Versiones del kit: nueva sección en `CHANGELOG.md` → push → GitHub Actions «publicar versión» (Run workflow) crea la
+release con el zip reproducible de `tools/release.py`.
 Este repo local tiene como remoto `upstream` el repositorio público del kit: **nunca hagas `push` ahí** (el progreso
 de Ayoub va en local o en un repo privado suyo si lo configura).
 Estado en ejecución: `~/.config/ocarinashell/settings.json` (ajustes del usuario), `~/.local/state/ocarinashell/`

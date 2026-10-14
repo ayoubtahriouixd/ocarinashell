@@ -28,6 +28,7 @@ logo fuera de la shell.
 | `limine-preview.py conf out.png --asset fichero=nombre` | arranca el Limine REAL en QEMU/OVMF con esa config y captura el menú | así se hicieron `limine/preview-*.png` |
 | `readme_assets.py [--fonts DIR]` | `docs/img/`: previas ligeras de mockups y arranque, `recorrido.webp` animado y `social-preview.png` (1280×640) | las ve el README de GitHub |
 | `release.py vX.Y.Z [--repo usuario/repo]` | `dist/`: zip reproducible del kit, `SHA256SUMS` y notas de la versión (de `CHANGELOG.md`) | escribe el repo en README e instalador |
+| `publicar-github.sh [repo]` | publica desde tu equipo con GitHub CLI (crea el repo, sube el código y la release) | alternativa a la Action «publicar versión» |
 
 Arranque: `limine/preview-*.png` son capturas del Limine 10.8.5 real en QEMU con `limine-test-*.conf`; los
 `plymouth/preview-*.png` son capturas del tema ejecutándose en un plymouthd 24.004.60 real (renderer x11 bajo Xvfb, a

@@ -1,0 +1,46 @@
+name: publicar versión
+
+# Publica la versión de CHANGELOG.md como release de GitHub, con el zip reproducible del kit, SHA256SUMS e install.sh.
+# Se lanza a mano: Actions → «publicar versión» → Run workflow. Si esa versión ya existe, no hace nada.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Versión de CHANGELOG.md
+        id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="v$(sed -n 's/^## \[\([0-9][0-9.]*\)\].*/\1/p' CHANGELOG.md | head -n 1)"
+          [[ $v =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::CHANGELOG.md no tiene una versión «## [X.Y.Z]»"; exit 1; }
+          if gh release view "$v" >/dev/null 2>&1; then
+            echo "::notice::La versión $v ya está publicada: nada que hacer"
+            echo "skip=1" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - name: Red de seguridad (pruebas del hook de guardia)
+        if: steps.v.outputs.skip != '1'
+        run: python3 scripts/hooks/test-guard.py
+      - name: Zip reproducible, sumas y notas
+        if: steps.v.outputs.skip != '1'
+        run: python3 tools/release.py "${{ steps.v.outputs.version }}"
+      - name: Crear la release y su etiqueta
+        if: steps.v.outputs.skip != '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          V: ${{ steps.v.outputs.version }}
+        run: |
+          gh release create "$V" "dist/ocarinashell-kit-$V.zip" dist/SHA256SUMS install.sh \
+            --target "$GITHUB_SHA" --title "OcarinaShell $V" --notes-file dist/RELEASE-NOTES.md --latest
+          echo "### Publicada $V" >> "$GITHUB_STEP_SUMMARY"
+          cat dist/SHA256SUMS >> "$GITHUB_STEP_SUMMARY"
