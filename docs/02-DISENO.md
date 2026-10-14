@@ -94,6 +94,39 @@ vatios, chip de límite de carga.
 **Modos de energía** — en Engawa, dos tarjetas a media anchura: 忍 Shinobi (borde discontinuo rojo, hanko 忍,
 «Máx. batería») y 鬼 Oni (hanko negro sobre rojo con borde dorado, «Máx. potencia»; activo = degradado rojo intenso
 y brillo). Activación «覚醒» de Oni: estampado 1,6→1 con onda circular + brillo rojo en los bordes 600 ms.
+**滑 Fluido** (Nameraka, 01-ARQUITECTURA §19) — tarjeta a todo el ancho justo debajo de 忍/鬼 (mockup 02), radio 16,
+padding 10/12/12, gap 10. Fila 1 (44 px): hanko 40×40 radio 10 con 滑 (pincel 22) —apagado: contorno `accent` 1,5 px
+sobre transparente; activo: relleno `accent`, 滑 en `surface0`, halo `accent` 45 % y tres líneas de velocidad de 2 px
+al 30 % a su izquierda—, «Fluido» 13,5/600 y subtítulo 11,5 `textMuted` con el estado («Apagado · Lossless Scaling
+listo», «×4 · 30 → 120 fps · Chrome», «×6 → ×4 · 120 Hz», «Pon el vídeo a pantalla completa», «Bloqueado por 忍
+Shinobi», «Falta lsfg-vk · Ajustes»), interruptor y chevron a la página; marca de agua 滑 42 px al 6 % (10 % activa).
+Fila 2: segmentado de 4 sobre `surface0` al 55 % (`×2 · ×4 · ×6 · [tune] 120 fps`, cifras tabulares 13/600; el
+cuarto, «A medida», muestra su objetivo; el elegido en `accent` con borde `accent` 45 %). Activo = degradado de los
+mosaicos encendidos. Ritmo irregular (base × m ≠ Hz): icono `warning` 14 px en `warning` al final del subtítulo
+(tooltip «24 × 4 = 96 ≠ 120 Hz: usa A medida»). Tocar la tarjeta = encender/apagar; el segmentado cambia el modo al
+vuelo (lsfg-vk recarga en caliente, sin cortes). Al encender, un barrido de luz de izquierda a derecha cruza el hanko
+(450 ms, una vez; nada continuo). Sin `Motion`: cambio instantáneo. Hasta que exista la fase 11 B, la tarjeta no se
+muestra.
+**Página Fluido** (Engawa, mockup 13) — cabecera ← + hanko 滑 (sin líneas) + «Fluido» / «Generación de fotogramas ·
+LSFG» (o «· IA») + interruptor. Tarjeta de estado: icono y nombre de la app + título de la ventana objetivo;
+«30 → 120 fps» en cifras tabulares 26/600 (la salida en `accent` con brillo suave) y chips «×4 real», «LSFG 3.1 · flujo
+75 %» y «+46 ms · audio sincronizado» (verde); **tira de ritmo**: 8 celdas de 14 px, una por refresco (real = relleno
+`accent`, generado = contorno `accent`) + leyenda y «120 Hz · ritmo perfecto» (o el aviso); estática: solo se redibuja
+al cambiar el multiplicador. Multiplicador (segmentado). «A medida»: slider 30–Hz con marcas en los divisores de los Hz
+(30 · 40 · 60 · 120; la última alineada a la derecha) y valor tabular; el extremo derecho guarda 0 («los Hz de la
+pantalla», así un monitor de 144 Hz llega a 144). Motor: segmentado `Auto · LSFG 3.1 · IA` (IA con chip «exp.», o
+deshabilitada con el motivo medido). Calidad: slider «Resolución del flujo» 25–100 % y «Modo rendimiento»: mientras
+sigan la calibración muestran el chip «auto»; tocarlos fija un valor y el chip lo devuelve a automático. Interruptores
+«Sincronizar audio» y «Automático» (vídeo a pantalla completa). Pie: chips de la política («En batería: económico»,
+«Calibrado · 2880×1800»). Ancho 420 como Engawa.
+**Isla en «armando»**: hanko 滑 en contorno + «Pon el vídeo a pantalla completa» (en navegadores, «pulsa F o ⛶»; en
+reproductores, además, botón «Pantalla completa»); se va sola a los 60 s o al empezar.
+**OSD de Fluido**: al encender o cambiar de modo, una superficie propia de vida corta en `overlay` con la forma de la
+isla (alto 44, radio 22): hanko 滑 + «×4 · 30 → 120 fps» + «LSFG» en `textMuted`, durante 1,2 s; al apagar, «Fluido
+apagado». Sobre un vídeo a pantalla completa es lo único de la shell que se ve: ahí no hay barra.
+**Settei → 滑 Vídeo fluido**: modo y objetivo por defecto, motor, calidad y calibración («Calibrar» + tabla de
+resultados), batería (`eco`/`normal`/`off`), sincronía de audio, VRR mientras está activo (solo motor IA), automático,
+exclusiones por app y estado de lsfg-vk y de la DLL (versión, rama de Steam, ruta) con «Cómo instalarlo».
 **Torii (lanzador)** — `ancho 680 · top 150 · radio 22`, fondo vidrio fuerte, telón 42 % detrás. Campo 60 px con
 torii rojo dibujado, texto 24 px y cursor rojo 2 px; pista `探す · …`. Chips de modo. Filas 56 px: icono 36
 (radio 11), título 15 con coincidencias en rojo, subtítulo 12,5; seleccionada = `surface2` + barra roja 3 px con

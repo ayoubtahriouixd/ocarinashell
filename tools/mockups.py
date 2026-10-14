@@ -234,6 +234,27 @@ def bright(pct, dev, name):
             f'<span class="lb inv" style="clip-path:inset(0 {100 - pct}% 0 0)">{lab}</span></div>')
 
 
+FLOW_MODES = ("×2", "×4", "×6")
+
+
+def flow_seg(sel=3, target=120):
+    """×2 · ×4 · ×6 · A medida (shows its target fps). sel = index of the selected segment."""
+    labels = list(FLOW_MODES) + [f'{ms("tune")}{target} fps']
+    return '<div class="seg s4 x">' + "".join(f'<span{" class=on" if i == sel else ""}>{t}</span>' for i, t in enumerate(labels)) + "</div>"
+
+
+def flow_hanko(on, lines=True):
+    lines = '<span class="sp"><i style="width:9px"></i><i style="width:6px"></i><i style="width:9px"></i></span>' if on and lines else ""
+    return f'<span class="fhk{" on" if on else ""}">{lines}滑</span>'
+
+
+def flow_card(on=False, sub="Apagado · Lossless Scaling listo", sel=3):
+    """滑 Fluido card in Engawa (Nameraka, 01-ARQUITECTURA §19): toggle + modes inline, chevron to its page."""
+    return (f'<div class="flow{" on" if on else ""}"><span class="wmk">滑</span><div class="top">{flow_hanko(on)}'
+            f'<span class="tx"><b>Fluido</b><span>{sub}</span></span><span class="sw{" on" if on else ""}"></span>'
+            f'{ms("chevron_right", "chev")}</div>{flow_seg(sel)}</div>')
+
+
 def p02():
     tiles = [("wifi", "網", "Wi-Fi", "Casa · 6 GHz", True), ("bluetooth", "青", "Bluetooth", "Auriculares · 80 %", True),
              ("do_not_disturb_on", "静", "No molestar", "Desactivado", False),
@@ -250,6 +271,7 @@ def p02():
   <div class="modes">
     <div class="mode shinobi"><span class="hk">忍</span><span><b>Shinobi</b><span>Máx. batería</span></span></div>
     <div class="mode oni"><span class="hk">鬼</span><span><b>Oni</b><span>Máx. potencia</span></span></div></div>
+  {flow_card()}
   <div class="slider"><div class="fill" style="width:62%">{ms('volume_up', fill=True)}</div><span class="v">62 %</span></div>
   {bright(45, 'laptop', 'Portátil')}{bright(78, 'desktop_windows', 'Monitor 27″')}
   <div class="seg"><span><b>省</b>Ahorro</span><span class="on"><b>均</b>Equilibrado</span><span><b>速</b>Rendimiento</span></div>
@@ -653,11 +675,57 @@ def p12():
             f'{obi(title=("settings", "Ajustes de OcarinaShell"), ws=((1, "on", 1), (2, "busy", 2), (3, "", 0)))}{shima(CLOCK)}</div>')
 
 
+def p13():
+    """滑 Nameraka active over a full-screen video: Engawa's Fluido page and the island OSD (01-ARQUITECTURA §19)."""
+    cells = "".join(f'<i class="{"r" if i % 4 == 0 else ""}"></i>' for i in range(8))
+    ticks = "".join(f'<span style="left:{(v - 30) / 90 * 100:.2f}%{";transform:translateX(-100%)" if v == 120 else ";transform:none" if v == 30 else ""}">{v}</span>'
+                    for v in (30, 40, 60, 120))
+
+    def frow(title, sub, ctl):
+        return f'<div class="frow"><span class="t"><b>{title}</b>{f"<span>{sub}</span>" if sub else ""}</span>{ctl}</div>'
+    motor = ('<div class="seg x" style="margin-top:0"><span class="on">Auto</span><span>LSFG 3.1</span>'
+             '<span>IA <span class="chip" style="height:18px;padding:0 6px;font-size:10px;margin-left:2px">exp.</span></span></div>')
+    panel = f"""<div class="panel glass strong">
+  <div class="phead"><span class="ibtn">{ms('arrow_back')}</span>{flow_hanko(True, lines=False)}
+    <div class="who"><b>Fluido</b><span>Generación de fotogramas · LSFG</span></div><span class="sw on"></span></div>
+  <div class="card fstat" style="margin-top:14px">
+    <div class="app">{ms('public')}<b style="color:var(--text);font-weight:600">Chrome</b>
+      <span class="ell" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">· Tren al anochecer (1080p)</span></div>
+    <div class="big"><span class="from">30</span><span class="ar">→</span><span class="to">120</span><small>fps</small></div>
+    <div class="row" style="gap:6px;margin-top:11px;flex-wrap:wrap"><span class="chip red" style="font-weight:600">×4 real</span>
+      <span class="chip">LSFG 3.1 · flujo 75 %</span><span class="chip ok">{ms('graphic_eq', 's16')}+46 ms · audio sincronizado</span></div>
+    <div class="rhythm">{cells}</div>
+    <div class="rlegend"><span><b class="r"></b>real</span><span><b></b>generado</span><span style="margin-left:auto">120 Hz · ritmo perfecto</span></div></div>
+  <div class="fsect">Multiplicador</div>{flow_seg(3)}
+  <div class="card" style="margin-top:8px;padding:12px 14px 10px">
+    <div class="row" style="gap:12px"><span class="t grow"><b style="font:500 13px/1.3 var(--ui)">A medida</b>
+      <span class="muted" style="font-size:11.5px;display:block">Los fps que quieras · por defecto, los Hz</span></span>
+      <span class="tnum" style="font:600 13px/1 var(--ui)">120 fps</span></div>
+    <div style="margin-top:12px"><span class="hs wide" style="display:block"><i style="width:100%"></i><b style="left:100%"></b></span>
+      <div class="ticks">{ticks}</div></div></div>
+  <div class="fsect">Motor</div>{motor}
+  <div class="fsect">Calidad</div>
+  <div class="card">{frow('Resolución del flujo', 'Menos = más rápido', '<span class="hs" style="width:130px"><i style="width:66.7%"></i><b style="left:66.7%"></b></span><span class="val">75 %</span>')}
+    {frow('Modo rendimiento', 'Modelo ligero, para ×6 o batería', '<span class="sw"></span>')}
+    {frow('Sincronizar audio', 'Retrasa el sonido lo mismo que la imagen', '<span class="sw on"></span>')}
+    {frow('Automático', 'Con vídeo a pantalla completa', '<span class="sw"></span>')}</div>
+  <div class="row" style="gap:6px;margin-top:12px"><span class="chip">{ms('battery_5_bar', 's16')}En batería: económico</span>
+    <span class="chip">{ms('speed', 's16')}Calibrado · 2880×1800</span></div>
+</div>"""
+    osd = ('<div class="shima osd"><span class="hk flow">滑</span><span class="osdv">×4 <em>·</em> 30 → 120 fps</span>'
+           '<span class="day">LSFG</span></div>')
+    ctl = f"""<div class="vctl"><div class="bar"><u style="width:52%"></u><i style="width:37%"></i><b style="left:37%"></b></div>
+  <div class="btns">{ms('pause', fill=True)}{ms('skip_next', fill=True)}{ms('volume_up', fill=True)}<span>08:42 / 23:40</span>
+    <span style="flex:1"></span>{ms('closed_caption')}{ms('settings')}{ms('fullscreen_exit')}</div></div>"""
+    return f'<div class="screen" style="background:url(img/fluido-video.jpg) center/cover no-repeat #0b0912">{ctl}{osd}{panel}</div>'
+
+
 PAGES = {1: ("escritorio", "Escritorio · Kurenai", p01, "kurenai"), 2: ("centro-de-control", "Engawa", p02, "kurenai"),
          3: ("bloqueo", "Kagi", p03, "kurenai"), 4: ("lanzador", "Torii", p04, "kurenai"), 5: ("energia", "Dengen", p05, "kurenai"),
          6: ("shinobi", "Shinobi", p06, "shinobi"), 7: ("ajustes-kohaku", "Settei · Kōhaku", p07, "kohaku"),
          8: ("oni", "Oni", p08, "kurenai"), 9: ("fune", "Fune", p09, "kurenai"), 10: ("mamori", "Mamori", p10, "kurenai"),
-         11: ("snake", "Snake", p11, "kurenai"), 12: ("pantallas", "Settei · Pantalla", p12, "kurenai")}
+         11: ("snake", "Snake", p11, "kurenai"), 12: ("pantallas", "Settei · Pantalla", p12, "kurenai"),
+         13: ("fluido", "Fluido · Nameraka", p13, "kurenai")}
 
 
 # ----------------------------------------------------------------------------- the Oni game frame (original art)
@@ -715,6 +783,113 @@ def game_scene(path):
     im.filter(ImageFilter.GaussianBlur(.6)).save(path, quality=90)
 
 
+# ----------------------------------------------------------------------------- the Fluido video frame (original art)
+def video_scene(path):
+    """Mockup 13 background: a red-striped bullet train crossing a viaduct at dusk under a snow-capped volcano."""
+    from PIL import Image, ImageDraw, ImageFilter
+    import numpy as np
+    W, H = 2880, 1800
+    rnd = random.Random(11)
+    ys = np.linspace(0, 1, H)
+    stops = [(0.0, (20, 22, 62)), (0.26, (74, 42, 104)), (0.44, (178, 80, 120)), (0.56, (246, 146, 98)), (0.62, (255, 210, 150)),
+             (1.0, (255, 220, 160))]
+    sky = np.stack([np.interp(ys, [s[0] for s in stops], [s[1][c] for s in stops]) for c in range(3)], axis=1).astype(np.float32)
+    img = np.repeat(sky[:, None, :], W, axis=1)
+    yy, xx = np.mgrid[0:H, 0:W]
+    sx, sy = W * .71, H * .555
+    d = np.hypot(xx - sx, (yy - sy) * 1.25)
+    img += np.array([255, 160, 105], np.float32) * np.exp(-d / (H * .2))[..., None] * .5
+    img[d < H * .042] = (255, 238, 205)
+    im = Image.fromarray(np.clip(img, 0, 255).astype(np.uint8), "RGB")
+    dr = ImageDraw.Draw(im)
+    for _ in range(170):                                   # first stars
+        x, y = rnd.random() * W, rnd.random() * H * .3
+        r = rnd.uniform(.8, 2.2)
+        a = int(150 + 100 * rnd.random())
+        dr.ellipse((x - r, y - r, x + r, y + r), fill=(a, a, min(255, a + 20)))
+    horizon = H * .615
+    # volcano with a sunset-tinted snow cap
+    cx, peak, base, half = W * .3, H * .27, horizon + 4, W * .36
+    dr.polygon([(cx - half, base), (cx - W * .055, peak + 18), (cx - W * .02, peak), (cx + W * .025, peak + 4),
+                (cx + W * .06, peak + 22), (cx + half, base)], fill=(70, 44, 92))
+    dr.polygon([(cx - W * .095, peak + 120), (cx - W * .055, peak + 18), (cx - W * .02, peak), (cx + W * .025, peak + 4),
+                (cx + W * .06, peak + 22), (cx + W * .1, peak + 125), (cx + W * .07, peak + 95), (cx + W * .045, peak + 140),
+                (cx + W * .015, peak + 100), (cx - W * .012, peak + 150), (cx - W * .04, peak + 105), (cx - W * .065, peak + 145)],
+               fill=(246, 206, 214))
+    for i, col in enumerate(((92, 46, 92), (64, 30, 70))):    # two ranges of hills
+        pts, base_y = [(0, H)], horizon - 40 + i * 30
+        for k in range(15):
+            pts.append((W * k / 14, base_y - (60 + 50 * rnd.random()) * (1 - i * .4)))
+        pts.append((W, H))
+        dr.polygon(pts, fill=col)
+    # town lights along the far shore
+    for _ in range(260):
+        x, y = rnd.random() * W, horizon - 10 + rnd.random() * 26
+        c = rnd.choice(((255, 214, 140), (255, 180, 120), (255, 240, 210)))
+        dr.rectangle((x, y, x + rnd.choice((2, 3, 4)), y + 2), fill=c)
+    water = int(H * .705)
+    # viaduct: deck, beam and piers
+    deck_t, deck_b = int(H * .628), int(H * .652)
+    dark = (26, 18, 34)
+    dr.rectangle((0, deck_t, W, deck_b), fill=dark)
+    dr.rectangle((0, deck_b, W, deck_b + 10), fill=(40, 26, 46))
+    for px in range(-60, W + 200, 250):
+        dr.polygon([(px - 26, deck_b), (px + 26, deck_b), (px + 34, water), (px - 34, water)], fill=dark)
+        dr.arc((px + 30, deck_b - 36, px + 220, deck_b + 70), 180, 360, fill=dark, width=14)
+    # the train (own layer, so its tail can carry motion blur)
+    layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    td = ImageDraw.Draw(layer)
+    x0, x1, top, bot = int(W * .08), int(W * .79), deck_t - 104, deck_t - 6
+    td.rounded_rectangle((x0, top, x1, bot), radius=26, fill=(236, 226, 224))
+    td.rectangle((x0, top, x1, top + 34), fill=(250, 236, 226))                  # warm light on the roof
+    nose = [(x1 - 40, top), (x1 + 120, top + 18), (x1 + 290, bot - 26), (x1 + 300, bot - 6), (x1 - 40, bot)]
+    td.polygon(nose, fill=(236, 226, 224))
+    td.rectangle((x0, bot - 30, x1 + 40, bot - 18), fill=(230, 0, 51))             # the red line
+    td.polygon([(x1 + 40, bot - 30), (x1 + 270, bot - 22), (x1 + 280, bot - 14), (x1 + 40, bot - 18)], fill=(230, 0, 51))
+    td.rectangle((x0 + 20, top + 42, x1 - 10, top + 66), fill=(30, 24, 40))         # window band
+    for wx in range(x0 + 40, x1 - 30, 46):
+        td.rectangle((wx, top + 46, wx + 28, top + 62), fill=(255, 212, 140) if rnd.random() > .15 else (60, 48, 70))
+    td.polygon([(x1 + 10, top + 30), (x1 + 120, top + 40), (x1 + 160, top + 62), (x1 + 10, top + 62)], fill=(30, 24, 40))
+    for gx in range(x0 + 420, x1, 420):                                             # car gaps
+        td.rectangle((gx, top + 4, gx + 6, bot), fill=(150, 140, 146))
+    td.rectangle((x0, bot - 6, x1 + 300, bot + 2), fill=(44, 36, 52))
+    for px in range(x0 + 300, x1, 840):                                             # pantographs
+        td.line((px, top, px + 40, top - 34, px + 90, top - 34), fill=(60, 50, 66), width=4)
+    alpha = np.asarray(layer, np.float32)
+    blurred = np.asarray(layer.resize((W // 24, H), Image.BILINEAR).resize((W, H), Image.BILINEAR), np.float32)
+    t = np.clip((np.arange(W) - x0) / ((x1 - x0) * .75), 0, 1)[None, :, None]          # tail blurred → nose sharp
+    mix = blurred * (1 - t) + alpha * t
+    train = Image.fromarray(np.clip(mix, 0, 255).astype(np.uint8), "RGBA")
+    im.paste(train, (0, 0), train)
+    st = ImageDraw.Draw(im)
+    for _ in range(26):                                                             # speed streaks behind the tail
+        y = rnd.uniform(top + 8, bot - 6)
+        ln = rnd.uniform(160, 520)
+        st.line((x0 - ln - 40, y, x0 + rnd.uniform(-20, 60), y), fill=(255, 226, 210), width=2)
+    # reflection: mirror of everything above the waterline, darker and rippled
+    arr = np.asarray(im, np.float32)
+    span = H - water
+    refl = arr[water - span:water][::-1].copy()
+    rows = np.arange(span)
+    shift = (np.sin(rows / 3.1) * (2 + rows / span * 14)).astype(int)
+    for r in range(span):
+        refl[r] = np.roll(refl[r], shift[r], axis=0)
+    refl = (refl + np.roll(refl, 3, axis=0) + np.roll(refl, -3, axis=0)) / 3                  # soft, watery
+    refl = refl * np.linspace(.5, .28, span)[:, None, None] + np.array([8, 10, 26], np.float32) * .6
+    arr[water:] = refl
+    im = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), "RGB")
+    st = ImageDraw.Draw(im)
+    # reeds in the foreground, vignette and grain
+    for _ in range(90):
+        bx = rnd.uniform(0, W * .28)
+        h = rnd.uniform(90, 260)
+        st.line((bx, H, bx + rnd.uniform(-30, 30), H - h), fill=(12, 8, 16), width=rnd.choice((3, 4, 5)))
+    arr = np.asarray(im, np.float32)
+    v = np.clip(1 - (np.hypot((xx - W / 2) / W, (yy - H / 2) / H) - .25) * .9, .55, 1)[..., None]
+    arr = arr * v + np.random.default_rng(3).normal(0, 3.2, arr.shape)
+    Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(.5)).save(path, quality=90)
+
+
 # ----------------------------------------------------------------------------- render
 def main():
     ap = argparse.ArgumentParser()
@@ -727,6 +902,8 @@ def main():
     (SRC / "tokens.css").write_text(tokens_css())
     if not (SRC / "img/oni-game.jpg").exists():
         game_scene(SRC / "img/oni-game.jpg")
+    if not (SRC / "img/fluido-video.jpg").exists():
+        video_scene(SRC / "img/fluido-video.jpg")
     fcss = font_css(a.fonts)
     from PIL import Image
     done = []

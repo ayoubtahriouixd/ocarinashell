@@ -36,7 +36,7 @@ Uso:  bash install.sh [opciones]
       curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | bash -s -- [opciones]
 
 Opciones:
-  --version <vX.Y.Z>  instala esa versión (por defecto, la última publicada)
+  --version <vX.Y.Z>  instala esa versión (por defecto, la última publicada; «main» = lo más reciente)
   --update            actualiza un kit ya instalado sin tocar tu trabajo (fusiona la nueva versión)
   --check             solo comprueba el equipo; no descarga ni cambia nada
   --sudo-temporal     activa sudo sin contraseña SOLO durante la construcción (lo quita la fase 17)
@@ -200,7 +200,7 @@ install_kit() {
 	if [[ -e $DEST ]]; then
 		if [[ -d $DEST/.git ]] && git -C "$DEST" config --get remote.upstream.url >/dev/null 2>&1; then
 			ok "el kit ya está instalado en $DEST ($(git -C "$DEST" describe --tags --always 2>/dev/null))"
-			info "para actualizarlo:  bash $DEST/install.sh --update"
+			info "para actualizarlo:  curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | bash -s -- --update"
 			ALREADY=1
 			return 0
 		fi
@@ -231,20 +231,42 @@ install_kit() {
 	info "tu trabajo irá en la rama local main; las actualizaciones llegan de «upstream»"
 }
 
+news() {   # la sección más reciente de CHANGELOG.md, resumida
+	awk '/^## \[/ { n++ } n == 1 && !/^\[/ { print }' "$DEST/CHANGELOG.md" 2>/dev/null |
+		sed -e '/^### /d' -e '/^[[:space:]]*$/d' -e 's/\*\*//g' -e 's/`//g' -e 's/^## //' -e 's/^- /  · /' \
+			-e 's/^  \([^ ·]\)/    \1/' -e 's/^\([^ ]\)/  \1/' |
+		head -n 14 || true
+}
+
+adr_duplicates() {   # números de decisión repetidos tras fusionar (la fusión «union» no los detecta)
+	grep -o '^## D-[0-9]*' "$DEST/docs/DECISIONES.md" 2>/dev/null | sort | uniq -d | sed 's/^## //' | paste -sd ' ' - || true
+}
+
 update_kit() {
 	step "2 · Actualización"
 	[[ -d $DEST/.git ]] || die "No hay un kit instalado con git en $DEST (instálalo sin --update)."
-	local remote=upstream current
+	local remote=upstream current target attrs
 	git -C "$DEST" config --get remote.upstream.url >/dev/null 2>&1 || remote=origin
 	git -C "$DEST" fetch --quiet --tags "$remote" || die "No se pudo contactar con $remote."
 	if [[ $WANT == latest ]]; then
 		TAG="$(git -C "$DEST" tag --list 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1 || true)"
+		if [[ -z $TAG ]]; then
+			TAG=main
+			info "aún no hay versiones publicadas: sigo la rama main del kit"
+		fi
 	else
 		TAG="$WANT"
 	fi
-	[[ -n $TAG ]] || die "No hay versiones publicadas en $remote."
-	current="$(git -C "$DEST" describe --tags --abbrev=0 2>/dev/null || echo '?')"
-	if git -C "$DEST" merge-base --is-ancestor "$TAG" HEAD 2>/dev/null; then
+	# una rama (main) se fusiona desde el remoto, nunca desde tu rama local del mismo nombre
+	if git -C "$DEST" rev-parse --quiet --verify "refs/remotes/$remote/$TAG" >/dev/null; then
+		target="$remote/$TAG"
+	elif git -C "$DEST" rev-parse --quiet --verify "refs/tags/$TAG" >/dev/null; then
+		target="$TAG"
+	else
+		die "No existe «$TAG» en $remote (usa --version vX.Y.Z o --version main)."
+	fi
+	current="$(git -C "$DEST" describe --tags --always 2>/dev/null || echo '?')"
+	if git -C "$DEST" merge-base --is-ancestor "$target" HEAD 2>/dev/null; then
 		ok "ya tienes $TAG (o algo más nuevo): nada que hacer"
 		return 0
 	fi
@@ -252,15 +274,26 @@ update_kit() {
 		die "Tienes cambios sin guardar en $DEST: haz commit (o pídeselo a Claude Code) y repite."
 	fi
 	ensure_identity "$DEST"
-	if git -C "$DEST" merge --quiet --ff-only "$TAG" >/dev/null 2>&1; then
+	# los registros que solo crecen (decisiones, mantenimiento) se fusionan conservando lo de ambos lados
+	attrs="$(git -C "$DEST" rev-parse --git-path info/attributes)"
+	[[ $attrs == /* ]] || attrs="$DEST/$attrs"
+	mkdir -p "$(dirname "$attrs")"
+	grep -qxF 'docs/DECISIONES.md merge=union' "$attrs" 2>/dev/null ||
+		printf '%s\n' 'docs/DECISIONES.md merge=union' 'docs/MANTENIMIENTO.md merge=union' >>"$attrs"
+	if git -C "$DEST" merge --quiet --ff-only "$target" >/dev/null 2>&1; then
 		ok "actualizado: $current → $TAG"
-	elif git -C "$DEST" merge --quiet --no-edit -m "kit: fusiona $TAG" "$TAG" >/dev/null 2>&1; then
+	elif git -C "$DEST" merge --quiet --no-edit -m "kit: fusiona $TAG" "$target" >/dev/null 2>&1; then
 		ok "actualizado: $current → $TAG (fusionado con tu trabajo de las fases)"
 	else
 		git -C "$DEST" merge --abort >/dev/null 2>&1 || true
-		die "La versión $TAG choca con cambios tuyos; no se ha tocado nada. Pídele a Claude Code: «fusiona la versión $TAG del kit»."
+		die "La versión $TAG choca con cambios tuyos; no se ha tocado nada. Pídele a Claude Code: «fusiona la versión $TAG del kit» (o /actualizar-kit, si ya lo tienes)."
 	fi
-	info "novedades: $DEST/CHANGELOG.md"
+	local dups
+	dups="$(adr_duplicates)"
+	[[ -z $dups ]] || warn "DECISIONES.md repite números ($dups): pídele a Claude Code que renumere las del kit"
+	news
+	info "novedades completas: $DEST/CHANGELOG.md"
+	info "si Claude Code estaba abierto, sal y vuelve a entrar (claude --continue) para que lea esta versión"
 }
 
 verify_kit() {

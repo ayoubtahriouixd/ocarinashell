@@ -346,3 +346,66 @@ body { font: 400 13.5px/1.4 var(--ui); color: var(--text); background: #000; -we
 .banner { display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 14px; border-radius: 14px; margin: -8px 0 14px;
   background: color-mix(in srgb, var(--accent) 10%, var(--surface1)); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
 .banner > .ms { color: var(--accent); }
+
+/* 滑 Nameraka (vídeo fluido) — Engawa card (mockup 02), Engawa page + island OSD (mockup 13) */
+.flow { margin-top: 8px; border-radius: 16px; padding: 10px 12px 12px; background: var(--surface1); border: 1px solid var(--outline);
+  position: relative; overflow: hidden; }
+.flow.on { background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 17%, var(--surface1)), var(--surface1) 75%);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--outline)); }
+.flow .top { display: flex; align-items: center; gap: 11px; height: 44px; }
+.flow .tx { flex: 1; min-width: 0; }
+.flow .tx b { display: block; font: 600 13.5px/1.2 var(--ui); }
+.flow .tx span { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--text-muted); white-space: nowrap;
+  font-feature-settings: "tnum"; }
+.flow .chev { color: var(--text-dim); font-size: 18px; }
+.flow .wmk { position: absolute; right: 108px; top: 7px; font: 600 42px/1 var(--disp); opacity: .06; }
+.flow.on .wmk { color: var(--accent); opacity: .1; }
+.fhk { position: relative; width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; flex: none;
+  font: 600 22px/1 var(--brush); color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.fhk.on { background: var(--accent); color: var(--surface0);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .22), 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent); }
+.fhk .sp { position: absolute; right: calc(100% + 3px); top: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.fhk .sp i { display: block; height: 2px; border-radius: 1px; background: var(--accent); opacity: .3; }
+.seg.s4 { grid-template-columns: repeat(4, 1fr); }
+.seg.x { background: color-mix(in srgb, var(--surface0) 55%, transparent); }
+.flow .seg { margin-top: 10px; }
+.seg.x span { font: 600 13px/1 var(--ui); font-feature-settings: "tnum"; gap: 5px; }
+.seg.x span .ms { font-size: 15px; }
+.seg.x span.on { color: var(--accent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent), 0 1px 0 var(--glass-hl); }
+.fsect { font: 600 11px/1 var(--ui); letter-spacing: .09em; text-transform: uppercase; color: var(--text-dim); margin: 16px 2px 8px; }
+.fstat { padding: 14px 14px 12px; }
+.fstat .app { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--text-muted); }
+.fstat .app .ms { font-size: 18px; color: var(--text); }
+.fstat .big { display: flex; align-items: baseline; gap: 10px; margin-top: 10px; font: 600 26px/1 var(--ui); font-feature-settings: "tnum"; }
+.fstat .big .from { color: var(--text-muted); }
+.fstat .big .ar { font-size: 20px; color: var(--text-dim); }
+.fstat .big .to { color: var(--accent); text-shadow: 0 0 18px color-mix(in srgb, var(--accent) 40%, transparent); }
+.fstat .big small { font: 500 13px/1 var(--ui); color: var(--text-muted); }
+.rhythm { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; margin-top: 12px; }
+.rhythm i { height: 14px; border-radius: 4px; box-shadow: inset 0 0 0 1.5px var(--accent); }
+.rhythm i.r { background: var(--accent); }
+.rlegend { display: flex; gap: 14px; margin-top: 7px; font-size: 11px; color: var(--text-dim); }
+.rlegend b { display: inline-block; width: 10px; height: 8px; border-radius: 2px; margin-right: 5px; box-shadow: inset 0 0 0 1.5px var(--accent); }
+.rlegend b.r { background: var(--accent); }
+.frow { display: flex; align-items: center; gap: 12px; min-height: 50px; padding: 0 14px; border-top: 1px solid var(--outline); }
+.frow:first-child { border-top: 0; }
+.frow .t { flex: 1; min-width: 0; } .frow .t b { display: block; font: 500 13px/1.3 var(--ui); }
+.frow .t span { font-size: 11.5px; color: var(--text-muted); }
+.frow .val { font: 600 12.5px/1 var(--ui); font-feature-settings: "tnum"; width: 54px; text-align: right; }
+.ticks { position: relative; height: 12px; margin-top: 5px; }
+.ticks span { position: absolute; transform: translateX(-50%); font: 500 10px/1 var(--ui); color: var(--text-dim); font-feature-settings: "tnum"; }
+.hs.wide { width: auto; flex: 1; }
+.shima .hk.flow { background: #e60033; color: #050405; }
+.shima .osdv { font: 700 14.5px/1 var(--ui); color: #f4efe6; }
+.shima .osdv em { font-style: normal; color: #aaa39b; font-weight: 500; }
+.vctl { position: absolute; left: 0; right: 0; bottom: 0; height: 150px; padding: 0 34px 26px; display: flex; flex-direction: column;
+  justify-content: flex-end; background: linear-gradient(0deg, rgba(0, 0, 0, .72), transparent); color: #fff; z-index: 3; }
+.vctl .bar { position: relative; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .28); }
+.vctl .bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; background: #e60033; }
+.vctl .bar u { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; background: rgba(255, 255, 255, .35); }
+.vctl .bar b { position: absolute; top: 50%; width: 13px; height: 13px; border-radius: 7px; background: #e60033; transform: translate(-50%, -50%); }
+.vctl .btns { display: flex; align-items: center; gap: 20px; margin-top: 14px; font: 500 14px/1 var(--ui); font-feature-settings: "tnum"; }
+.vctl .btns .ms { font-size: 26px; }
+.shima.osd { height: 44px; border-radius: 22px; padding: 0 18px 0 8px; gap: 11px; }
+.shima.osd .hk.flow { height: 30px; min-width: 30px; border-radius: 9px; font-size: 18px; }
+.shima.osd .osdv { font-size: 16px; }

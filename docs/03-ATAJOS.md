@@ -1,7 +1,7 @@
 # 03 · Atajos y comportamiento del ratón
 
 Base: los binds que Ayoub usaba con DankMaterialShell (`reference/binds-dms-original.kdl`). Borrador adaptado y
-verificado sintácticamente: `reference/binds-ocarina.kdl` (conserva los 134 originales, adaptados, y añade 15).
+verificado sintácticamente: `reference/binds-ocarina.kdl` (conserva los 134 originales, adaptados, y añade 17).
 La fase 1 lo instala como `config/niri/ocarina/binds.kdl` tras ajustar keysyms a la distribución real.
 
 ## Equivalencias DMS → OcarinaShell
@@ -41,6 +41,8 @@ Se mantiene porque era tu atajo; si molesta, propón Mod+Shift+Ctrl+R (pregúnta
 | Mayús + teclas de brillo | Brillo de todas las pantallas a la vez (cada una en su escala) |
 | Mod+Alt+P | 色 Iro: cuentagotas con el color tradicional japonés más cercano (07-IDEAS) |
 | Mod+Alt+T | 読 Yomu: leer el texto de una zona y traducirlo con Snake (07-IDEAS) |
+| Mod+Alt+F | 滑 Fluido on/off: genera fotogramas en el vídeo a pantalla completa (Nameraka, fase 11) |
+| Mod+Alt+Shift+F | 滑 Fluido: siguiente modo (×2 → ×4 → ×6 → A medida) |
 | Botón de encendido | Menú Dengen (con `input { disable-power-key-handling }`) |
 | ★ (XF86Favorites, ThinkPad) | Centro de control — verificar keysym |
 | Mod+Shift+/ | Chuleta de atajos de OcarinaShell (antes: overlay nativo) · el nativo pasa a Mod+Ctrl+/ |

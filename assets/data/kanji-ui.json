@@ -332,6 +332,10 @@
   "kyukei": {
    "kanji": "休憩",
    "es": "Descanso"
+  },
+  "nameraka": {
+   "kanji": "滑",
+   "es": "Vídeo fluido"
   }
  },
  "settingsPages": [
@@ -382,6 +386,12 @@
    "kanji": "鬼",
    "glyph": "鬼",
    "es": "Oni"
+  },
+  {
+   "id": "nameraka",
+   "kanji": "滑",
+   "glyph": "滑",
+   "es": "Vídeo fluido"
   },
   {
    "id": "fune",
@@ -760,7 +770,8 @@
   "recording": "録",
   "shinobi": "忍",
   "oni": "鬼",
-  "mamori": "守"
+  "mamori": "守",
+  "nameraka": "滑"
  },
  "funeStatus": {
   "running": {
@@ -796,6 +807,40 @@
   "blocked": {
    "kanji": "封",
    "es": "Bloqueada (Shinobi/Oni)"
+  }
+ },
+ "namerakaStatus": {
+  "off": {
+   "kanji": "止",
+   "es": "Apagado"
+  },
+  "arming": {
+   "kanji": "待",
+   "es": "Esperando pantalla completa"
+  },
+  "starting": {
+   "kanji": "起",
+   "es": "Arrancando"
+  },
+  "active": {
+   "kanji": "滑",
+   "es": "Activo"
+  },
+  "paused": {
+   "kanji": "休",
+   "es": "En pausa"
+  },
+  "adjusted": {
+   "kanji": "調",
+   "es": "Ajustado"
+  },
+  "blocked": {
+   "kanji": "封",
+   "es": "Bloqueado por Shinobi"
+  },
+  "unavailable": {
+   "kanji": "無",
+   "es": "No disponible"
   }
  },
  "mamoriStatus": {

@@ -84,6 +84,15 @@ Sin `curl`: descarga `ocarinashell-kit-{version}.zip` y `SHA256SUMS`, comprueba 
 `sha256sum -c SHA256SUMS --ignore-missing` y sigue el README.
 
 Después: `cd ~/ocarinashell && claude --permission-mode acceptEdits` y escribe `/fase 0`.
+
+### Actualizar un kit ya instalado
+
+```bash
+curl -fsSL {raw} | bash -s -- --update
+```
+
+Fusiona esta versión con tu progreso de las fases. Si algo choca, se detiene sin tocar nada: entonces pídele a Claude
+Code «fusiona la versión {version} del kit» (o `/actualizar-kit`, desde la 1.1.0).
 """)
 
 

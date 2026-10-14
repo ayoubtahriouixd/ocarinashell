@@ -31,6 +31,7 @@ BOOT = {"limine-oscuro": "assets/boot/limine/preview-dark.png", "limine-claro": 
 TOUR = [  # (image, kanji, caption) — a full loop: use → shut down → boot → unlock → desktop again
     ("assets/mockups/01-escritorio.png", "帯", "Escritorio · barra Obi, isla Shima y espacios hanko"),
     ("assets/mockups/02-centro-de-control.png", "縁", "Engawa · centro de control con brillo por pantalla"),
+    ("assets/mockups/13-fluido.png", "滑", "Fluido · vídeo hasta 120 fps con Lossless Scaling"),
     ("assets/mockups/04-lanzador.png", "鳥", "Torii · lanzador"),
     ("assets/mockups/12-pantallas.png", "画", "Ajustes · pantallas, brillo y cuidado del OLED"),
     ("assets/mockups/06-shinobi.png", "忍", "Shinobi · ahorro extremo de batería"),

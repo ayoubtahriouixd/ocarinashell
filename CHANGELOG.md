@@ -1,7 +1,25 @@
 # Cambios
 
 Formato de [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y versiones con
-[SemVer](https://semver.org/lang/es/). Para actualizar un kit instalado: `bash ~/ocarinashell/install.sh --update`.
+[SemVer](https://semver.org/lang/es/). Para actualizar un kit instalado (conserva tu progreso):
+`curl -fsSL https://raw.githubusercontent.com/ayoubtahriouixd/ocarinashell/main/install.sh | bash -s -- --update`.
+
+## [1.1.0] · 2026-10-14
+
+**滑 Nameraka · vídeo fluido**: cualquier vídeo a pantalla completa hasta 120 fps con generación de fotogramas, como
+Lossless Scaling. Especificado en el kit; lo construye Claude Code en la fase 11 B (que puede adelantarse).
+
+### Añadido
+- **滑 Fluido** en Engawa: ×2 · ×4 · ×6 · A medida (los fps que quieras) para lo que veas a pantalla completa en Chrome,
+  Firefox, mpv o cualquier app; al apagarlo, todo como estaba. `Mod+Alt+F` y `Mod+Alt+Shift+F`.
+- Motor **LSFG 3.1** de Lossless Scaling (lsfg-vk 2.0) y alternativa libre con IA (RIFE) tras una prueba de rendimiento.
+- Diseño completo en `docs/01-ARQUITECTURA.md` §19 y tareas en la **fase 11 (parte B)**, que puede adelantarse.
+- **Mockup 13** (Fluido sobre un vídeo), tarjeta Fluido en el mockup 02 y página 滑 en Ajustes.
+- Skill **`/actualizar-kit`**: fusiona una versión nueva del kit con tu progreso.
+
+### Cambiado
+- `install.sh --update` sigue la rama `main` si aún no hay versiones publicadas y protege tus registros al fusionar.
+- Las versiones se publican solas al subir una sección nueva a este fichero.
 
 ## [1.0.0] · 2026-10-14
 
@@ -25,4 +43,5 @@ Primera versión pública del kit.
   la construcción.
 - **Mantenimiento autónomo** 守 Mamori con la IA local 蛇 Snake (especificado; se construye en las fases 15 y 16).
 
-[1.0.0]: https://github.com/ayoubtahriouixd/ocarinashell/releases/tag/v1.0.0
+[1.1.0]: https://github.com/ayoubtahriouixd/ocarinashell/releases/tag/v1.1.0
+[1.0.0]: https://github.com/ayoubtahriouixd/ocarinashell/tree/cae125d

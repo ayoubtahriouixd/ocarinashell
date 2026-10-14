@@ -18,6 +18,7 @@
 | Apps de Windows | **WinApps** + `dockur/windows` (KVM) + **FreeRDP 3** RemoteApp; Wine/Proton (`umu-run`) para lo compatible | fase 12 (船 Fune); WinBoat como alternativa con interfaz propia |
 | IA local | **蛇 Snake**: `llama-server` (llama.cpp con Vulkan en la Radeon 860M) o FastFlowLM en la NPU XDNA 2, bajo demanda | fase 15; modelo y backend elegidos por evaluación |
 | Mantenimiento | **守 Mamori**: `bin/ocarina-mamori` (Python stdlib) + ayudante root `ocarina-maint` + Snake (Claude Code opcional) | fase 16; también funciona sin IA |
+| Vídeo fluido | **滑 Nameraka**: ayudante nativo `native/nameraka` (C++20, Vulkan, PipeWire) + **lsfg-vk ≥ 2.0** (Lossless Scaling de Steam, rama `lsfg-vk`); alternativa IA libre RIFE + ncnn | fase 11, parte B (§19); captura de la ventana con la API ScreenCast de niri |
 
 No hay más demonios de UI: ni waybar, ni mako/dunst/swaync, ni fuzzel/rofi, ni agentes polkit externos
 (OcarinaShell ES el servidor de notificaciones y el agente polkit). La fase 0 detecta y retira conflictos.
@@ -36,6 +37,7 @@ No hay más demonios de UI: ni waybar, ni mako/dunst/swaync, ni fuzzel/rofi, ni 
 | `ocarina-bootmark.service` | marca de arranque correcto (la usa Mamori para detectar kernels que no arrancan) |
 | `ocarina-snake.service` | servidor de la IA local en `127.0.0.1`, arrancado bajo demanda y parado tras N min sin uso |
 | `ocarina-hikae.timer` + `.service` · `ocarina-hikae-usb.service` | 控 Hikae: `ocarina backup now --if-due` a diario con CA y al montar el disco de copias (ligado a su `.mount`); `Nice=19`, IO idle |
+| `ocarina-nameraka.socket` + `.service` · `ocarina-nameraka-selftest.service` | 滑 Nameraka (§19): activado por socket al usarlo, se cierra tras 60 s apagado (0 procesos en reposo); `self-test` oneshot al iniciar sesión (`Nice=19`) |
 Arranque: niri lanza la sesión (`niri-session`/`niri.service`) → `graphical-session.target` → unidades.
 `spawn-at-startup` solo para lo que no admita systemd. `xwayland-satellite` lo gestiona niri.
 El motor de contenedores de Fune (Docker) arranca **bajo demanda** por `docker.socket`: sin Windows, nada corre.
@@ -55,13 +57,13 @@ config/                   Theme.qml, Motion.qml, Settings.qml, Paths.qml, Glossa
 services/                 Niri.qml, Time.qml, Audio.qml, Brightness.qml, Power.qml, Network.qml, Bt.qml,
                           Media.qml, Notifs.qml, Kisetsu.qml, Weather.qml, SysInfo.qml, Idle.qml, Modes.qml
                           (Shinobi/Oni), Fune.qml, Snake.qml, Mamori.qml, Clipboard.qml, Wallpapers.qml, Sounds.qml,
-                          Recorder.qml, Displays.qml, Session.qml, Focus.qml, Backup.qml   (singletons)
+                          Recorder.qml, Displays.qml, Session.qml, Focus.qml, Backup.qml, Nameraka.qml   (singletons)
 components/               primitivas: Surface, GlassPanel, OText, OIcon (Material Symbols), Kanji, Hanko,
                           OButton, OToggle, OSlider, OSwitch, Segmented, Chip, Tile, ListRow, ScrollArea,
                           Tooltip, PopupPanel, Anim (NumberAnimation con Motion), Ripple, OcarinaLogo
 modules/obi/              barra: Obi.qml, Workspaces.qml, FocusedTitle.qml, StatusCluster.qml, Tray.qml
-modules/shima/            isla: Shima.qml (+ estados: Clock, Media, Osd, Peek, Recording, Rename, Shinobi, Oni, Focus)
-modules/engawa/           centro de control + páginas Wi-Fi/Bluetooth/Audio
+modules/shima/            isla: Shima.qml (+ estados: Clock, Media, Osd, Peek, Recording, Rename, Shinobi, Oni, Focus, Fluido)
+modules/engawa/           centro de control + páginas Wi-Fi/Bluetooth/Audio/Fluido (FlowCard.qml: tarjeta 滑)
 modules/fumi/             toasts + centro de notificaciones
 modules/koyomi/           calendario + tiempo + 72 kō
 modules/torii/            lanzador (+ providers/: Apps, Calc, Run, Web, Files, Windows, Kanji (+ kaomoji), Ssh, Settings, Actions)
@@ -111,6 +113,7 @@ Reglas: módulos no se conocen entre sí; hablan por servicios y señales. Popup
 | `Session` (復元 Fukugen) | eventos de ventanas de `Niri` | guarda `session.json` agrupando 30 s; restaura al entrar si se pide |
 | `Focus` (集中 Shūchū) | tic de minutos de `Time` | solo vive mientras hay un bloque activo |
 | `Backup` (控 Hikae) | `FileView` de `~/.local/state/ocarinashell/hikae/status.json` (lo escribe `ocarina backup`) | la UI nunca lanza `restic` salvo «Copiar ahora»/«Recuperar» |
+| `Nameraka` (滑, §19) | `FileView` de `~/.local/state/ocarinashell/nameraka/selftest.json` (disponibilidad y motivo, sin arrancar nada) + `Socket` a `$XDG_RUNTIME_DIR/ocarinashell/nameraka.sock` solo con Fluido encendido (eventos JSON; systemd arranca el ayudante al conectar) | estadísticas solo con Engawa u OSD visibles (`stats on/off`); `pause`/`resume` desde la shell al bloquear, apagar pantalla o abrir popups si hiciera falta; 0 procesos con el modo apagado |
 
 ## 6. Contrato IPC (`qs -c ocarina ipc call <destino> <función> [args]`)
 | Destino | Funciones |
@@ -143,6 +146,7 @@ Reglas: módulos no se conocen entre sí; hablan por servicios y señales. Popup
 | `backup` | `now()` · `status(): string` · `restore(path: string)` (abre Recuperar en la página 守; vacío = sin preselección) |
 | `iro` | `pick()` · `status(): string` |
 | `yomu` | `region(translate: bool)` · `status(): string` |
+| `nameraka` | `toggle()` · `on()` · `off()` · `mode(m: string)` (`x2\|x4\|x6\|custom\|next`) · `fps(n: int)` (objetivo de «A medida» y pasa a ese modo; 0 = Hz de la pantalla) · `engine(e: string)` (`auto\|lsfg\|ia`) · `calibrate()` · `status(): string` (JSON de la orden `status` del ayudante: estado, motivo, ventana, base, multiplicador real, fps de salida, Hz, motor, tarde %, latencia, GPU) |
 
 ## 7. CLI `ocarina` (bash, `bin/ocarina`) — los binds llaman SIEMPRE a esto
 - Traduce a IPC y, **si la shell no responde, usa un respaldo** para que las teclas nunca mueran:
@@ -159,6 +163,8 @@ Reglas: módulos no se conocen entre sí; hablan por servicios y señales. Popup
   `mamori [status|run|pause <días>|resume|hold <pkg> <días>|unhold <pkg>|rollback|report]` ·
   `displays [arrange|identify|mirror on|off|profile <nombre>|list]` · `focus [<min>|stop]` · `session [save|restore]` ·
   `backup [now [--if-due]|status|restore <ruta>|check]` · `pick-color` · `read [--translate]` · `ssh <host>` ·
+  `nameraka [on|off|toggle|status|x2|x4|x6|custom|next|fps <N>|engine <auto|lsfg|ia>|calibrate]` (alias `fluido`; si la
+  shell no responde, habla con el socket del ayudante y `off` cae en `systemctl --user stop ocarina-nameraka.service`) ·
   `theme <id>` · `record [region]` · `cheatsheet` · `update` · `doctor [--post-update|--quiet]` · `restart` ·
   `logs [-f]` · `version`.
 - `lock --wait`: pide el bloqueo y espera (máx. 2 s) a `isLocked()==true` para que `swayidle -w` no suspenda antes.
@@ -175,6 +181,7 @@ Esquema con `"version": 1` y migraciones. Secciones (claves orientativas; defín
 `audio {uiSounds, uiVolume}` · `power {chargeLimit, lowBattery, autoShinobiAt, exitShinobiOnAC}` ·
 `shinobi {refresh60, boostOff, bluetoothOff, brightnessCap, brightnessCapExternal, kbdLightOff, wifiPowersave, pauseServices[], gpuLow, funeStop}` ·
 `oni {auto, onBattery, gpuLevel, fanMax, kishin, vrrGames, dnd, gamescopePreset, funePause}` ·
+`nameraka {mode (x2|x4|x6|custom; por defecto custom), customFps (0 = Hz de la pantalla; por defecto 0), engine (auto|lsfg|ia; por defecto auto), flowScale (null = calibrado), performance (null = calibrado | true | false), avSync, autoOnFullscreenVideo, battery (eco|normal|off), vrrWhileActive, exclude[]}` ·
 `fune {enabled, autopauseMin, autostopMin, startOnLoginAC, cpus, ramGB, scale, rdpFlags, pinnedApps[], maintenanceWindow}` ·
 `snake {enabled, backend (vulkan|npu|lemonade), model, keepAliveMin, minFreeRamGB, onBattery, assistant, contextSources[]}` ·
 `mamori {enabled, requireAC, minBattery, allowMetered, soakDays, soakDaysNoAI, ai (snake|claude|both|off), claudeBudget, firmware (approve|auto|off), autoReboot, autoImprove, quietHours}` ·
@@ -223,6 +230,9 @@ manual, % de batería, al desenchufar (opcional); salida automática al enchufar
 - Snake: servidor solo en `127.0.0.1`; sin ejecución libre de comandos; lo descargado de internet se trata como dato.
 - Ideas (07-IDEAS): Yomu hace el OCR y la traducción en local y borra la captura; Hikae cifra con `restic` y guarda la
   contraseña en gnome-keyring; Honban solo lee los nombres `Host` de `~/.ssh/config` (nunca claves ni `known_hosts`).
+- 滑 Nameraka captura SOLO la ventana objetivo, en memoria de la GPU y mientras está activo: nada se graba, nada sale
+  del equipo y la captura termina al apagarlo (se ve en `niri msg casts`). La DLL de Lossless Scaling sale de la
+  instalación de Steam de Ayoub; el kit nunca la copia ni la redistribuye.
 - Ninguna telemetría. Peticiones de red solo: Open-Meteo (tiempo), Wallhaven si se activa y el destino de Hikae.
 
 ## 12. Verificación y herramientas
@@ -241,6 +251,9 @@ oculta batería. Sin Bluetooth → oculta mosaico. Sin red → tiempo desde cach
 oculto. Pantalla externa → barra en cada salida, isla solo en la principal (configurable), bloqueo en todas.
 Sin `ddcutil`/acceso I²C → brillo externo por software. Sin `restic`, `tesseract`, `wl-mirror` o `qrencode` → esa
 función se oculta con la pista del paquete que falta. Sin `niri msg pick-color` (niri < 25.05) → cuentagotas oculto.
+Nameraka: sin lsfg-vk o sin la DLL de Lossless Scaling → motor `ia` si pasó su puerta; si no, la tarjeta 滑 dice qué
+falta y enlaza a Ajustes. Sin la API ScreenCast de niri, sin layer-shell o sin importación DMA-BUF en Vulkan → tarjeta
+oculta y el motivo en Ajustes › Acerca de › Diagnóstico.
 
 ## 14. Resiliencia, actualizaciones y mantenimiento autónomo
 Obligatoria desde la fase 3: ver `docs/06-ACTUALIZACIONES.md` (6 capas: snapshots/LTS, paquetes oficiales, código que no
@@ -276,3 +289,178 @@ estable y gana en la evaluación), arrancado bajo demanda y parado tras N min si
 `diagnose`, `propose-patch`, `report`, `assist`, `translate`) y recuperación de información de una lista blanca de fuentes.
 Snake nunca ejecuta nada: propone; Mamori (o el usuario, con confirmación en el asistente) dispone. Modelo elegido y
 reevaluado cada mes con `snake/evals/`. 0 MB de RAM en reposo; bloqueado en Shinobi y Oni.
+
+## 19. 滑 Nameraka — vídeo fluido: generación de fotogramas en todo el sistema (fase 11, parte B)
+El «Lossless Scaling» de OcarinaShell. La tarjeta 滑 de Engawa (o `Mod+Alt+F`) multiplica los fps de lo que estés
+viendo a pantalla completa —cualquier app: Chrome, Firefox, mpv, Electron…— con **×2 · ×4 · ×6** o **A medida** (los
+fps que quieras; por defecto, los Hz de la pantalla). Apagarlo deja todo exactamente como estaba: Nameraka nunca toca
+la app ni su vídeo, solo pone (y quita) una capa encima. Mismo principio que Lossless Scaling en Windows: **capturar →
+generar → presentar encima**, aquí sin copias en CPU y con el ritmo atado a los Hz del panel.
+
+### Tubería
+1. **Captura sin diálogo y sin copias.** niri implementa en D-Bus la API de screencast de Mutter, la misma que usa
+   xdg-desktop-portal-gnome (`org.gnome.Mutter.ScreenCast`, versión 4; ver `src/dbus/mutter_screen_cast.rs` de tu
+   versión). El ayudante llama a `CreateSession({})` → `Session.RecordWindow({"window-id": <u64, el id de niri>,
+   "cursor-mode": <u32> 0})` → `Session.Start()` y recibe `Stream.PipeWireStreamAdded(node_id)`; se conecta a ese nodo de
+   PipeWire pidiendo DMA-BUF con modificadores (memoria compartida solo como respaldo). Todo desde una única conexión de
+   D-Bus que vive lo que dura la sesión. Se captura solo esa ventana —nada de lo que tenga encima— y sin cursor: el cursor
+   real lo sigue dibujando niri por encima, así que ni se retrasa ni se deforma. Al no pasar por el portal no sale el
+   selector de ventanas; la sesión aparece en `niri msg casts` y muere al apagar. Desde 25.08 niri entrega cada
+   fotograma ya renderizado; si el búfer trae un fence implícito, espéralo (`DMA_BUF_IOCTL_EXPORT_SYNC_FILE`) antes de leer.
+2. **Presentación encima.** `nameraka view` crea una superficie layer-shell con espacio de nombres `ocarina-nameraka` en
+   la capa `overlay` de la salida de la ventana: anclada a los cuatro bordes, `exclusive_zone -1`,
+   `keyboard_interactivity none` y **región de entrada vacía** (ratón, teclado y táctil siguen yendo a la app de debajo,
+   como en Lossless Scaling). Debe cubrir el panel 1:1 sin reescalar: comprueba el tamaño lógico que le da niri y elige
+   búfer (fractional-scale-v1) + viewporter para que cada píxel del búfer caiga en un píxel físico (a escala 1,75,
+   1646 × 1,75 = 2880,5: si sobra medio píxel, recorta en la copia; nunca reescales). Se verifica con la captura de un
+   patrón. Importa cada DMA-BUF en Vulkan (`VK_EXT_external_memory_dma_buf` + `VK_EXT_image_drm_format_modifier`, ambas
+   en RADV) y lo copia a la swapchain FIFO con una pasada de cómputo (~0,3 ms a 2880×1800) que también aplica el
+   atenuado por software de esa pantalla si lo hay (la capa `ocarina-dim` queda debajo de Nameraka).
+3. **Generación** (`engine`; `auto`, el valor por defecto, usa `lsfg` si está disponible):
+   - **`lsfg`**: **Lossless Scaling Frame Generation 3.1** a través de **lsfg-vk ≥ 2.0**, una capa Vulkan que se engancha
+     al `vkQueuePresentKHR` del presentador e inserta los fotogramas generados entre cada dos que presenta. Necesita
+     Lossless Scaling comprado en Steam y su rama `lsfg-vk` (Ayoub lo tiene). La 2.0 usa FP16: de 2 a 3,5 veces más
+     rápida en iGPU AMD que la 1.x según sus notas.
+   - **`ia`** (alternativa libre, experimental): **RIFE** (red neuronal de interpolación; código y modelos MIT) con
+     `ncnn` sobre Vulkan dentro del presentador: flujo óptico a resolución reducida, mezcla a resolución completa y pasos
+     de tiempo arbitrarios; aquí el presentador marca su propio ritmo. Solo se ofrece hasta donde lo sostenga la 860M
+     (puerta de la fase 11); lo que no, sale deshabilitado con la cifra medida.
+4. **Ritmo.** El presentador entrega cada fotograma **nuevo** una sola vez (deduplicado) y nunca más deprisa de lo que
+   permite la pantalla. lsfg-vk solo tiene ritmo `vsync`: presenta los generados en cuanto los tiene y FIFO los reparte
+   uno por refresco, así que va perfecto **solo cuando base × multiplicador = Hz** (cada fotograma, un refresco). Si
+   no, los generados salen seguidos y el real se queda varios refrescos: 30 fps × 2 en 120 Hz da una cadencia 1-3, que
+   se nota más que no generar nada. Por eso el valor por defecto es «A medida = Hz».
+
+### Multiplicador efectivo
+Hz = frecuencia actual de la salida (de `Niri`); base = fps reales del contenido. Modo fijo:
+`m = max(1, min(elegido, ⌊Hz/base⌋))`. «A medida» con objetivo T (`customFps`; 0 = Hz):
+`m = max(1, min(round(T/base), ⌊Hz/base⌋))`; con `ia`, exactamente T. `m = 1` es paso directo (lsfg-vk lo admite como
+«bypass» y se recarga en caliente). Si T es otro modo de la pantalla (p. ej. 60 Hz), Nameraka puede pedir a `Displays`
+ese modo mientras dura —y devolver el anterior al apagar— para que base × m = T. La tarjeta muestra siempre el resultado
+real («×6 → ×4 · 120 Hz») y avisa ⚠ cuando base × m ≠ Hz.
+
+| Contenido (base) | ×2 | ×4 | ×6 | A medida = 120 (por defecto) |
+|---|---|---|---|---|
+| 23,976/24 fps (cine, anime) | 48 ⚠ | 96 ⚠ | 120 (×5) | **120 (×5)** |
+| 25 fps | 50 ⚠ | 100 ⚠ | 100 ⚠ (×4) | 100 ⚠ (×4) |
+| 30 fps | 60 ⚠ | **120** | 120 (×4) | **120 (×4)** |
+| 60 fps | **120** | 120 (×2) | 120 (×2) | **120 (×2)** |
+
+⚠ = base × m ≠ 120: tirones (con 30 → 60 se puede evitar con «A medida 60» y la pantalla a 60 Hz). 25 y 50 fps no
+dividen 120 ni 60: con `lsfg` siempre irán algo irregulares; con `ia` y VRR (`vrrWhileActive`: solo con `ia`, que marca
+su ritmo, si el panel lo admite sin parpadeo y las medidas lo confirman) irían regulares. ×6 brilla con fuentes de
+≤ 20 fps o en monitores de 144 Hz (24 × 6 = 144).
+
+**Base**: intervalos entre fotogramas nuevos (marcas de tiempo de PipeWire) → mediana de los 32 últimos → se ajusta a
+10 · 12 · 15 · 20 · 23,976 · 24 · 25 · 29,97 · 30 · 48 · 50 · 59,94 · 60 si está a ±3 %; un cambio solo se aplica si dura
+> 1 s. Sin fotogramas nuevos (pausa del vídeo) no se presenta nada y la pantalla conserva el último. **Duplicados**:
+niri puede entregar repintados sin cambios; se descartan con `SPA_META_VideoDamage` si viene y, si no, con una firma en
+la GPU (luminancia a 1/16 comparada con la anterior, ~0,1 ms).
+
+### Estados
+`off → arming → starting → active ⇄ paused → off` (+ marcas `adjusted`, `blocked`, `unavailable`; textos y kanji en
+`kanji-ui.json` → `namerakaStatus`). Los decide el daemon con los eventos de niri; lo que niri no publica (bloqueo,
+pantalla apagada por inactividad, popups de la shell) se lo manda la shell con `pause`/`resume`.
+- **Objetivo**: la ventana con el foco al encender (la última ventana enfocada; el foco de las superficies de la shell
+  —Engawa, Torii…— no cuenta, así que abrir Engawa no lo cambia).
+- **active** solo si el objetivo existe, está a pantalla completa (niri 26.04 no tiene ese campo: `layout.window_size`
+  = tamaño lógico de su salida ±1 px y, si viene, `tile_pos_in_workspace_view` = (0, 0); usa un campo explícito si tu
+  versión lo trae), ninguna otra **ventana** ha tomado el foco, su espacio está visible y no hay vista general, bloqueo
+  ni pantalla apagada.
+- **paused**: se destruye la superficie (se ve la ventana real) pero se mantienen captura y presentador: volver tarda
+  < 150 ms. Si el objetivo deja la pantalla completa estando activo → **arming** (60 s); si se cierra → **off**.
+- **arming** (al encender sobre una ventana que no está a pantalla completa): la isla dice «Pon el vídeo a pantalla
+  completa». En navegadores eso es la tecla F o el botón ⛶ del reproductor (la pantalla completa de la ventana sería la
+  del navegador, F11, no la del vídeo); en reproductores (mpv, Celluloid, Haruna, VLC…) la isla ofrece además el botón
+  «Pantalla completa» (acción `FullscreenWindow` con su `id`; es un conmutador: solo se llama si no lo está y, al
+  apagar, se deshace solo si la puso Nameraka). Arranca en cuanto lo esté; se cancela a los 60 s.
+- **Automático** (`autoOnFullscreenVideo`, apagado por defecto): cuando una ventana pasa a pantalla completa y un
+  reproductor MPRIS de esa misma app (identidad o `desktop entry` ↔ `app_id`) está en «Playing», Nameraka arranca solo;
+  nunca con ventanas de `exclude[]` ni de gamescope. Así no hace falta capturar nada para «adivinar» si hay vídeo.
+- **Apagar**: la capa desaparece en el siguiente fotograma, `Session.Stop()`, el audio vuelve a su salida y el ayudante
+  (daemon y presentador, sin superficie ni captura) queda en caliente 60 s.
+- **Vigilante**: si el presentador no presenta nada en 1 s estando activo (GPU colgada, FIFO bloqueado), el daemon lo
+  mata: una capa opaca congelada nunca puede quedarse tapando la pantalla. Y `ocarina nameraka off` hace
+  `systemctl --user stop ocarina-nameraka.service` si el socket no responde en 300 ms (05-RESCATE).
+- **Capas**: sobre una ventana a pantalla completa niri oculta la capa `top`, así que todo lo de la shell que deba verse
+  encima de un vídeo (Engawa, Fumi, OSD, Dengen) vive en `overlay`; dentro de una capa, la superficie mapeada después
+  queda encima (compruébalo). Al pasar a `active`, la shell vuelve a mapear sus popups abiertos y muestra el OSD en una
+  superficie propia de vida corta (se mapea después del presentador). Si niri no lo respetara, Nameraka pasa a
+  `paused` mientras se vean.
+
+### Audio sincronizado
+Generar retrasa la imagen ≈ 1 fotograma base + cálculo (30 fps → unos 45 ms; se nota en los labios). Con `avSync`
+(activado si la prueba de la fase sale bien) el ayudante retrasa igual el audio de esa app: crea un nodo de retardo de
+PipeWire hacia la salida actual (`pw-loopback` con retardo o `libpipewire-module-loopback`; comprueba las opciones de tu
+versión) y mueve allí los flujos de la app objetivo (por PID y sus hijos, o `application.process.binary`; también los que
+nazcan mientras dura), sin que WirePlumber recuerde ese destino para la app (compruébalo y, si lo guarda, bórralo al
+apagar). En `paused` más de 2 s el audio vuelve a su salida y se retrasa de nuevo al reanudar. Retardo
+`D = 1000/base + t_gen + 1,5 × 1000/Hz` ms (`t_gen` de la calibración); solo se reajusta si cambia > 10 ms. Ojo: si el
+nodo de retardo declara su latencia, los reproductores la compensan retrasando también la imagen y no se gana nada; la
+prueba del destello + pitido lo decide.
+
+### Energía, calidad y calibración
+- 忍 Shinobi lo apaga y lo bloquea (la tarjeta lo dice). En batería, `battery`: `eco` (por defecto: modo rendimiento +
+  flujo −25 %), `normal` u `off`. 鬼 Oni: calidad máxima.
+- **Guardias** (con lo que ya mide el ayudante y, solo mientras está activo, `gpu_busy_percent` y `Tctl` cada 1 s): GPU
+  ≥ 95 % durante 3 s, fotogramas tarde o `Tctl` ≥ 95 °C 10 s → baja un escalón: flujo −0,15 → modo rendimiento →
+  multiplicador con ritmo perfecto inferior (p. ej. 30 → 60 con la pantalla a 60 Hz) → paso directo con aviso. La
+  tarjeta dice «ajustado». Nunca sube solo (nada de oscilaciones) hasta que cambies de modo.
+- **Calibración**: `lsfg-vk-cli benchmark -w <ancho> -h <alto> -m <N>` a la resolución de cada pantalla, para
+  N ∈ {2…6} × flujo {1 · 0,75 · 0,5} × modo rendimiento (cómo fijar flujo y modo: `--help` del CLI o
+  `LSFGVK_FLOW_SCALE`/`LSFGVK_PERFORMANCE_MODE`) → `~/.local/state/ocarinashell/nameraka/calibration.json` (fps base máximos
+  de cada combinación, `t_gen` y la huella de la DLL). Se usa la de más calidad cuyo máximo ≥ 1,3 × la base necesaria.
+  `flowScale` y `performance` a `null` = lo que diga la calibración. Se recalibra al actualizarse lsfg-vk o Mesa
+  (Mamori), cuando cambia la huella de la DLL (la comprueba el daemon al arrancar: Steam la actualiza por su cuenta) y
+  con «Calibrar» en Ajustes.
+- **Configuración de lsfg-vk propia y aislada**: `~/.local/state/ocarinashell/nameraka/lsfg.toml`; el daemon lanza el
+  presentador con `LSFGVK_CONFIG=<ese fichero>` y `LSFGVK_PROFILE=nameraka`, así el `~/.config/lsfg-vk/conf.toml` de los
+  juegos queda intacto. `version = 2`, `[global]` (`allow_fp16 = true`; `dll` solo si no la encuentra en la biblioteca de
+  Steam) y un `[[profile]]` `nameraka` con `multiplier`, `flow_scale` y `performance_mode` (las tres se recargan en
+  caliente: pasar de ×2 a ×4 no corta nada) y el ritmo (`pacing` en la página de opciones, `pacing_mode` en el ejemplo:
+  decide con `lsfg-vk-cli validate`). Comprueba si la recarga sobrevive a un `rename` atómico o exige escribir en el sitio.
+  Si lsfg-vk se carga como capa implícita en todas las apps Vulkan, las unidades propias que usan la GPU
+  (`ocarina-snake.service`…) llevan `Environment=DISABLE_LSFGVK=1`.
+- **Exclusiones**: nunca sobre superficies de OcarinaShell, ventanas de gamescope ni juegos que ya usen lsfg-vk (se
+  generaría dos veces); lista por app-id en Ajustes. Para juegos es mejor lsfg-vk directo, por juego (menos latencia que
+  capturar): perfiles en Settei → 鬼 Oni.
+- **Reglas de capa de niri**: `ocarina-nameraka` queda fuera de la regla `^ocarina-` (sin sombra ni efectos), como
+  `ocarina-dim`.
+
+### Procesos y ficheros
+- `native/nameraka/` (C++20 + meson; dependencias oficiales, verifícalas con `pacman -Si`: `vulkan-headers`,
+  `vulkan-icd-loader`, `wayland`, `wayland-protocols`, `libpipewire`, `libdrm`, `systemd-libs` (sd-bus), `glslang`;
+  `wlr-layer-shell-unstable-v1.xml` de `wlr-protocols` o copiado con su licencia MIT; `ncnn` solo con `-Dia=enabled`).
+  Un binario, `~/.local/libexec/ocarinashell/nameraka`, con tres modos:
+  - `daemon`: activado por socket (`ocarina-nameraka.socket` → `$XDG_RUNTIME_DIR/ocarinashell/nameraka.sock`); máquina de
+    estados, eventos de niri, D-Bus ScreenCast (sd-bus), audio, `lsfg.toml`, calibración, guardias y vigilante. Se
+    cierra tras 60 s apagado.
+  - `view`: el presentador (PipeWire + Wayland + Vulkan), hijo del daemon con el entorno del motor (`LSFGVK_*`, o
+    `DISABLE_LSFGVK=1` con `ia`); cambiar de motor = relanzar el hijo. El origen de captura va detrás de una interfaz:
+    cuando niri tenga `ext-image-copy-capture` con origen de ventana, se cambia a él (menos latencia, sin D-Bus).
+  - `self-test [--json]`: comprueba por etapas y por motor. Códigos: 0 ok · 10 sin ScreenCast de niri · 11 sin
+    layer-shell o fractional-scale · 12 sin Vulkan/DMA-BUF · 13 sin lsfg-vk · 14 sin la DLL de Lossless Scaling · 15 sin
+    ncnn o sin modelos (solo `ia`). Lo lanza `ocarina-nameraka-selftest.service` (oneshot al iniciar sesión, `Nice=19`)
+    y escribe `~/.local/state/ocarinashell/nameraka/selftest.json` (resultado por etapa y por motor + huella de la DLL),
+    que la shell lee con `FileView`: así sabe `available` y el motivo sin arrancar nada. 10–12 ocultan la tarjeta; 13–15
+    la muestran con el motivo (si el otro motor sirve, se usa ese). También lo usan `ocarina doctor` y Mamori.
+- **Protocolo de control** (líneas JSON por el socket): órdenes `start {window, engine, mode, fps, flow, perf, avSync}` ·
+  `set {…}` · `pause` · `resume` · `stop` · `status` (respuesta única: estado, motivo, ventana, salida, base, m, fps de
+  salida, Hz, motor, `late`, `latency_ms`, `gpu`) · `stats {on}` · `calibrate`; eventos `state {state, flags, reason,
+  window, output}` · `stats {…}` (1/s y solo con `stats on`, es decir, con Engawa u OSD visibles) · `error {code, msg}`.
+- **Shell**: `services/Nameraka.qml` (cliente `Socket` + `FileView` de `selftest.json`), `modules/engawa/FlowCard.qml` +
+  página Fluido, estados de la isla (armando) y OSD, y página 滑 de Settei. `scripts/install.sh` compila el ayudante
+  (meson) y enlaza las unidades.
+
+### Descartado (y por qué)
+mpv + VapourSynth/RIFE: solo serviría en mpv. lsfg-vk directo en el navegador: Firefox (GL) y Chromium en Wayland no
+presentan por una swapchain de Vulkan, así que no hay dónde engancharse; el presentador se la da. Un segundo `qs` como
+presentador: QML no consume nodos de PipeWire en Vulkan y cargaría la shell. Capturar la salida completa: incluiría la
+propia capa (bucle) y niri tapa en negro lo bloqueado con `block-out-from`.
+
+### Límites (sin maquillar)
+Solo pantalla completa (como Lossless Scaling). Latencia de ≈ 1 fotograma base (el audio se compensa; para juegos,
+lsfg-vk directo). Texto que se mueve rápido o desplazamientos bruscos pueden mostrar artefactos (como en Lossless
+Scaling; menos cuantos más fps base). Contenido de 25/50 fps: algo irregular con `lsfg`. Sin HDR. Vídeo con DRM: en
+Linux los navegadores lo componen como cualquier otro, así que debería capturarse; compruébalo con un servicio de
+streaming y anótalo, sin prometerlo.

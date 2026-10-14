@@ -7,7 +7,7 @@ robustez, accesibilidad, documentación y limpieza. Opcionales de lujo al final 
 ## Tareas
 1. **Snapshot**.
 2. **QA visual independiente**: lanza el agente `visual-qa` con todas las pantallas (escritorio, Engawa, Torii, Kagi
-   en modo prueba, Dengen, despedida, Shinobi, Oni, Fune, Snake, Settei en Kōhaku y Kurenai con las páginas 守 y 画
+   en modo prueba, Dengen, despedida, Shinobi, Oni, Fune, Snake, 滑 Fluido (mockup 13), Settei en Kōhaku y Kurenai con las páginas 守 y 画
    Pantalla (mockup 12), menú de Limine en QEMU). Corrige todo lo de severidad alta y media. Repite hasta que no
    queden altas.
 3. **Auditoría de rendimiento**: agente `perf-auditor` contra 04-RENDIMIENTO (reposo de la shell, Snake parado, VM de
@@ -16,7 +16,8 @@ robustez, accesibilidad, documentación y limpieza. Opcionales de lujo al final 
    suspensión; tapa; enchufar/desenchufar CA; monitor externo si Ayoub tiene (conectar/desconectar en caliente, brillo
    de cada pantalla por separado); 20 cambios de tema; 20 Shinobi on/off y 10 Oni on/off; sin red; Bluetooth apagado por
    rfkill; reproductor que desaparece; 100 notificaciones; abrir una app de Windows desde VM apagada, en pausa y activa;
-   Snake respondiendo mientras la VM está activa (política de RAM). Cero errores en el journal.
+   Snake respondiendo mientras la VM está activa (política de RAM); 20 Fluido on/off con un vídeo a pantalla completa y
+   Alt+Tab, vista general y bloqueo con Fluido activo. Cero errores en el journal.
 5. **Primera semana de Mamori**: revisa `docs/MANTENIMIENTO.md` y `history.jsonl`: ¿actuó cuando debía?, ¿algún aviso
    innecesario?, ¿alguna decisión dudosa de Snake? Ajusta umbrales y plantillas; amplía `snake/evals/` con los casos reales.
 6. **Accesibilidad**: navegación completa por teclado en cada popup, foco visible, contraste AA en Kurenai y Kōhaku

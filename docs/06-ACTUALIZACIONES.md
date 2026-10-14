@@ -26,6 +26,12 @@ informe», nunca quedarse sin escritorio. Seis capas:
 - AUR solo con **paru** (con `NewsOnUpgrade` y `LocalRepo`: los paquetes del AUR compilados se guardan en un repo
   local, así que bajar de versión o reinstalar no exige recompilar). Cada actualización del AUR exige revisar el diff
   del PKGBUILD (lo hace la IA de Mamori; si no está disponible, esa actualización espera).
+- 滑 Nameraka depende de dos piezas de fuera de pacman: **lsfg-vk** (AUR, con paru y PKGBUILD revisado como todo el AUR;
+  nunca `-git`) y la **DLL de Lossless Scaling**, que actualiza Steam (rama `lsfg-vk`). Tras cambiar cualquiera de las
+  dos, Mesa, PipeWire o niri: `nameraka self-test` y recalibración (la DLL se detecta por su huella). Si algo falla,
+  Nameraka queda no disponible con el motivo —en la tarjeta o, si falla la base, en Ajustes › Acerca de › Diagnóstico—
+  y el resto de la shell ni se entera, hasta que se arregle; el ayudante nativo se recompila solo
+  si `self-test` detecta un fallo de enlace. lsfg-vk es CC BY-NC-ND: se instala y se configura, nunca se modifica.
 - Plugins de Neovim fijados con `lazy-lock.json` (en git); se actualizan en una rama, se prueban y solo entonces se
   fusionan (vuelta atrás: `:Lazy restore`).
 - Las dependencias opcionales (matugen, gpu-screen-recorder, Wallhaven…) son eso: opcionales. Si faltan o fallan,
@@ -64,7 +70,8 @@ informe», nunca quedarse sin escritorio. Seis capas:
   inocua; modo prueba del bloqueo abre y cierra; Ghostty `+validate-config`; Neovim arranca sin errores (headless);
   `fish -n`; `starship prompt`; unidades activas; la shell es dueña de `org.freedesktop.Notifications` y del agente
   polkit; portales vivos; fuentes presentes; `ocarina-theme apply --dry-run`; bloque de Limine presente; tema Plymouth
-  dentro del initramfs actual; FreeRDP/Docker de Fune (si está activo). Resultado en
+  dentro del initramfs actual; FreeRDP/Docker de Fune (si está activo); `nameraka self-test` (si está instalado; no
+  bloqueante: avisa y dispara el playbook de 滑, nunca la reversión; los códigos 13–15 no cuentan como fallo). Resultado en
   `~/.local/state/ocarinashell/smoke.json`.
 - **Reversión**: si fallan tras una actualización y la adaptación automática (capa 6) no lo arregla, Mamori ejecuta
   `snapper undochange <pre>..<post>` del par de la transacción, reinicia la shell, repite las pruebas y retiene el lote.
@@ -145,6 +152,7 @@ previa sí se hace en segundo plano). Si no se cumple, lo reintenta más tarde. 
 | Reloj desincronizado | `systemd-timesyncd` activo |
 | Coredumps repetidos (`coredumpctl`) | Snake investiga la causa |
 | Kernel nuevo con arranque fallido | retener + volver al anterior desde la caché |
+| 滑 Nameraka: `self-test` falla tras actualizar | recompilar el ayudante (meson) y recalibrar; si sigue, retener lsfg-vk (o avisar si fue la DLL de Steam) y Snake diagnostica |
 | Batería: desgaste anómalo o temperaturas en reposo altas | aviso (posible ventilador sucio) |
 
 ### Mantenimiento periódico (siempre con las condiciones de arriba)

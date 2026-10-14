@@ -72,12 +72,13 @@ shell/        → ~/.config/quickshell/ocarina   (QML: shell.qml, services/, com
 config/niri/  → ~/.config/niri                 config/ghostty → ~/.config/ghostty   config/nvim → ~/.config/nvim
 config/fish/, config/starship.toml, config/*   (resto de dotfiles)   templates/ (plantillas del motor de temas)
 bin/          → ~/.local/bin (ocarina, ocarina-theme, …)              system/ (ficheros root: polkit, helper, greetd…)
+native/       código nativo compilado por scripts/install.sh (nameraka: C++/Vulkan → ~/.local/libexec/ocarinashell/)
 scripts/      install.sh, doctor.sh, bench-*.sh, hooks/               docs/, assets/, tools/ (generadores de assets)
 tests/        datos falsos para pruebas (p. ej. `ssh_config` con hosts ficticios)
 install.sh    (raíz) instalador del kit por curl: descarga/actualiza el repo; NO enlaza nada (eso es scripts/install.sh)
 ```
-Versiones del kit: nueva sección en `CHANGELOG.md` → push → GitHub Actions «publicar versión» (Run workflow) crea la
-release con el zip reproducible de `tools/release.py`.
+Versiones del kit: nueva sección arriba en `CHANGELOG.md` → push a `main` → GitHub Actions «publicar versión» crea sola la
+release con el zip reproducible de `tools/release.py` (solo en el repositorio público del kit).
 Este repo local tiene como remoto `upstream` el repositorio público del kit: **nunca hagas `push` ahí** (el progreso
 de Ayoub va en local o en un repo privado suyo si lo configura).
 Estado en ejecución: `~/.config/ocarinashell/settings.json` (ajustes del usuario), `~/.local/state/ocarinashell/`
@@ -90,7 +91,7 @@ Estado en ejecución: `~/.config/ocarinashell/settings.json` (ajustes del usuari
   Kura (portapapeles), Techo (notas), Mihari (monitor), Settei (ajustes), Kabegami (fondos), Mado (reglas),
   Shinobi (ahorro), Oni (rendimiento), Fune (apps de Windows), Snake (IA local), Mamori (mantenimiento autónomo),
   Haichi (pantallas), Happyō (presentar), Hogo (cuidado OLED), Hikae (copias), Fukugen (restaurar sesión),
-  Honban (SSH de producción), Iro (cuentagotas), Shūchū (foco), Yomu (leer y traducir).
+  Honban (SSH de producción), Iro (cuentagotas), Shūchū (foco), Yomu (leer y traducir), Nameraka (vídeo fluido).
 - QML: un componente por fichero, `pragma ComponentBehavior: Bound`, `required property` en delegates,
   ids en camelCase, sin lógica pesada en bindings, `Loader`/`LazyLoader` para todo lo que no está visible,
   animaciones con `Anim`/`Motion.*` y preferencia por `*Animator` (hilo de render).

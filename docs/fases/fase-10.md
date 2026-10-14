@@ -23,8 +23,8 @@ y que el uso normal ya sea eficiente. Con números medidos, no con fe.
    externos solo con `brightnessCapExternal`, pensado para los USB-C que se alimentan del portátil), luz de teclado off ·
    energía → PPD `power-saver`, turbo off (helper), `gpu low` solo si las medidas lo justifican ·
    radios → Bluetooth off (salvo dispositivo de audio conectado, configurable), Wi-Fi powersave ·
-   apps → efectos de Ghostty y Neovim off (fichero `mode`), pausa de servicios de usuario configurados (Snake y la VM
-   de Fune se enganchan aquí en sus fases).
+   apps → efectos de Ghostty y Neovim off (fichero `mode`), pausa de servicios de usuario configurados (Snake, la VM
+   de Fune y 滑 Nameraka —se apaga y queda bloqueado— se enganchan aquí en sus fases; si Nameraka ya existe, hazlo ya).
    Entrada: el sello 忍 se estampa en la isla y el tema funde a negro (única animación permitida); toast como el
    mockup 06 con autonomía estimada (potencia media de los últimos 60 s).
    Disparadores: manual (Mod+Alt+S, mosaico, CLI), batería ≤ umbral (preguntar o automático según Ajustes), salida

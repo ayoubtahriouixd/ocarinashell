@@ -84,7 +84,7 @@ añadir los suyos (anime incluido) desde Kabegami; nosotros nunca distribuimos a
 | Fichero | Qué fija |
 |---|---|
 | `01-escritorio.png` | barra Obi, isla, espacios hanko, ventanas niri (radio 14, anillo de foco degradado), Ghostty con fastfetch kanji y prompt, Neovim con statusline kanji, notificación |
-| `02-centro-de-control.png` | Engawa: rápidos con kanji de marca de agua, tarjetas 忍 Shinobi y 鬼 Oni, sliders (brillo por pantalla: portátil + monitor externo), perfiles 省/均/速, música, batería |
+| `02-centro-de-control.png` | Engawa: rápidos con kanji de marca de agua, tarjetas 忍 Shinobi y 鬼 Oni, tarjeta 滑 Fluido (×2 · ×4 · ×6 · A medida; llega con la fase 11 B), sliders (brillo por pantalla: portátil + monitor externo), perfiles 省/均/速, música, batería |
 | `03-bloqueo.png` | Kagi: composición asimétrica, reloj 196 px, fecha kanji, pétalos, proverbio vertical con sello |
 | `04-lanzador.png` | Torii: búsqueda, chips de modo, resultados con coincidencias en rojo, acciones, pie de atajos |
 | `05-energia.png` | Dengen: kanji de pincel, selección roja, «mantén para apagar» |
@@ -95,6 +95,7 @@ añadir los suyos (anime incluido) desde Kabegami; nosotros nunca distribuimos a
 | `10-mamori.png` | 守 Mamori en Settei (tema Kurenai): estado, línea temporal de acciones, retenciones con motivo, salud, tarjeta de Snake |
 | `11-snake.png` | 蛇 Snake: asistente local en un panel, respuesta con contexto del sistema y acción propuesta con confirmación |
 | `12-pantallas.png` | Settei → Pantalla: 配置 Haichi (pantallas a escala, principal 主, perfiles, «revertir en 15 s»), brillo de cada pantalla y 保護 cuidado del OLED |
+| `13-fluido.png` | 滑 Nameraka activo sobre un vídeo a pantalla completa: página Fluido de Engawa (30 → 120 fps, tira de ritmo, modos, motor, calidad) y OSD de la isla |
 | `assets/boot/limine/preview-*.png` | menú de Limine real (QEMU) con el tema oscuro y claro |
 | `assets/boot/plymouth/preview-*.png` | Plymouth: arranque, apagado, reinicio y contraseña de disco |
 

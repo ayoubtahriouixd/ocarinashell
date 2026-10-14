@@ -45,6 +45,8 @@ binds {
     Shift+XF86MonBrightnessUp allow-when-locked=true { spawn "ocarina" "brightness" "up" "--all"; }
     Mod+Alt+P hotkey-overlay-title="色 Cuentagotas" { spawn "ocarina" "pick-color"; }
     Mod+Alt+T hotkey-overlay-title="読 Leer y traducir pantalla" { spawn "ocarina" "read"; }
+    Mod+Alt+F hotkey-overlay-title="滑 Fluido · generar fotogramas" { spawn "ocarina" "nameraka" "toggle"; }
+    Mod+Alt+Shift+F hotkey-overlay-title="滑 Fluido · siguiente modo" { spawn "ocarina" "nameraka" "next"; }
     // XF86NotificationCenter { spawn "ocarina" "notifications"; }  // verificar si la fila Fn lo emite
 
     // Chuleta: la de OcarinaShell en tu atajo de siempre; la nativa de niri pasa a Mod+Ctrl+/

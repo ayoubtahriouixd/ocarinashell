@@ -43,6 +43,13 @@ los mensajes. Desinstalar temas: `sudo bash scripts/root/plymouth-tema.sh --unin
 `ocarina oni off` (restaura el snapshot). Si la shell no responde: `powerprofilesctl set balanced` y
 `echo level auto | sudo tee /proc/acpi/ibm/fan`.
 
+## 滑 Fluido: la imagen se congeló o no se quita
+Lo que ves es la capa de Nameraka encima del vídeo (ratón y teclado siguen yendo a la app de debajo). En orden:
+`Mod+Alt+F` · `ocarina nameraka off` · `systemctl --user stop ocarina-nameraka.service` (lo cierra todo y la capa
+desaparece). El vigilante del ayudante ya debería quitarla solo en 1 s. Si se repite: `journalctl --user -u
+ocarina-nameraka -n 80`, `~/.local/libexec/ocarinashell/nameraka self-test` y, para descartar lsfg-vk, cambia al motor
+IA si pasó su puerta (`ocarina nameraka engine ia`). Para desactivarlo del todo: Ajustes › 滑 Vídeo fluido.
+
 ## 船 Windows (Fune) no arranca o va lento
 `ocarina fune status` · `docker logs --tail 80 WinApps` · visor web de emergencia en `http://127.0.0.1:8006` ·
 `docker restart WinApps`. El disco de Windows vive en `~/.local/share/ocarinashell/fune/` (subvolumen propio): **nunca**

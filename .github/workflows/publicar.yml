@@ -1,15 +1,25 @@
 name: publicar versión
 
 # Publica la versión de CHANGELOG.md como release de GitHub, con el zip reproducible del kit, SHA256SUMS e install.sh.
-# Se lanza a mano: Actions → «publicar versión» → Run workflow. Si esa versión ya existe, no hace nada.
+# Se lanza automáticamente al subir a main un CHANGELOG.md con una sección nueva arriba, o a mano: Actions → «publicar
+# versión» → Run workflow. Si esa versión ya existe, no hace nada. Solo en el repositorio público del kit: en una copia
+# privada con tu progreso no publica nada.
 on:
+  push:
+    branches: [main]
+    paths: [CHANGELOG.md]
   workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: publicar
+  cancel-in-progress: false
+
 jobs:
   release:
+    if: github.repository == 'ayoubtahriouixd/ocarinashell'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

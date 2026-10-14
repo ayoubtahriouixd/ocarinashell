@@ -19,7 +19,7 @@ que **Claude Code construye en tu equipo** fase a fase, con un snapshot y prueba
 
 </div>
 
-<p align="center"><img src="docs/img/recorrido.webp" alt="Recorrido por OcarinaShell: arranque, bloqueo, escritorio, centro de control, lanzador, ajustes, Shinobi, Oni, Fune, Snake y energía" width="100%"></p>
+<p align="center"><img src="docs/img/recorrido.webp" alt="Recorrido por OcarinaShell: arranque, bloqueo, escritorio, centro de control, vídeo fluido, lanzador, ajustes, Shinobi, Oni, Fune, Snake y energía" width="100%"></p>
 <p align="center"><sub>El arranque son capturas reales (Limine en QEMU, Plymouth en plymouthd). El resto son los mockups a tamaño real
 (2880×1800): el objetivo visual que cada fase reproduce y compara con una captura de verdad.</sub></p>
 
@@ -50,8 +50,11 @@ equipo y adapta lo que cambie: pantalla, sensores, teclas o cargador de arranque
 
 <table>
   <tr>
+    <td align="center" colspan="2"><a href="assets/mockups/13-fluido.png"><img src="docs/img/mockups/13-fluido.jpg" alt="Vídeo fluido"></a><br><b>滑 Fluido</b> · <b>nuevo en 1.1</b>: cualquier vídeo a pantalla completa, hasta 120 fps, generando fotogramas con Lossless Scaling desde Engawa (×2 · ×4 · ×6 · A medida)</td>
+  </tr>
+  <tr>
     <td align="center" width="50%"><a href="assets/mockups/01-escritorio.png"><img src="docs/img/mockups/01-escritorio.jpg" alt="Escritorio"></a><br><b>帯 Escritorio</b> · barra Obi, isla Shima, espacios <i>hanko</i>, Ghostty y Neovim</td>
-    <td align="center" width="50%"><a href="assets/mockups/02-centro-de-control.png"><img src="docs/img/mockups/02-centro-de-control.jpg" alt="Centro de control"></a><br><b>縁 Engawa</b> · centro de control con el brillo de cada pantalla</td>
+    <td align="center" width="50%"><a href="assets/mockups/02-centro-de-control.png"><img src="docs/img/mockups/02-centro-de-control.jpg" alt="Centro de control"></a><br><b>縁 Engawa</b> · centro de control: brillo de cada pantalla y 滑 Fluido</td>
   </tr>
   <tr>
     <td align="center" width="50%"><a href="assets/mockups/03-bloqueo.png"><img src="docs/img/mockups/03-bloqueo.jpg" alt="Bloqueo"></a><br><b>鍵 Kagi</b> · bloqueo: cada tecla ilumina un agujero de la ocarina</td>
@@ -200,7 +203,7 @@ curl -fsSL https://raw.githubusercontent.com/ayoubtahriouixd/ocarinashell/main/i
 | Opción | Qué hace |
 |---|---|
 | `--check` | Solo comprueba el equipo: no descarga ni cambia nada. |
-| `--version v1.0.0` | Instala una versión concreta (por defecto, la última publicada). |
+| `--version v1.1.0` | Instala una versión concreta (por defecto, la última publicada; `main` = lo más reciente). |
 | `--update` | Actualiza un kit ya instalado y fusiona la nueva versión con tu trabajo de las fases. |
 | `--sudo-temporal` | Activa el sudo temporal de la construcción sin preguntar. |
 | `--no-sudo-temporal` | No pregunta por el sudo temporal. |
@@ -213,14 +216,14 @@ curl -fsSL https://raw.githubusercontent.com/ayoubtahriouixd/ocarinashell/main/i
 <details>
 <summary><b>Sin <code>curl</code>: desde la release (zip con suma de comprobación)</b></summary>
 
-Descarga `ocarinashell-kit-v1.0.0.zip` y `SHA256SUMS` de la
+Descarga `ocarinashell-kit-v1.1.0.zip` y `SHA256SUMS` de la
 [última release](https://github.com/ayoubtahriouixd/ocarinashell/releases/latest). Después:
 
 ```bash
 cd ~/Descargas            # o ~/Downloads
 sha256sum -c SHA256SUMS --ignore-missing
-unzip ocarinashell-kit-v1.0.0.zip -d ~
-cd ~/ocarinashell && git init -q -b main && git add -A && git commit -qm "kit v1.0.0"
+unzip ocarinashell-kit-v1.1.0.zip -d ~
+cd ~/ocarinashell && git init -q -b main && git add -A && git commit -qm "kit v1.1.0"
 ```
 
 El último paso inicializa git, porque las fases guardan su progreso con commits. Con el zip no hay `--update`: las
@@ -273,6 +276,7 @@ Claude Code instala y configura sin pedirte nada.
 | `/pulir <componente>` | Pulido visual contra el mockup (isla, barra, kagi, fune, limine…). |
 | `/auditar rendimiento·visual·qml` | Revisión independiente con agentes especializados. |
 | `/actualizar` | Actualización guiada a mano (normalmente la hace Mamori). |
+| `/actualizar-kit` | Trae una versión nueva del kit y la fusiona con tu progreso. |
 | `/mantener` | Lo que ejecuta Mamori en segundo plano, ahora y completo. |
 | `/rescate <problema>` | Diagnóstico y recuperación. |
 
@@ -287,6 +291,7 @@ Claude Code instala y configura sin pedirte nada.
 | **鍵 Kagi** · **電源 Dengen** | Bloqueo que «suena» (cada tecla, una nota) y menú de energía con pincel. |
 | **設定 Settei** · **壁紙 Kabegami** | Ajustes completos (claro y oscuro) y explorador de fondos con transición de tinta. |
 | **忍 Shinobi** · **鬼 Oni** | Ahorro extremo de batería y rendimiento extremo para jugar (gamescope + FSR, MangoHud, GameMode). |
+| **滑 Nameraka** | Vídeo fluido en todo el sistema: lo que veas a pantalla completa (Chrome, Firefox, mpv…) hasta 120 fps generando fotogramas con Lossless Scaling (LSFG 3.1 vía lsfg-vk), con ×2 · ×4 · ×6 · A medida desde Engawa. Al apagarlo, todo como estaba. |
 | **船 Fune** | Apps de Windows como ventanas nativas (Windows en KVM + RemoteApp), con pausa automática. |
 | **蛇 Snake** · **守 Mamori** | IA local gratuita y mantenimiento autónomo con snapshot, pruebas y reversión. |
 | **Terminal y editor** | Ghostty, fish, starship y Neovim con el mismo diseño. |
@@ -312,7 +317,7 @@ modo foco, leer y traducir japonés de la pantalla, kaomoji, gestos táctiles y 
 | 8 | Terminal | Ghostty, fish, starship y CLI con el diseño. |
 | 9 | Neovim | Editor propio, rápido, con barra de estado en kanji. |
 | 10 | 忍 Shinobi | Ahorro extremo de batería, medido. |
-| 11 | 鬼 Oni | Rendimiento extremo y juegos. |
+| 11 | 鬼 Oni · 滑 Nameraka | Rendimiento extremo y juegos; vídeo fluido en todo el sistema (esta parte, `/fase 11b`, puede adelantarse). |
 | 12 | 船 Fune | Apps de Windows como ventanas nativas, y Wine/Proton sin sobrecoste. |
 | 13 | Arranque y apagado | Limine + Plymouth animado + despedida enlazada. |
 | 14 | Blindaje | Modo seguro, pruebas de humo, reversión automática, simulacros y copias de seguridad. |
@@ -344,10 +349,13 @@ seguridad). Detalles en [`docs/06-ACTUALIZACIONES.md`](docs/06-ACTUALIZACIONES.m
 ## 更 Actualizar y desinstalar
 
 ```bash
-bash ~/ocarinashell/install.sh --update   # nueva versión del kit, fusionada con tu trabajo
+curl -fsSL https://raw.githubusercontent.com/ayoubtahriouixd/ocarinashell/main/install.sh | bash -s -- --update
 ```
 
-Si una versión nueva choca con cambios tuyos, el instalador no toca nada y te dice cómo pedírselo a Claude Code.
+Trae la última versión del kit y la fusiona con tu progreso de las fases (con el instalador más reciente; también vale
+`bash ~/ocarinashell/install.sh --update`). Si algo choca con cambios tuyos, no toca nada y te dice qué pedirle a Claude
+Code; desde la 1.1.0, dentro de Claude Code basta con `/actualizar-kit`. Lo nuevo de cada versión, en
+[`CHANGELOG.md`](CHANGELOG.md).
 
 - **Antes de empezar las fases**, desinstalar es borrar la carpeta: `rm -rf ~/ocarinashell`.
 - **Con fases hechas**: `bash ~/ocarinashell/scripts/install.sh --uninstall` (restaura tus ficheros originales),
@@ -380,6 +388,27 @@ mantiene con Snake, que es gratis y local; Claude Code queda como extra opcional
 Ninguna telemetría. Solo hay red para paquetes y actualizaciones, el tiempo (Open-Meteo) y lo que tú actives (fondos de
 Wallhaven, el destino de tus copias). Snake, la lectura y traducción de pantalla y el resto de la IA local funcionan sin
 conexión.
+
+</details>
+
+<details>
+<summary><b>¿Fluido funciona con YouTube, Netflix o cualquier vídeo?</b></summary>
+
+Con cualquier app que muestre el vídeo a **pantalla completa**: Chrome, Firefox, mpv, apps Electron… Como Lossless
+Scaling en Windows, captura la ventana, genera los fotogramas intermedios y los presenta encima, a los Hz de tu
+pantalla; el ratón y el teclado siguen yendo al vídeo. «A medida 120» lleva un vídeo de 24 fps a 120 (×5) y uno de 30 a
+120 (×4). Añade la latencia de un fotograma, que se compensa retrasando igual el audio. El vídeo con DRM debería
+funcionar porque en Linux el navegador lo compone como cualquier otro, pero la fase 11 lo comprueba antes de
+prometerlo.
+
+</details>
+
+<details>
+<summary><b>¿Necesito Lossless Scaling para el vídeo fluido?</b></summary>
+
+Para el motor recomendado, sí: [Lossless Scaling](https://store.steampowered.com/app/993090/Lossless_Scaling/) en
+Steam (rama `lsfg-vk`), que en Linux se usa con [lsfg-vk](https://lsfg-vk.dev). Es el que mejor rinde en una iGPU. Sin
+él queda una alternativa libre con IA (RIFE), solo hasta donde la aguante tu GPU; la fase 11 lo mide.
 
 </details>
 
@@ -426,10 +455,10 @@ snapshot anterior o el kernel LTS.
 ```
 install.sh          instalador del kit (curl … | bash)
 CLAUDE.md           memoria del proyecto para Claude Code (reglas de oro)
-.claude/            permisos, hooks, skills (/fase, /estado, /pulir, /rescate…) y agentes
+.claude/            permisos, hooks, skills (/fase, /estado, /pulir, /rescate, /actualizar-kit…) y agentes
 docs/               visión, arquitectura, diseño, rendimiento, rescate, ideas y fases 00–17
 assets/logo/        logo: SVG estáticos y animados, PNG y componente QML verificado
-assets/mockups/     12 pantallas objetivo a 2880×1800 + su fuente HTML/CSS
+assets/mockups/     13 pantallas objetivo a 2880×1800 + su fuente HTML/CSS
 assets/boot/        temas de Limine (probado en QEMU) y Plymouth (probado en plymouthd)
 assets/wallpapers/  6 fondos originales
 assets/sounds/      6 sonidos originales tipo ocarina
@@ -447,6 +476,9 @@ tests/              datos falsos para pruebas (config SSH ficticia)
   con licencia OFL o Apache) se descargan en la fase 0; no se incluyen aquí.
 - Construido sobre [niri](https://github.com/YaLTeR/niri), [Quickshell](https://quickshell.org) y
   [CachyOS](https://cachyos.org). OcarinaShell se escribe desde cero: no copia código de otras shells.
+- El vídeo fluido usa [lsfg-vk](https://lsfg-vk.dev) (CC BY-NC-ND) con tu copia de
+  [Lossless Scaling](https://store.steampowered.com/app/993090/Lossless_Scaling/): el kit los instala y configura, nunca
+  los copia ni los modifica.
 - Diseñado y especificado con [Claude Code](https://code.claude.com/docs/en/overview).
 
 ---
@@ -457,8 +489,9 @@ tests/              datos falsos para pruebas (config SSH ficticia)
 OcarinaShell is a **build kit** for a complete Japanese-styled desktop on **CachyOS + niri + Quickshell**. It is not a
 dotfiles dump. It ships the full spec (architecture, pixel-exact mockups, 18 phases with acceptance criteria), original
 assets (animated logo, wallpapers, ocarina UI sounds, Limine and Plymouth themes tested for real) and safety nets: a
-snapshot before every phase, a command guard with 201 tests, a safe mode and automatic rollback. Claude Code then builds
-the desktop on your machine, phase by phase. Install the kit with
+snapshot before every phase, a command guard with 201 tests, a safe mode and automatic rollback. Since 1.1 it also
+specifies system-wide frame generation for any full-screen video (Lossless Scaling's LSFG through lsfg-vk, ×2 · ×4 · ×6
+or a custom fps target). Claude Code then builds the desktop on your machine, phase by phase. Install the kit with
 `curl -fsSL https://raw.githubusercontent.com/ayoubtahriouixd/ocarinashell/main/install.sh | bash`, then run
 `claude --permission-mode acceptEdits` in `~/ocarinashell` and type `/fase 0`. Docs are in Spanish.
 

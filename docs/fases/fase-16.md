@@ -46,7 +46,9 @@ mockup `10-mamori.png`, D-007 y D-008, y lo construido en las fases 14 (piezas d
 11. **Periódico** (06 §Mantenimiento periódico): paccache, huérfanos (informe), firmware (BIOS con aprobación de un
     toque), scrub mensual, mirrors, plugins de Neovim (rama → salud y arranque headless → fusión), Fune (`ocarina fune
     update` + ventana de mantenimiento de Windows), Snake (evaluación mensual de modelos nuevos), Hikae (última copia
-    ≤ 7 días; `restic check --read-data-subset 5%` mensual con CA; aviso si falla), `claude update` si está instalado.
+    ≤ 7 días; `restic check --read-data-subset 5%` mensual con CA; aviso si falla), `claude update` si está instalado,
+    滑 Nameraka (tras actualizar lsfg-vk, Mesa, PipeWire, niri o la DLL de Lossless Scaling: `nameraka self-test` +
+    recalibración; playbook de 06-ACTUALIZACIONES si falla).
 12. **Disparadores**: `ocarina-mamori.timer` (diario 04:00, `Persistent=true`, `RandomizedDelaySec=20m`) + disparo
     oportunista desde la shell (inactiva 15 min y ciclo pendiente) + revisión tras cada arranque si hay marca pendiente.
 13. **Informes y UI**: `history.jsonl`, `docs/MANTENIMIENTO.md` (commit), notificaciones agrupadas con hanko 守 (solo

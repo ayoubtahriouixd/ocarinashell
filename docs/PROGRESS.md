@@ -16,7 +16,7 @@
 | 08 | Ghostty, fish, starship y herramientas CLI | ⬜ pendiente |
 | 09 | Neovim | ⬜ pendiente |
 | 10 | 忍 Shinobi (ahorro extremo) y afinado de energía | ⬜ pendiente |
-| 11 | 鬼 Oni: rendimiento extremo y juegos | ⬜ pendiente |
+| 11 | 鬼 Oni: rendimiento extremo y juegos (A) · 滑 Nameraka: vídeo fluido (B) | A ⬜ · B ⬜ |
 | 12 | 船 Fune: apps de Windows | ⬜ pendiente |
 | 13 | Arranque y apagado: Limine, Plymouth, greeter, despedida | ⬜ pendiente |
 | 14 | Blindaje: modo seguro, pruebas de humo, reversión, simulacros | ⬜ pendiente |

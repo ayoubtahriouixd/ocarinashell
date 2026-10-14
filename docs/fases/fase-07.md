@@ -44,6 +44,8 @@ instante, y un explorador de fondos rápido.
      umbrales de batería baja, gráfica de consumo de las últimas horas (UPower history si existe), auto-Shinobi.
    - 忍 **Shinobi** y 鬼 **Oni**: qué apaga/enciende cada modo (checkboxes), disparadores, estimaciones (Oni llega en la
      fase 11: deja la página preparada).
+   - 滑 **Vídeo fluido** (Nameraka, fase 11 parte B; 02-DISENO): si ya está construido, su página completa; si no, deja
+     el hueco en la navegación como con Oni.
    - 鍵 **Bloqueo e inactividad**: tiempos CA/batería, huella, privacidad, multimedia en bloqueo.
    - 入 **Teclado, ratón y táctil**: distribuciones y cambio, repetición, touchpad, TrackPoint, foco sigue al ratón,
      cursor sigue al foco.

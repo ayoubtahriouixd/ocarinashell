@@ -26,6 +26,7 @@
    Engawa/Settei (caché 30 s) y escrituras coalescidas; cero procesos `ddcutil` en reposo.
    Ideas (07-IDEAS): Hogo y Shūchū cuelgan del tic de minutos de `Time` (ningún `Timer` propio); Fukugen guarda por
    eventos de ventanas (agrupados 30 s); Hikae solo con CA (`Nice=19`, IO idle); Iro, Yomu y Happyō solo al invocarlos.
+   滑 Nameraka: ayudante activado por socket solo al encenderlo; sus estadísticas (1/s) solo con Engawa u OSD visibles.
 2. `LazyLoader`/`Loader { active: … }` para todo popup; destruir lo pesado al cerrar (salvo lanzador caliente).
 3. Imágenes con `sourceSize` exacto (tamaño en pantalla × escala), `asynchronous: true`, caché de miniaturas en disco.
 4. **Nada de blur en QML** (MultiEffect/FastBlur) sobre áreas grandes: el blur lo hace niri («xray» = calculado
@@ -53,6 +54,27 @@ MangoHud con registro (`log_duration=60`, `output_folder=~/ocarinashell/docs/evi
 frecuencias CPU/GPU, `Tctl`, temperatura de la GPU y vatios del paquete. Escenarios: normal · Oni · Oni + gamescope
 1440×900→2880×1800 FSR · (Kishin si se aprobó). Resultado en `docs/JUEGOS.md` con la configuración ganadora.
 Límite duro: ninguna medida justifica superar 97 °C sostenidos.
+
+## Vídeo fluido (fase 11, 滑 Nameraka): presupuestos y protocolo
+| Métrica | Objetivo |
+|---|---|
+| Apagado | **0 procesos**, 0 % CPU/GPU (el socket de systemd espera; la shell no se conecta) |
+| Encender (toque → primer fotograma generado) | **< 300 ms** en frío · < 120 ms en caliente (daemon y presentador vivos 60 s tras apagar) |
+| Apagar (toque en la tarjeta → app original a la vista) | **≤ 2 fotogramas** (≤ 17 ms a 120 Hz; con el atajo, que pasa por el CLI, ≤ 50 ms) |
+| Pausa ⇄ activo (Alt+Tab, vista general, popup) | < 150 ms |
+| CPU del ayudante activo | **< 3 %** de un núcleo (cero copias en CPU: DMA-BUF de punta a punta) |
+| Fotogramas tarde o perdidos | **< 0,5 %** en 5 min a 120 Hz con 1080p30 ×4, 1080p60 ×2 y 1080p24 A medida (×5) |
+| Latencia añadida | ≤ 1 fotograma base + `t_gen` + 12,5 ms (la fórmula de §19); con `avSync`, desfase audio-vídeo dentro de ±15 ms |
+| Memoria del ayudante | < 150 MB (motor `lsfg`) |
+| Potencia extra | se mide y se publica (no hay tope: es una función que gasta por diseño); `eco` en batería |
+Cómo medir: vídeos de prueba generados con ffmpeg a 23,976/24/25/30/60 fps (`testsrc2` + un rótulo en movimiento
+horizontal y un contador de fotogramas) en mpv y en Chrome a pantalla completa, más un vídeo real de cada tipo
+(anime 24, deporte 60). Las estadísticas del ayudante (`ocarina nameraka status`: base, multiplicador real, salida,
+tarde %, latencia, GPU) durante 5 min, `gpu_busy_percent`, `pidstat` del ayudante y MangoHud sobre el presentador (según la
+guía de capas superpuestas de lsfg-vk) para la gráfica de tiempos: plana en 8,33 ms cuando base × m = Hz. Potencia con
+`scripts/bench-power.sh` (mide descargando: en batería con `battery: normal` y con `eco`; sin Nameraka · ×2 · ×4 ·
+A medida). Sincronía: vídeo de destello + pitido; Ayoub lo confirma a ojo y oído. Resultado en `docs/FLUIDO.md` con la
+configuración ganadora por resolución y fps base.
 
 ## Windows (fase 12, 船 Fune): protocolo de medida
 Latencia de apertura de una app (clic en Torii → ventana visible) en frío (VM apagada), templado (VM en pausa) y

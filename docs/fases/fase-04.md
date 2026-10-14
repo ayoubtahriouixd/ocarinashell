@@ -10,7 +10,7 @@ Notification, Networking, Bluetooth, PowerProfiles, ColorQuantizer, PopupWindow.
 2. **Engawa** (`modules/engawa/`): panel de capa anclado arriba-derecha (420 px), cierre con Esc/clic fuera, foco de
    teclado (`WlrKeyboardFocus.OnDemand`), navegación completa con teclado. Cabecera, mosaicos (Wi-Fi, Bluetooth, No
    molestar, Luz nocturna, Despierto/IdleInhibitor, Micrófono, Grabar, Captura), tarjetas de modo 忍 Shinobi y 鬼 Oni
-   (de momento llaman a los servicios stub), sliders (volumen con selector de salida/entrada; **brillo: uno por
+   (de momento llaman a los servicios stub; la tarjeta 滑 Fluido del mockup 02 llega con la fase 11 B), sliders (volumen con selector de salida/entrada; **brillo: uno por
    pantalla** —mockup 02—, que aparecen y desaparecen en caliente al conectar o quitar monitores, en el orden físico de
    niri, con el nombre a la derecha y el texto invertido bajo el relleno; Mayús + arrastrar mueve todos; teclado si
    existe), segmentado de perfiles, tarjeta multimedia (Mpris + ColorQuantizer), pie de batería (UPower + `power_now`
