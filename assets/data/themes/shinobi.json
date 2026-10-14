@@ -1,0 +1,82 @@
+{
+ "id": "shinobi",
+ "name": "Shinobi",
+ "kanji": "忍",
+ "kana": "しのび",
+ "mode": "dark",
+ "description": "Negro puro OLED y luminancia mínima (lo usa el modo ahorro)",
+ "colorFormat": "CSS hex: #RRGGBB o #RRGGBBAA (la shell y el motor de temas lo convierten por destino)",
+ "wallpaper": null,
+ "colors": {
+  "bg": "#000000",
+  "surface0": "#000000",
+  "surface1": "#0a0a0a",
+  "surface2": "#121212",
+  "surface3": "#1a1a1a",
+  "outline": "#161616",
+  "outlineStrong": "#262626",
+  "text": "#b8b2aa",
+  "textMuted": "#7f7973",
+  "textDim": "#4a4642",
+  "accent": "#c0001f",
+  "accentHover": "#d1102f",
+  "accentSoft": "#c0001f26",
+  "onAccent": "#e8e2da",
+  "accent2": "#8a7a4a",
+  "success": "#4f8a68",
+  "warning": "#a8862e",
+  "error": "#c23a50",
+  "info": "#5f8798"
+ },
+ "glass": {
+  "alpha": 0.94,
+  "opaqueAlpha": 0.94,
+  "border": "#ffffff12",
+  "highlight": "#ffffff0b"
+ },
+ "focusRing": {
+  "active": [
+   "#c0001f",
+   "#c0001f"
+  ],
+  "inactive": "#121212",
+  "urgent": "#8a7a4a",
+  "windows": "#006b73"
+ },
+ "shadow": "#00000099",
+ "scrim": "#0000006b",
+ "terminal": {
+  "background": "#000000",
+  "foreground": "#b8b2aa",
+  "cursor": "#c0001f",
+  "cursorText": "#000000",
+  "selectionBackground": "#2a0a10",
+  "selectionForeground": "#b8b2aa",
+  "palette": [
+   "#0a0a0a",
+   "#c0001f",
+   "#4f8a68",
+   "#a8862e",
+   "#4d6a95",
+   "#8a5a85",
+   "#3f7f87",
+   "#8a857e",
+   "#333333",
+   "#c23a50",
+   "#63a07d",
+   "#bf9d45",
+   "#6380ab",
+   "#a0709b",
+   "#55969e",
+   "#b8b2aa"
+  ]
+ },
+ "system": {
+  "colorScheme": "prefer-dark",
+  "gtkTheme": "adw-gtk3-dark",
+  "iconTheme": "Papirus-Dark",
+  "papirusFolders": "red",
+  "cursorTheme": "Bibata-Modern-Classic",
+  "kvantum": null
+ }
+}

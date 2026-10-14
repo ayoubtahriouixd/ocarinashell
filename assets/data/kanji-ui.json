@@ -1,0 +1,840 @@
+{
+ "numerals": [
+  "〇",
+  "一",
+  "二",
+  "三",
+  "四",
+  "五",
+  "六",
+  "七",
+  "八",
+  "九",
+  "十",
+  "十一",
+  "十二",
+  "十三",
+  "十四",
+  "十五",
+  "十六",
+  "十七",
+  "十八",
+  "十九",
+  "二十"
+ ],
+ "weekdays": [
+  {
+   "kanji": "日",
+   "es": "domingo"
+  },
+  {
+   "kanji": "月",
+   "es": "lunes"
+  },
+  {
+   "kanji": "火",
+   "es": "martes"
+  },
+  {
+   "kanji": "水",
+   "es": "miércoles"
+  },
+  {
+   "kanji": "木",
+   "es": "jueves"
+  },
+  {
+   "kanji": "金",
+   "es": "viernes"
+  },
+  {
+   "kanji": "土",
+   "es": "sábado"
+  }
+ ],
+ "months": [
+  {
+   "n": "一月",
+   "wafu": "睦月",
+   "romaji": "Mutsuki",
+   "es": "enero"
+  },
+  {
+   "n": "二月",
+   "wafu": "如月",
+   "romaji": "Kisaragi",
+   "es": "febrero"
+  },
+  {
+   "n": "三月",
+   "wafu": "弥生",
+   "romaji": "Yayoi",
+   "es": "marzo"
+  },
+  {
+   "n": "四月",
+   "wafu": "卯月",
+   "romaji": "Uzuki",
+   "es": "abril"
+  },
+  {
+   "n": "五月",
+   "wafu": "皐月",
+   "romaji": "Satsuki",
+   "es": "mayo"
+  },
+  {
+   "n": "六月",
+   "wafu": "水無月",
+   "romaji": "Minazuki",
+   "es": "junio"
+  },
+  {
+   "n": "七月",
+   "wafu": "文月",
+   "romaji": "Fumizuki",
+   "es": "julio"
+  },
+  {
+   "n": "八月",
+   "wafu": "葉月",
+   "romaji": "Hazuki",
+   "es": "agosto"
+  },
+  {
+   "n": "九月",
+   "wafu": "長月",
+   "romaji": "Nagatsuki",
+   "es": "septiembre"
+  },
+  {
+   "n": "十月",
+   "wafu": "神無月",
+   "romaji": "Kannazuki",
+   "es": "octubre"
+  },
+  {
+   "n": "十一月",
+   "wafu": "霜月",
+   "romaji": "Shimotsuki",
+   "es": "noviembre"
+  },
+  {
+   "n": "十二月",
+   "wafu": "師走",
+   "romaji": "Shiwasu",
+   "es": "diciembre"
+  }
+ ],
+ "dateUnits": {
+  "year": "年",
+  "month": "月",
+  "day": "日",
+  "hour": "時",
+  "minute": "分",
+  "second": "秒"
+ },
+ "seasons": [
+  {
+   "kanji": "春",
+   "es": "primavera"
+  },
+  {
+   "kanji": "夏",
+   "es": "verano"
+  },
+  {
+   "kanji": "秋",
+   "es": "otoño"
+  },
+  {
+   "kanji": "冬",
+   "es": "invierno"
+  }
+ ],
+ "greetings": {
+  "byHour": [
+   {
+    "from": 5,
+    "to": 11,
+    "jp": "おはよう",
+    "es": "Buenos días"
+   },
+   {
+    "from": 11,
+    "to": 18,
+    "jp": "こんにちは",
+    "es": "Buenas tardes"
+   },
+   {
+    "from": 18,
+    "to": 23,
+    "jp": "こんばんは",
+    "es": "Buenas noches"
+   },
+   {
+    "from": 23,
+    "to": 5,
+    "jp": "おやすみ",
+    "es": "Que descanses"
+   }
+  ],
+  "welcomeBack": {
+   "jp": "お帰りなさい",
+   "es": "Bienvenido de nuevo"
+  },
+  "goodWork": {
+   "jp": "お疲れさま",
+   "es": "Buen trabajo"
+  },
+  "boot": {
+   "jp": "ようこそ",
+   "es": "Bienvenido"
+  },
+  "shutdown": {
+   "jp": "おやすみなさい",
+   "es": "Buenas noches"
+  },
+  "reboot": {
+   "jp": "また後で",
+   "es": "Hasta ahora"
+  },
+  "updating": {
+   "jp": "更新中",
+   "es": "Actualizando"
+  },
+  "diskPassword": {
+   "jp": "鍵",
+   "es": "Contraseña del disco"
+  }
+ },
+ "modules": {
+  "obi": {
+   "kanji": "帯",
+   "es": "Barra"
+  },
+  "shima": {
+   "kanji": "島",
+   "es": "Isla"
+  },
+  "torii": {
+   "kanji": "鳥居",
+   "es": "Lanzador"
+  },
+  "engawa": {
+   "kanji": "縁側",
+   "es": "Centro de control"
+  },
+  "fumi": {
+   "kanji": "文",
+   "es": "Notificaciones"
+  },
+  "koyomi": {
+   "kanji": "暦",
+   "es": "Calendario"
+  },
+  "kagi": {
+   "kanji": "鍵",
+   "es": "Bloqueo"
+  },
+  "dengen": {
+   "kanji": "電源",
+   "es": "Energía"
+  },
+  "kura": {
+   "kanji": "蔵",
+   "es": "Portapapeles"
+  },
+  "techo": {
+   "kanji": "手帳",
+   "es": "Notas"
+  },
+  "mihari": {
+   "kanji": "見張",
+   "es": "Monitor"
+  },
+  "settei": {
+   "kanji": "設定",
+   "es": "Ajustes"
+  },
+  "kabegami": {
+   "kanji": "壁紙",
+   "es": "Fondos"
+  },
+  "mado": {
+   "kanji": "窓",
+   "es": "Reglas de ventanas"
+  },
+  "shinobi": {
+   "kanji": "忍",
+   "es": "Ahorro extremo"
+  },
+  "oni": {
+   "kanji": "鬼",
+   "es": "Rendimiento extremo"
+  },
+  "kishin": {
+   "kanji": "鬼神",
+   "es": "Kishin (experimental)"
+  },
+  "kakusei": {
+   "kanji": "覚醒",
+   "es": "Despertar"
+  },
+  "fune": {
+   "kanji": "船",
+   "es": "Apps de Windows"
+  },
+  "snake": {
+   "kanji": "蛇",
+   "es": "IA local"
+  },
+  "mamori": {
+   "kanji": "守",
+   "es": "Mantenimiento autónomo"
+  },
+  "haichi": {
+   "kanji": "配置",
+   "es": "Pantallas"
+  },
+  "happyo": {
+   "kanji": "発表",
+   "es": "Presentar"
+  },
+  "hogo": {
+   "kanji": "保護",
+   "es": "Cuidado del OLED"
+  },
+  "hikae": {
+   "kanji": "控",
+   "es": "Copias de seguridad"
+  },
+  "fukugen": {
+   "kanji": "復元",
+   "es": "Restaurar sesión"
+  },
+  "honban": {
+   "kanji": "本番",
+   "es": "Producción (SSH)"
+  },
+  "iro": {
+   "kanji": "色",
+   "es": "Cuentagotas"
+  },
+  "shuchu": {
+   "kanji": "集中",
+   "es": "Modo foco"
+  },
+  "yomu": {
+   "kanji": "読",
+   "es": "Leer y traducir"
+  },
+  "kyukei": {
+   "kanji": "休憩",
+   "es": "Descanso"
+  }
+ },
+ "settingsPages": [
+  {
+   "id": "apariencia",
+   "kanji": "外観",
+   "glyph": "彩",
+   "es": "Apariencia"
+  },
+  {
+   "id": "barra",
+   "kanji": "帯",
+   "glyph": "帯",
+   "es": "Barra e isla"
+  },
+  {
+   "id": "pantalla",
+   "kanji": "画面",
+   "glyph": "画",
+   "es": "Pantalla"
+  },
+  {
+   "id": "sonido",
+   "kanji": "音",
+   "glyph": "音",
+   "es": "Sonido"
+  },
+  {
+   "id": "red",
+   "kanji": "網",
+   "glyph": "網",
+   "es": "Red y Bluetooth"
+  },
+  {
+   "id": "energia",
+   "kanji": "電源",
+   "glyph": "電",
+   "es": "Energía"
+  },
+  {
+   "id": "shinobi",
+   "kanji": "忍",
+   "glyph": "忍",
+   "es": "Shinobi"
+  },
+  {
+   "id": "oni",
+   "kanji": "鬼",
+   "glyph": "鬼",
+   "es": "Oni"
+  },
+  {
+   "id": "fune",
+   "kanji": "船",
+   "glyph": "船",
+   "es": "Apps de Windows"
+  },
+  {
+   "id": "snake",
+   "kanji": "蛇",
+   "glyph": "蛇",
+   "es": "Snake"
+  },
+  {
+   "id": "mamori",
+   "kanji": "守",
+   "glyph": "守",
+   "es": "Mantenimiento"
+  },
+  {
+   "id": "bloqueo",
+   "kanji": "鍵",
+   "glyph": "鍵",
+   "es": "Bloqueo"
+  },
+  {
+   "id": "entrada",
+   "kanji": "入力",
+   "glyph": "入",
+   "es": "Teclado y ratón"
+  },
+  {
+   "id": "atajos",
+   "kanji": "技",
+   "glyph": "技",
+   "es": "Atajos"
+  },
+  {
+   "id": "notificaciones",
+   "kanji": "通知",
+   "glyph": "文",
+   "es": "Notificaciones"
+  },
+  {
+   "id": "ventanas",
+   "kanji": "窓",
+   "glyph": "窓",
+   "es": "Ventanas"
+  },
+  {
+   "id": "fondos",
+   "kanji": "壁紙",
+   "glyph": "壁",
+   "es": "Fondos"
+  },
+  {
+   "id": "acerca",
+   "kanji": "情報",
+   "glyph": "情",
+   "es": "Acerca de"
+  }
+ ],
+ "toggles": {
+  "wifi": {
+   "kanji": "網",
+   "es": "Wi-Fi"
+  },
+  "bluetooth": {
+   "kanji": "青",
+   "es": "Bluetooth"
+  },
+  "dnd": {
+   "kanji": "静",
+   "es": "No molestar"
+  },
+  "nightLight": {
+   "kanji": "夜",
+   "es": "Luz nocturna"
+  },
+  "airplane": {
+   "kanji": "空",
+   "es": "Modo avión"
+  },
+  "caffeine": {
+   "kanji": "醒",
+   "es": "Mantener despierto"
+  },
+  "mic": {
+   "kanji": "声",
+   "es": "Micrófono"
+  },
+  "record": {
+   "kanji": "録",
+   "es": "Grabar pantalla"
+  },
+  "screenshot": {
+   "kanji": "写",
+   "es": "Captura"
+  },
+  "vpn": {
+   "kanji": "隠",
+   "es": "VPN"
+  },
+  "darkMode": {
+   "kanji": "闇",
+   "es": "Tema oscuro"
+  }
+ },
+ "powerProfiles": {
+  "power-saver": {
+   "kanji": "省",
+   "es": "Ahorro"
+  },
+  "balanced": {
+   "kanji": "均",
+   "es": "Equilibrado"
+  },
+  "performance": {
+   "kanji": "速",
+   "es": "Rendimiento"
+  }
+ },
+ "power": [
+  {
+   "id": "lock",
+   "kanji": "鍵",
+   "key": "l",
+   "es": "Bloquear"
+  },
+  {
+   "id": "suspend",
+   "kanji": "眠",
+   "key": "s",
+   "es": "Suspender"
+  },
+  {
+   "id": "logout",
+   "kanji": "退",
+   "key": "e",
+   "es": "Cerrar sesión"
+  },
+  {
+   "id": "reboot",
+   "kanji": "再",
+   "key": "r",
+   "es": "Reiniciar"
+  },
+  {
+   "id": "poweroff",
+   "kanji": "終",
+   "key": "p",
+   "es": "Apagar"
+  }
+ ],
+ "battery": {
+  "battery": "電",
+  "charging": "充",
+  "full": "満",
+  "low": "低",
+  "limit": "限"
+ },
+ "weatherWmo": {
+  "0": {
+   "kanji": "晴",
+   "es": "Despejado",
+   "icon": "clear_day"
+  },
+  "1": {
+   "kanji": "晴",
+   "es": "Casi despejado",
+   "icon": "partly_cloudy_day"
+  },
+  "2": {
+   "kanji": "曇",
+   "es": "Parcialmente nublado",
+   "icon": "partly_cloudy_day"
+  },
+  "3": {
+   "kanji": "曇",
+   "es": "Nublado",
+   "icon": "cloud"
+  },
+  "45": {
+   "kanji": "霧",
+   "es": "Niebla",
+   "icon": "foggy"
+  },
+  "48": {
+   "kanji": "霧",
+   "es": "Niebla helada",
+   "icon": "foggy"
+  },
+  "51": {
+   "kanji": "雨",
+   "es": "Llovizna débil",
+   "icon": "rainy_light"
+  },
+  "53": {
+   "kanji": "雨",
+   "es": "Llovizna",
+   "icon": "rainy_light"
+  },
+  "55": {
+   "kanji": "雨",
+   "es": "Llovizna intensa",
+   "icon": "rainy"
+  },
+  "56": {
+   "kanji": "氷",
+   "es": "Llovizna helada",
+   "icon": "weather_mix"
+  },
+  "57": {
+   "kanji": "氷",
+   "es": "Llovizna helada intensa",
+   "icon": "weather_mix"
+  },
+  "61": {
+   "kanji": "雨",
+   "es": "Lluvia débil",
+   "icon": "rainy_light"
+  },
+  "63": {
+   "kanji": "雨",
+   "es": "Lluvia",
+   "icon": "rainy"
+  },
+  "65": {
+   "kanji": "雨",
+   "es": "Lluvia intensa",
+   "icon": "rainy_heavy"
+  },
+  "66": {
+   "kanji": "氷",
+   "es": "Lluvia helada",
+   "icon": "weather_mix"
+  },
+  "67": {
+   "kanji": "氷",
+   "es": "Lluvia helada intensa",
+   "icon": "weather_mix"
+  },
+  "71": {
+   "kanji": "雪",
+   "es": "Nevada débil",
+   "icon": "weather_snowy"
+  },
+  "73": {
+   "kanji": "雪",
+   "es": "Nevada",
+   "icon": "weather_snowy"
+  },
+  "75": {
+   "kanji": "雪",
+   "es": "Nevada intensa",
+   "icon": "snowing_heavy"
+  },
+  "77": {
+   "kanji": "雪",
+   "es": "Granos de nieve",
+   "icon": "weather_snowy"
+  },
+  "80": {
+   "kanji": "雨",
+   "es": "Chubascos",
+   "icon": "rainy"
+  },
+  "81": {
+   "kanji": "雨",
+   "es": "Chubascos",
+   "icon": "rainy"
+  },
+  "82": {
+   "kanji": "雨",
+   "es": "Chubascos fuertes",
+   "icon": "rainy_heavy"
+  },
+  "85": {
+   "kanji": "雪",
+   "es": "Chubascos de nieve",
+   "icon": "weather_snowy"
+  },
+  "86": {
+   "kanji": "雪",
+   "es": "Chubascos de nieve fuertes",
+   "icon": "snowing_heavy"
+  },
+  "95": {
+   "kanji": "雷",
+   "es": "Tormenta",
+   "icon": "thunderstorm"
+  },
+  "96": {
+   "kanji": "雹",
+   "es": "Tormenta con granizo",
+   "icon": "thunderstorm"
+  },
+  "99": {
+   "kanji": "雹",
+   "es": "Tormenta con granizo fuerte",
+   "icon": "thunderstorm"
+  }
+ },
+ "moonPhases": [
+  {
+   "kanji": "新月",
+   "es": "Luna nueva"
+  },
+  {
+   "kanji": "三日月",
+   "es": "Luna creciente"
+  },
+  {
+   "kanji": "上弦",
+   "es": "Cuarto creciente"
+  },
+  {
+   "kanji": "十三夜",
+   "es": "Gibosa creciente"
+  },
+  {
+   "kanji": "満月",
+   "es": "Luna llena"
+  },
+  {
+   "kanji": "寝待月",
+   "es": "Gibosa menguante"
+  },
+  {
+   "kanji": "下弦",
+   "es": "Cuarto menguante"
+  },
+  {
+   "kanji": "有明月",
+   "es": "Luna menguante"
+  }
+ ],
+ "mangohud": {
+  "fps": "速",
+  "cpu": "脳",
+  "gpu": "絵",
+  "ram": "記",
+  "vram": "像",
+  "power": "電",
+  "temp": "熱",
+  "frametime": "間"
+ },
+ "nvimModes": {
+  "normal": "常",
+  "insert": "挿",
+  "visual": "視",
+  "vline": "行",
+  "vblock": "塊",
+  "replace": "換",
+  "command": "令",
+  "terminal": "端",
+  "select": "選"
+ },
+ "gitStatus": {
+  "branch": "枝",
+  "ahead": "先",
+  "behind": "後",
+  "diverged": "岐",
+  "staged": "済",
+  "modified": "変",
+  "untracked": "新",
+  "deleted": "消",
+  "renamed": "名",
+  "stashed": "蔵",
+  "conflicted": "衝"
+ },
+ "indicators": {
+  "fune": "船",
+  "snake": "蛇",
+  "rebootPending": "新",
+  "recording": "録",
+  "shinobi": "忍",
+  "oni": "鬼",
+  "mamori": "守"
+ },
+ "funeStatus": {
+  "running": {
+   "kanji": "動",
+   "es": "Activa"
+  },
+  "paused": {
+   "kanji": "停",
+   "es": "En pausa"
+  },
+  "off": {
+   "kanji": "止",
+   "es": "Apagada"
+  },
+  "starting": {
+   "kanji": "起",
+   "es": "Arrancando"
+  }
+ },
+ "snakeStatus": {
+  "loaded": {
+   "kanji": "起",
+   "es": "Modelo cargado"
+  },
+  "idle": {
+   "kanji": "眠",
+   "es": "Dormida (0 MB)"
+  },
+  "thinking": {
+   "kanji": "考",
+   "es": "Pensando"
+  },
+  "blocked": {
+   "kanji": "封",
+   "es": "Bloqueada (Shinobi/Oni)"
+  }
+ },
+ "mamoriStatus": {
+  "ok": {
+   "kanji": "安",
+   "es": "Todo en orden"
+  },
+  "waiting": {
+   "kanji": "待",
+   "es": "Esperando condiciones"
+  },
+  "updating": {
+   "kanji": "更",
+   "es": "Actualizando"
+  },
+  "holding": {
+   "kanji": "留",
+   "es": "Retenido"
+  },
+  "repaired": {
+   "kanji": "直",
+   "es": "Reparado"
+  },
+  "rolledBack": {
+   "kanji": "戻",
+   "es": "Revertido"
+  },
+  "attention": {
+   "kanji": "注",
+   "es": "Necesita a Ayoub"
+  }
+ },
+ "watermarks": {
+  "notification": "文",
+  "workspaceEmpty": "空",
+  "search": "探す",
+  "clipboard": "蔵",
+  "calendar": "暦",
+  "music": "音",
+  "weather": "天"
+ }
+}

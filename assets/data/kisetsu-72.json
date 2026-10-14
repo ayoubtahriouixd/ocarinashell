@@ -1,0 +1,1303 @@
+{
+ "comment": "二十四節気 y 七十二候 (versión japonesa, 略本暦). 'start' = fecha habitual [mes, día] (±1 día según el año); 'lon' = longitud eclíptica solar de inicio (cálculo exacto). 'symbol' = kanji corto para la isla.",
+ "sekki": [
+  {
+   "index": 0,
+   "kanji": "立春",
+   "kana": "りっしゅん",
+   "romaji": "Risshun",
+   "es": "Comienzo de la primavera",
+   "start": [
+    2,
+    4
+   ],
+   "lon": 315
+  },
+  {
+   "index": 1,
+   "kanji": "雨水",
+   "kana": "うすい",
+   "romaji": "Usui",
+   "es": "Agua de lluvia",
+   "start": [
+    2,
+    19
+   ],
+   "lon": 330
+  },
+  {
+   "index": 2,
+   "kanji": "啓蟄",
+   "kana": "けいちつ",
+   "romaji": "Keichitsu",
+   "es": "Despertar de los insectos",
+   "start": [
+    3,
+    6
+   ],
+   "lon": 345
+  },
+  {
+   "index": 3,
+   "kanji": "春分",
+   "kana": "しゅんぶん",
+   "romaji": "Shunbun",
+   "es": "Equinoccio de primavera",
+   "start": [
+    3,
+    21
+   ],
+   "lon": 0
+  },
+  {
+   "index": 4,
+   "kanji": "清明",
+   "kana": "せいめい",
+   "romaji": "Seimei",
+   "es": "Claro y luminoso",
+   "start": [
+    4,
+    5
+   ],
+   "lon": 15
+  },
+  {
+   "index": 5,
+   "kanji": "穀雨",
+   "kana": "こくう",
+   "romaji": "Kokuu",
+   "es": "Lluvia de los granos",
+   "start": [
+    4,
+    20
+   ],
+   "lon": 30
+  },
+  {
+   "index": 6,
+   "kanji": "立夏",
+   "kana": "りっか",
+   "romaji": "Rikka",
+   "es": "Comienzo del verano",
+   "start": [
+    5,
+    5
+   ],
+   "lon": 45
+  },
+  {
+   "index": 7,
+   "kanji": "小満",
+   "kana": "しょうまん",
+   "romaji": "Shōman",
+   "es": "Pequeña plenitud",
+   "start": [
+    5,
+    21
+   ],
+   "lon": 60
+  },
+  {
+   "index": 8,
+   "kanji": "芒種",
+   "kana": "ぼうしゅ",
+   "romaji": "Bōshu",
+   "es": "Siembra del grano con arista",
+   "start": [
+    6,
+    6
+   ],
+   "lon": 75
+  },
+  {
+   "index": 9,
+   "kanji": "夏至",
+   "kana": "げし",
+   "romaji": "Geshi",
+   "es": "Solsticio de verano",
+   "start": [
+    6,
+    21
+   ],
+   "lon": 90
+  },
+  {
+   "index": 10,
+   "kanji": "小暑",
+   "kana": "しょうしょ",
+   "romaji": "Shōsho",
+   "es": "Pequeño calor",
+   "start": [
+    7,
+    7
+   ],
+   "lon": 105
+  },
+  {
+   "index": 11,
+   "kanji": "大暑",
+   "kana": "たいしょ",
+   "romaji": "Taisho",
+   "es": "Gran calor",
+   "start": [
+    7,
+    23
+   ],
+   "lon": 120
+  },
+  {
+   "index": 12,
+   "kanji": "立秋",
+   "kana": "りっしゅう",
+   "romaji": "Risshū",
+   "es": "Comienzo del otoño",
+   "start": [
+    8,
+    7
+   ],
+   "lon": 135
+  },
+  {
+   "index": 13,
+   "kanji": "処暑",
+   "kana": "しょしょ",
+   "romaji": "Shosho",
+   "es": "Fin del calor",
+   "start": [
+    8,
+    23
+   ],
+   "lon": 150
+  },
+  {
+   "index": 14,
+   "kanji": "白露",
+   "kana": "はくろ",
+   "romaji": "Hakuro",
+   "es": "Rocío blanco",
+   "start": [
+    9,
+    8
+   ],
+   "lon": 165
+  },
+  {
+   "index": 15,
+   "kanji": "秋分",
+   "kana": "しゅうぶん",
+   "romaji": "Shūbun",
+   "es": "Equinoccio de otoño",
+   "start": [
+    9,
+    23
+   ],
+   "lon": 180
+  },
+  {
+   "index": 16,
+   "kanji": "寒露",
+   "kana": "かんろ",
+   "romaji": "Kanro",
+   "es": "Rocío frío",
+   "start": [
+    10,
+    8
+   ],
+   "lon": 195
+  },
+  {
+   "index": 17,
+   "kanji": "霜降",
+   "kana": "そうこう",
+   "romaji": "Sōkō",
+   "es": "Descenso de la escarcha",
+   "start": [
+    10,
+    23
+   ],
+   "lon": 210
+  },
+  {
+   "index": 18,
+   "kanji": "立冬",
+   "kana": "りっとう",
+   "romaji": "Rittō",
+   "es": "Comienzo del invierno",
+   "start": [
+    11,
+    7
+   ],
+   "lon": 225
+  },
+  {
+   "index": 19,
+   "kanji": "小雪",
+   "kana": "しょうせつ",
+   "romaji": "Shōsetsu",
+   "es": "Pequeña nevada",
+   "start": [
+    11,
+    22
+   ],
+   "lon": 240
+  },
+  {
+   "index": 20,
+   "kanji": "大雪",
+   "kana": "たいせつ",
+   "romaji": "Taisetsu",
+   "es": "Gran nevada",
+   "start": [
+    12,
+    7
+   ],
+   "lon": 255
+  },
+  {
+   "index": 21,
+   "kanji": "冬至",
+   "kana": "とうじ",
+   "romaji": "Tōji",
+   "es": "Solsticio de invierno",
+   "start": [
+    12,
+    21
+   ],
+   "lon": 270
+  },
+  {
+   "index": 22,
+   "kanji": "小寒",
+   "kana": "しょうかん",
+   "romaji": "Shōkan",
+   "es": "Pequeño frío",
+   "start": [
+    1,
+    5
+   ],
+   "lon": 285
+  },
+  {
+   "index": 23,
+   "kanji": "大寒",
+   "kana": "だいかん",
+   "romaji": "Daikan",
+   "es": "Gran frío",
+   "start": [
+    1,
+    20
+   ],
+   "lon": 300
+  }
+ ],
+ "ko": [
+  {
+   "index": 1,
+   "kanji": "東風解凍",
+   "symbol": "風",
+   "kana": "はるかぜこおりをとく",
+   "romaji": "Harukaze kōri wo toku",
+   "es": "El viento del este deshiela",
+   "start": [
+    2,
+    4
+   ],
+   "lon": 315,
+   "sekki": 0
+  },
+  {
+   "index": 2,
+   "kanji": "黄鶯睍睆",
+   "symbol": "鶯",
+   "kana": "うぐいすなく",
+   "romaji": "Uguisu naku",
+   "es": "Canta el uguisu",
+   "start": [
+    2,
+    9
+   ],
+   "lon": 320,
+   "sekki": 0
+  },
+  {
+   "index": 3,
+   "kanji": "魚上氷",
+   "symbol": "魚",
+   "kana": "うおこおりをいずる",
+   "romaji": "Uo kōri wo izuru",
+   "es": "Los peces asoman bajo el hielo",
+   "start": [
+    2,
+    14
+   ],
+   "lon": 325,
+   "sekki": 0
+  },
+  {
+   "index": 4,
+   "kanji": "土脉潤起",
+   "symbol": "潤",
+   "kana": "つちのしょううるおいおこる",
+   "romaji": "Tsuchi no shō uruoi okoru",
+   "es": "La lluvia humedece la tierra",
+   "start": [
+    2,
+    19
+   ],
+   "lon": 330,
+   "sekki": 1
+  },
+  {
+   "index": 5,
+   "kanji": "霞始靆",
+   "symbol": "霞",
+   "kana": "かすみはじめてたなびく",
+   "romaji": "Kasumi hajimete tanabiku",
+   "es": "Empieza a flotar la neblina",
+   "start": [
+    2,
+    24
+   ],
+   "lon": 335,
+   "sekki": 1
+  },
+  {
+   "index": 6,
+   "kanji": "草木萌動",
+   "symbol": "萌",
+   "kana": "そうもくめばえいずる",
+   "romaji": "Sōmoku mebae izuru",
+   "es": "Brotan hierbas y árboles",
+   "start": [
+    3,
+    1
+   ],
+   "lon": 340,
+   "sekki": 1
+  },
+  {
+   "index": 7,
+   "kanji": "蟄虫啓戸",
+   "symbol": "虫",
+   "kana": "すごもりむしとをひらく",
+   "romaji": "Sugomori mushi to wo hiraku",
+   "es": "Los insectos salen de su letargo",
+   "start": [
+    3,
+    6
+   ],
+   "lon": 345,
+   "sekki": 2
+  },
+  {
+   "index": 8,
+   "kanji": "桃始笑",
+   "symbol": "桃",
+   "kana": "ももはじめてさく",
+   "romaji": "Momo hajimete saku",
+   "es": "Florecen los primeros melocotoneros",
+   "start": [
+    3,
+    11
+   ],
+   "lon": 350,
+   "sekki": 2
+  },
+  {
+   "index": 9,
+   "kanji": "菜虫化蝶",
+   "symbol": "蝶",
+   "kana": "なむしちょうとなる",
+   "romaji": "Namushi chō to naru",
+   "es": "Las orugas se vuelven mariposas",
+   "start": [
+    3,
+    16
+   ],
+   "lon": 355,
+   "sekki": 2
+  },
+  {
+   "index": 10,
+   "kanji": "雀始巣",
+   "symbol": "雀",
+   "kana": "すずめはじめてすくう",
+   "romaji": "Suzume hajimete sukū",
+   "es": "Los gorriones empiezan a anidar",
+   "start": [
+    3,
+    21
+   ],
+   "lon": 0,
+   "sekki": 3
+  },
+  {
+   "index": 11,
+   "kanji": "桜始開",
+   "symbol": "桜",
+   "kana": "さくらはじめてひらく",
+   "romaji": "Sakura hajimete hiraku",
+   "es": "Se abren los primeros cerezos",
+   "start": [
+    3,
+    26
+   ],
+   "lon": 5,
+   "sekki": 3
+  },
+  {
+   "index": 12,
+   "kanji": "雷乃発声",
+   "symbol": "雷",
+   "kana": "かみなりすなわちこえをはっす",
+   "romaji": "Kaminari sunawachi koe wo hassu",
+   "es": "Retumba el trueno a lo lejos",
+   "start": [
+    3,
+    31
+   ],
+   "lon": 10,
+   "sekki": 3
+  },
+  {
+   "index": 13,
+   "kanji": "玄鳥至",
+   "symbol": "燕",
+   "kana": "つばめきたる",
+   "romaji": "Tsubame kitaru",
+   "es": "Vuelven las golondrinas",
+   "start": [
+    4,
+    5
+   ],
+   "lon": 15,
+   "sekki": 4
+  },
+  {
+   "index": 14,
+   "kanji": "鴻雁北",
+   "symbol": "雁",
+   "kana": "こうがんかえる",
+   "romaji": "Kōgan kaeru",
+   "es": "Los gansos salvajes vuelan al norte",
+   "start": [
+    4,
+    10
+   ],
+   "lon": 20,
+   "sekki": 4
+  },
+  {
+   "index": 15,
+   "kanji": "虹始見",
+   "symbol": "虹",
+   "kana": "にじはじめてあらわる",
+   "romaji": "Niji hajimete arawaru",
+   "es": "Aparecen los primeros arcoíris",
+   "start": [
+    4,
+    15
+   ],
+   "lon": 25,
+   "sekki": 4
+  },
+  {
+   "index": 16,
+   "kanji": "葭始生",
+   "symbol": "葭",
+   "kana": "あしはじめてしょうず",
+   "romaji": "Ashi hajimete shōzu",
+   "es": "Brotan los primeros juncos",
+   "start": [
+    4,
+    20
+   ],
+   "lon": 30,
+   "sekki": 5
+  },
+  {
+   "index": 17,
+   "kanji": "霜止出苗",
+   "symbol": "苗",
+   "kana": "しもやんでなえいずる",
+   "romaji": "Shimo yande nae izuru",
+   "es": "Cesa la escarcha, brota el arroz",
+   "start": [
+    4,
+    25
+   ],
+   "lon": 35,
+   "sekki": 5
+  },
+  {
+   "index": 18,
+   "kanji": "牡丹華",
+   "symbol": "華",
+   "kana": "ぼたんはなさく",
+   "romaji": "Botan hana saku",
+   "es": "Florecen las peonías",
+   "start": [
+    4,
+    30
+   ],
+   "lon": 40,
+   "sekki": 5
+  },
+  {
+   "index": 19,
+   "kanji": "蛙始鳴",
+   "symbol": "蛙",
+   "kana": "かわずはじめてなく",
+   "romaji": "Kawazu hajimete naku",
+   "es": "Empiezan a cantar las ranas",
+   "start": [
+    5,
+    5
+   ],
+   "lon": 45,
+   "sekki": 6
+  },
+  {
+   "index": 20,
+   "kanji": "蚯蚓出",
+   "symbol": "蚓",
+   "kana": "みみずいずる",
+   "romaji": "Mimizu izuru",
+   "es": "Salen las lombrices",
+   "start": [
+    5,
+    10
+   ],
+   "lon": 50,
+   "sekki": 6
+  },
+  {
+   "index": 21,
+   "kanji": "竹笋生",
+   "symbol": "筍",
+   "kana": "たけのこしょうず",
+   "romaji": "Takenoko shōzu",
+   "es": "Brotan los tallos de bambú",
+   "start": [
+    5,
+    15
+   ],
+   "lon": 55,
+   "sekki": 6
+  },
+  {
+   "index": 22,
+   "kanji": "蚕起食桑",
+   "symbol": "蚕",
+   "kana": "かいこおきてくわをはむ",
+   "romaji": "Kaiko okite kuwa wo hamu",
+   "es": "Los gusanos de seda comen morera",
+   "start": [
+    5,
+    21
+   ],
+   "lon": 60,
+   "sekki": 7
+  },
+  {
+   "index": 23,
+   "kanji": "紅花栄",
+   "symbol": "紅",
+   "kana": "べにばなさかう",
+   "romaji": "Benibana sakau",
+   "es": "Florece el cártamo",
+   "start": [
+    5,
+    26
+   ],
+   "lon": 65,
+   "sekki": 7
+  },
+  {
+   "index": 24,
+   "kanji": "麦秋至",
+   "symbol": "麦",
+   "kana": "むぎのときいたる",
+   "romaji": "Mugi no toki itaru",
+   "es": "Madura el trigo",
+   "start": [
+    5,
+    31
+   ],
+   "lon": 70,
+   "sekki": 7
+  },
+  {
+   "index": 25,
+   "kanji": "蟷螂生",
+   "symbol": "螂",
+   "kana": "かまきりしょうず",
+   "romaji": "Kamakiri shōzu",
+   "es": "Nacen las mantis",
+   "start": [
+    6,
+    6
+   ],
+   "lon": 75,
+   "sekki": 8
+  },
+  {
+   "index": 26,
+   "kanji": "腐草為螢",
+   "symbol": "螢",
+   "kana": "くされたるくさほたるとなる",
+   "romaji": "Kusaretaru kusa hotaru to naru",
+   "es": "La hierba húmeda se llena de luciérnagas",
+   "start": [
+    6,
+    11
+   ],
+   "lon": 80,
+   "sekki": 8
+  },
+  {
+   "index": 27,
+   "kanji": "梅子黄",
+   "symbol": "梅",
+   "kana": "うめのみきばむ",
+   "romaji": "Ume no mi kibamu",
+   "es": "Amarillean las ciruelas",
+   "start": [
+    6,
+    16
+   ],
+   "lon": 85,
+   "sekki": 8
+  },
+  {
+   "index": 28,
+   "kanji": "乃東枯",
+   "symbol": "枯",
+   "kana": "なつかれくさかるる",
+   "romaji": "Natsukarekusa karuru",
+   "es": "Se seca la prunela",
+   "start": [
+    6,
+    21
+   ],
+   "lon": 90,
+   "sekki": 9
+  },
+  {
+   "index": 29,
+   "kanji": "菖蒲華",
+   "symbol": "菖",
+   "kana": "あやめはなさく",
+   "romaji": "Ayame hana saku",
+   "es": "Florecen los lirios",
+   "start": [
+    6,
+    26
+   ],
+   "lon": 95,
+   "sekki": 9
+  },
+  {
+   "index": 30,
+   "kanji": "半夏生",
+   "symbol": "夏",
+   "kana": "はんげしょうず",
+   "romaji": "Hange shōzu",
+   "es": "Brota el hange",
+   "start": [
+    7,
+    2
+   ],
+   "lon": 100,
+   "sekki": 9
+  },
+  {
+   "index": 31,
+   "kanji": "温風至",
+   "symbol": "温",
+   "kana": "あつかぜいたる",
+   "romaji": "Atsukaze itaru",
+   "es": "Llegan los vientos cálidos",
+   "start": [
+    7,
+    7
+   ],
+   "lon": 105,
+   "sekki": 10
+  },
+  {
+   "index": 32,
+   "kanji": "蓮始開",
+   "symbol": "蓮",
+   "kana": "はすはじめてひらく",
+   "romaji": "Hasu hajimete hiraku",
+   "es": "Se abren los primeros lotos",
+   "start": [
+    7,
+    12
+   ],
+   "lon": 110,
+   "sekki": 10
+  },
+  {
+   "index": 33,
+   "kanji": "鷹乃学習",
+   "symbol": "鷹",
+   "kana": "たかすなわちわざをならう",
+   "romaji": "Taka sunawachi waza wo narau",
+   "es": "Los halcones aprenden a volar",
+   "start": [
+    7,
+    17
+   ],
+   "lon": 115,
+   "sekki": 10
+  },
+  {
+   "index": 34,
+   "kanji": "桐始結花",
+   "symbol": "桐",
+   "kana": "きりはじめてはなをむすぶ",
+   "romaji": "Kiri hajimete hana wo musubu",
+   "es": "La paulonia da sus frutos",
+   "start": [
+    7,
+    23
+   ],
+   "lon": 120,
+   "sekki": 11
+  },
+  {
+   "index": 35,
+   "kanji": "土潤溽暑",
+   "symbol": "暑",
+   "kana": "つちうるおうてむしあつし",
+   "romaji": "Tsuchi uruōte mushiatsushi",
+   "es": "Tierra húmeda, calor bochornoso",
+   "start": [
+    7,
+    28
+   ],
+   "lon": 125,
+   "sekki": 11
+  },
+  {
+   "index": 36,
+   "kanji": "大雨時行",
+   "symbol": "雨",
+   "kana": "たいうときどきふる",
+   "romaji": "Taiu tokidoki furu",
+   "es": "Caen grandes lluvias de vez en cuando",
+   "start": [
+    8,
+    2
+   ],
+   "lon": 130,
+   "sekki": 11
+  },
+  {
+   "index": 37,
+   "kanji": "涼風至",
+   "symbol": "涼",
+   "kana": "すずかぜいたる",
+   "romaji": "Suzukaze itaru",
+   "es": "Llega la brisa fresca",
+   "start": [
+    8,
+    7
+   ],
+   "lon": 135,
+   "sekki": 12
+  },
+  {
+   "index": 38,
+   "kanji": "寒蝉鳴",
+   "symbol": "蝉",
+   "kana": "ひぐらしなく",
+   "romaji": "Higurashi naku",
+   "es": "Cantan las cigarras del atardecer",
+   "start": [
+    8,
+    12
+   ],
+   "lon": 140,
+   "sekki": 12
+  },
+  {
+   "index": 39,
+   "kanji": "蒙霧升降",
+   "symbol": "霧",
+   "kana": "ふかききりまとう",
+   "romaji": "Fukaki kiri matō",
+   "es": "Se espesa la niebla",
+   "start": [
+    8,
+    17
+   ],
+   "lon": 145,
+   "sekki": 12
+  },
+  {
+   "index": 40,
+   "kanji": "綿柎開",
+   "symbol": "綿",
+   "kana": "わたのはなしべひらく",
+   "romaji": "Wata no hanashibe hiraku",
+   "es": "Se abren las cápsulas del algodón",
+   "start": [
+    8,
+    23
+   ],
+   "lon": 150,
+   "sekki": 13
+  },
+  {
+   "index": 41,
+   "kanji": "天地始粛",
+   "symbol": "粛",
+   "kana": "てんちはじめてさむし",
+   "romaji": "Tenchi hajimete samushi",
+   "es": "Por fin amaina el calor",
+   "start": [
+    8,
+    28
+   ],
+   "lon": 155,
+   "sekki": 13
+  },
+  {
+   "index": 42,
+   "kanji": "禾乃登",
+   "symbol": "稲",
+   "kana": "こくものすなわちみのる",
+   "romaji": "Kokumono sunawachi minoru",
+   "es": "Madura el arroz",
+   "start": [
+    9,
+    2
+   ],
+   "lon": 160,
+   "sekki": 13
+  },
+  {
+   "index": 43,
+   "kanji": "草露白",
+   "symbol": "露",
+   "kana": "くさのつゆしろし",
+   "romaji": "Kusa no tsuyu shiroshi",
+   "es": "Rocío blanco sobre la hierba",
+   "start": [
+    9,
+    8
+   ],
+   "lon": 165,
+   "sekki": 14
+  },
+  {
+   "index": 44,
+   "kanji": "鶺鴒鳴",
+   "symbol": "鴒",
+   "kana": "せきれいなく",
+   "romaji": "Sekirei naku",
+   "es": "Cantan las lavanderas",
+   "start": [
+    9,
+    13
+   ],
+   "lon": 170,
+   "sekki": 14
+  },
+  {
+   "index": 45,
+   "kanji": "玄鳥去",
+   "symbol": "燕",
+   "kana": "つばめさる",
+   "romaji": "Tsubame saru",
+   "es": "Se van las golondrinas",
+   "start": [
+    9,
+    18
+   ],
+   "lon": 175,
+   "sekki": 14
+  },
+  {
+   "index": 46,
+   "kanji": "雷乃収声",
+   "symbol": "収",
+   "kana": "かみなりすなわちこえをおさむ",
+   "romaji": "Kaminari sunawachi koe wo osamu",
+   "es": "El trueno calla",
+   "start": [
+    9,
+    23
+   ],
+   "lon": 180,
+   "sekki": 15
+  },
+  {
+   "index": 47,
+   "kanji": "蟄虫坏戸",
+   "symbol": "戸",
+   "kana": "むしかくれてとをふさぐ",
+   "romaji": "Mushi kakurete to wo fusagu",
+   "es": "Los insectos sellan sus refugios",
+   "start": [
+    9,
+    28
+   ],
+   "lon": 185,
+   "sekki": 15
+  },
+  {
+   "index": 48,
+   "kanji": "水始涸",
+   "symbol": "涸",
+   "kana": "みずはじめてかるる",
+   "romaji": "Mizu hajimete karuru",
+   "es": "Se drenan los arrozales",
+   "start": [
+    10,
+    3
+   ],
+   "lon": 190,
+   "sekki": 15
+  },
+  {
+   "index": 49,
+   "kanji": "鴻雁来",
+   "symbol": "雁",
+   "kana": "こうがんきたる",
+   "romaji": "Kōgan kitaru",
+   "es": "Llegan los gansos salvajes",
+   "start": [
+    10,
+    8
+   ],
+   "lon": 195,
+   "sekki": 16
+  },
+  {
+   "index": 50,
+   "kanji": "菊花開",
+   "symbol": "菊",
+   "kana": "きくのはなひらく",
+   "romaji": "Kiku no hana hiraku",
+   "es": "Florecen los crisantemos",
+   "start": [
+    10,
+    13
+   ],
+   "lon": 200,
+   "sekki": 16
+  },
+  {
+   "index": 51,
+   "kanji": "蟋蟀在戸",
+   "symbol": "蟋",
+   "kana": "きりぎりすとにあり",
+   "romaji": "Kirigirisu to ni ari",
+   "es": "Los grillos cantan junto a la puerta",
+   "start": [
+    10,
+    18
+   ],
+   "lon": 205,
+   "sekki": 16
+  },
+  {
+   "index": 52,
+   "kanji": "霜始降",
+   "symbol": "霜",
+   "kana": "しもはじめてふる",
+   "romaji": "Shimo hajimete furu",
+   "es": "Cae la primera escarcha",
+   "start": [
+    10,
+    23
+   ],
+   "lon": 210,
+   "sekki": 17
+  },
+  {
+   "index": 53,
+   "kanji": "霎時施",
+   "symbol": "霎",
+   "kana": "こさめときどきふる",
+   "romaji": "Kosame tokidoki furu",
+   "es": "Llovizna de vez en cuando",
+   "start": [
+    10,
+    28
+   ],
+   "lon": 215,
+   "sekki": 17
+  },
+  {
+   "index": 54,
+   "kanji": "楓蔦黄",
+   "symbol": "楓",
+   "kana": "もみじつたきばむ",
+   "romaji": "Momiji tsuta kibamu",
+   "es": "Arces y hiedras cambian de color",
+   "start": [
+    11,
+    2
+   ],
+   "lon": 220,
+   "sekki": 17
+  },
+  {
+   "index": 55,
+   "kanji": "山茶始開",
+   "symbol": "椿",
+   "kana": "つばきはじめてひらく",
+   "romaji": "Tsubaki hajimete hiraku",
+   "es": "Florecen las primeras camelias",
+   "start": [
+    11,
+    7
+   ],
+   "lon": 225,
+   "sekki": 18
+  },
+  {
+   "index": 56,
+   "kanji": "地始凍",
+   "symbol": "凍",
+   "kana": "ちはじめてこおる",
+   "romaji": "Chi hajimete kōru",
+   "es": "La tierra empieza a helarse",
+   "start": [
+    11,
+    12
+   ],
+   "lon": 230,
+   "sekki": 18
+  },
+  {
+   "index": 57,
+   "kanji": "金盞香",
+   "symbol": "香",
+   "kana": "きんせんかさく",
+   "romaji": "Kinsenka saku",
+   "es": "Florecen los narcisos",
+   "start": [
+    11,
+    17
+   ],
+   "lon": 235,
+   "sekki": 18
+  },
+  {
+   "index": 58,
+   "kanji": "虹蔵不見",
+   "symbol": "蔵",
+   "kana": "にじかくれてみえず",
+   "romaji": "Niji kakurete miezu",
+   "es": "Los arcoíris se esconden",
+   "start": [
+    11,
+    22
+   ],
+   "lon": 240,
+   "sekki": 19
+  },
+  {
+   "index": 59,
+   "kanji": "朔風払葉",
+   "symbol": "葉",
+   "kana": "きたかぜこのはをはらう",
+   "romaji": "Kitakaze konoha wo harau",
+   "es": "El viento del norte barre las hojas",
+   "start": [
+    11,
+    27
+   ],
+   "lon": 245,
+   "sekki": 19
+  },
+  {
+   "index": 60,
+   "kanji": "橘始黄",
+   "symbol": "橘",
+   "kana": "たちばなはじめてきばむ",
+   "romaji": "Tachibana hajimete kibamu",
+   "es": "Amarillean los tachibana",
+   "start": [
+    12,
+    2
+   ],
+   "lon": 250,
+   "sekki": 19
+  },
+  {
+   "index": 61,
+   "kanji": "閉塞成冬",
+   "symbol": "冬",
+   "kana": "そらさむくふゆとなる",
+   "romaji": "Sora samuku fuyu to naru",
+   "es": "El cielo se cierra, llega el invierno",
+   "start": [
+    12,
+    7
+   ],
+   "lon": 255,
+   "sekki": 20
+  },
+  {
+   "index": 62,
+   "kanji": "熊蟄穴",
+   "symbol": "熊",
+   "kana": "くまあなにこもる",
+   "romaji": "Kuma ana ni komoru",
+   "es": "Los osos se retiran a sus cuevas",
+   "start": [
+    12,
+    12
+   ],
+   "lon": 260,
+   "sekki": 20
+  },
+  {
+   "index": 63,
+   "kanji": "鱖魚群",
+   "symbol": "鮭",
+   "kana": "さけのうおむらがる",
+   "romaji": "Sake no uo muragaru",
+   "es": "Los salmones remontan en bancos",
+   "start": [
+    12,
+    16
+   ],
+   "lon": 265,
+   "sekki": 20
+  },
+  {
+   "index": 64,
+   "kanji": "乃東生",
+   "symbol": "生",
+   "kana": "なつかれくさしょうず",
+   "romaji": "Natsukarekusa shōzu",
+   "es": "Brota la prunela",
+   "start": [
+    12,
+    21
+   ],
+   "lon": 270,
+   "sekki": 21
+  },
+  {
+   "index": 65,
+   "kanji": "麋角解",
+   "symbol": "鹿",
+   "kana": "さわしかのつのおつる",
+   "romaji": "Sawashika no tsuno otsuru",
+   "es": "Los ciervos mudan la cornamenta",
+   "start": [
+    12,
+    26
+   ],
+   "lon": 275,
+   "sekki": 21
+  },
+  {
+   "index": 66,
+   "kanji": "雪下出麦",
+   "symbol": "雪",
+   "kana": "ゆきわたりてむぎのびる",
+   "romaji": "Yuki watarite mugi nobiru",
+   "es": "Bajo la nieve crece el trigo",
+   "start": [
+    1,
+    1
+   ],
+   "lon": 280,
+   "sekki": 21
+  },
+  {
+   "index": 67,
+   "kanji": "芹乃栄",
+   "symbol": "芹",
+   "kana": "せりすなわちさかう",
+   "romaji": "Seri sunawachi sakau",
+   "es": "Prospera el perejil japonés",
+   "start": [
+    1,
+    5
+   ],
+   "lon": 285,
+   "sekki": 22
+  },
+  {
+   "index": 68,
+   "kanji": "水泉動",
+   "symbol": "泉",
+   "kana": "しみずあたたかをふくむ",
+   "romaji": "Shimizu atataka wo fukumu",
+   "es": "Los manantiales se templan",
+   "start": [
+    1,
+    10
+   ],
+   "lon": 290,
+   "sekki": 22
+  },
+  {
+   "index": 69,
+   "kanji": "雉始雊",
+   "symbol": "雉",
+   "kana": "きじはじめてなく",
+   "romaji": "Kiji hajimete naku",
+   "es": "Cantan los primeros faisanes",
+   "start": [
+    1,
+    15
+   ],
+   "lon": 295,
+   "sekki": 22
+  },
+  {
+   "index": 70,
+   "kanji": "款冬華",
+   "symbol": "蕗",
+   "kana": "ふきのはなさく",
+   "romaji": "Fuki no hana saku",
+   "es": "Brotan las flores del fuki",
+   "start": [
+    1,
+    20
+   ],
+   "lon": 300,
+   "sekki": 23
+  },
+  {
+   "index": 71,
+   "kanji": "水沢腹堅",
+   "symbol": "氷",
+   "kana": "さわみずこおりつめる",
+   "romaji": "Sawamizu kōri tsumeru",
+   "es": "El hielo cubre los arroyos",
+   "start": [
+    1,
+    25
+   ],
+   "lon": 305,
+   "sekki": 23
+  },
+  {
+   "index": 72,
+   "kanji": "鶏始乳",
+   "symbol": "鶏",
+   "kana": "にわとりはじめてとやにつく",
+   "romaji": "Niwatori hajimete toya ni tsuku",
+   "es": "Las gallinas empiezan a poner",
+   "start": [
+    1,
+    30
+   ],
+   "lon": 310,
+   "sekki": 23
+  }
+ ]
+}

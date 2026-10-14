@@ -1,0 +1,82 @@
+{
+ "id": "sumi",
+ "name": "Sumi",
+ "kanji": "墨",
+ "kana": "すみ",
+ "mode": "dark",
+ "description": "Grises de tinta; solo el sello y los errores en rojo",
+ "colorFormat": "CSS hex: #RRGGBB o #RRGGBBAA (la shell y el motor de temas lo convierten por destino)",
+ "wallpaper": "sumi-sansui.jpg",
+ "colors": {
+  "bg": "#0e0e0f",
+  "surface0": "#161617",
+  "surface1": "#1c1c1e",
+  "surface2": "#252527",
+  "surface3": "#2f2f32",
+  "outline": "#2a2a2d",
+  "outlineStrong": "#444448",
+  "text": "#ecebe8",
+  "textMuted": "#a3a19d",
+  "textDim": "#6b6966",
+  "accent": "#e60033",
+  "accentHover": "#ff1f4f",
+  "accentSoft": "#e600331f",
+  "onAccent": "#ffffff",
+  "accent2": "#b7b1a6",
+  "success": "#8fb79a",
+  "warning": "#d9b25c",
+  "error": "#ff4d6a",
+  "info": "#9bb7c9"
+ },
+ "glass": {
+  "alpha": 0.72,
+  "opaqueAlpha": 0.94,
+  "border": "#ffffff12",
+  "highlight": "#ffffff0b"
+ },
+ "focusRing": {
+  "active": [
+   "#e60033",
+   "#ff1f4f"
+  ],
+  "inactive": "#2f2f32",
+  "urgent": "#b7b1a6",
+  "windows": "#00a3af"
+ },
+ "shadow": "#00000099",
+ "scrim": "#0000006b",
+ "terminal": {
+  "background": "#0e0e0f",
+  "foreground": "#ecebe8",
+  "cursor": "#e60033",
+  "cursorText": "#ffffff",
+  "selectionBackground": "#3a2a2e",
+  "selectionForeground": "#ecebe8",
+  "palette": [
+   "#1c1c1e",
+   "#e60033",
+   "#8fb79a",
+   "#d9b25c",
+   "#8ea4bf",
+   "#b49ab8",
+   "#8fb5b8",
+   "#c9c7c2",
+   "#55555a",
+   "#ff4d6a",
+   "#a9cbb2",
+   "#e8c87f",
+   "#a9bbd1",
+   "#c8b3cb",
+   "#a7c8ca",
+   "#ecebe8"
+  ]
+ },
+ "system": {
+  "colorScheme": "prefer-dark",
+  "gtkTheme": "adw-gtk3-dark",
+  "iconTheme": "Papirus-Dark",
+  "papirusFolders": "red",
+  "cursorTheme": "Bibata-Modern-Classic",
+  "kvantum": null
+ }
+}

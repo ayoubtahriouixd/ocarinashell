@@ -1,0 +1,22 @@
+# Configuración SSH FALSA para probar Torii (`~`, fase 5) y 本番 Honban (fase 8). Los hosts no existen.
+# Claude Code no puede leer ~/.ssh (regla deny): durante las pruebas la shell usa este fichero con `ssh.configPath`.
+# Esperado: web-dev, db-prod (producción), nas y, desde el Include, router; el comodín *.example.internal NO aparece.
+# Los Include relativos se resuelven contra la carpeta de este fichero (con el ~/.ssh real, eso es ~/.ssh, como en ssh).
+
+Host web-dev
+    HostName 10.0.0.10
+    User ayoub
+
+Host db-prod
+    # ocarina: prod
+    HostName 10.0.0.20
+    User admin
+
+Host nas
+    HostName 192.168.1.50
+    Port 2222
+
+Host *.example.internal
+    User ops
+
+Include ssh_config.d/*.conf

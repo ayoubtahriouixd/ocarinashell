@@ -1,0 +1,13 @@
+{
+ "default": "kurenai",
+ "order": [
+  "kurenai",
+  "kohaku",
+  "sumi",
+  "ai",
+  "matcha",
+  "yozakura",
+  "shinobi"
+ ],
+ "powerSaving": "shinobi"
+}

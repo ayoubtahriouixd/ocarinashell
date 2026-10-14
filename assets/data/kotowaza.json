@@ -1,0 +1,299 @@
+{
+ "comment": "Proverbio del día = índice (día del año % 42). Para el bloqueo (縦書き).",
+ "kotowaza": [
+  {
+   "index": 0,
+   "jp": "七転び八起き",
+   "kana": "ななころびやおき",
+   "romaji": "Nana korobi ya oki",
+   "es": "Cae siete veces, levántate ocho."
+  },
+  {
+   "index": 1,
+   "jp": "猿も木から落ちる",
+   "kana": "さるもきからおちる",
+   "romaji": "Saru mo ki kara ochiru",
+   "es": "Hasta los monos se caen de los árboles."
+  },
+  {
+   "index": 2,
+   "jp": "石の上にも三年",
+   "kana": "いしのうえにもさんねん",
+   "romaji": "Ishi no ue ni mo sannen",
+   "es": "Tres años sobre una piedra: la constancia la calienta."
+  },
+  {
+   "index": 3,
+   "jp": "継続は力なり",
+   "kana": "けいぞくはちからなり",
+   "romaji": "Keizoku wa chikara nari",
+   "es": "La constancia es fuerza."
+  },
+  {
+   "index": 4,
+   "jp": "塵も積もれば山となる",
+   "kana": "ちりもつもればやまとなる",
+   "romaji": "Chiri mo tsumoreba yama to naru",
+   "es": "El polvo acumulado se vuelve montaña."
+  },
+  {
+   "index": 5,
+   "jp": "一期一会",
+   "kana": "いちごいちえ",
+   "romaji": "Ichigo ichie",
+   "es": "Cada encuentro ocurre una sola vez."
+  },
+  {
+   "index": 6,
+   "jp": "花より団子",
+   "kana": "はなよりだんご",
+   "romaji": "Hana yori dango",
+   "es": "Mejor dulces que flores: lo práctico primero."
+  },
+  {
+   "index": 7,
+   "jp": "急がば回れ",
+   "kana": "いそがばまわれ",
+   "romaji": "Isogaba maware",
+   "es": "Si tienes prisa, da un rodeo."
+  },
+  {
+   "index": 8,
+   "jp": "出る杭は打たれる",
+   "kana": "でるくいはうたれる",
+   "romaji": "Deru kui wa utareru",
+   "es": "El clavo que sobresale recibe el martillazo."
+  },
+  {
+   "index": 9,
+   "jp": "井の中の蛙大海を知らず",
+   "kana": "いのなかのかわずたいかいをしらず",
+   "romaji": "I no naka no kawazu taikai wo shirazu",
+   "es": "La rana del pozo no conoce el océano."
+  },
+  {
+   "index": 10,
+   "jp": "雨降って地固まる",
+   "kana": "あめふってじかたまる",
+   "romaji": "Ame futte ji katamaru",
+   "es": "Después de la lluvia, la tierra se afirma."
+  },
+  {
+   "index": 11,
+   "jp": "案ずるより産むが易し",
+   "kana": "あんずるよりうむがやすし",
+   "romaji": "Anzuru yori umu ga yasushi",
+   "es": "Hacerlo es más fácil que temerlo."
+  },
+  {
+   "index": 12,
+   "jp": "能ある鷹は爪を隠す",
+   "kana": "のうあるたかはつめをかくす",
+   "romaji": "Nō aru taka wa tsume wo kakusu",
+   "es": "El halcón hábil esconde sus garras."
+  },
+  {
+   "index": 13,
+   "jp": "千里の道も一歩から",
+   "kana": "せんりのみちもいっぽから",
+   "romaji": "Senri no michi mo ippo kara",
+   "es": "Un camino de mil ri empieza con un paso."
+  },
+  {
+   "index": 14,
+   "jp": "鉄は熱いうちに打て",
+   "kana": "てつはあついうちにうて",
+   "romaji": "Tetsu wa atsui uchi ni ute",
+   "es": "Golpea el hierro mientras está caliente."
+  },
+  {
+   "index": 15,
+   "jp": "百聞は一見に如かず",
+   "kana": "ひゃくぶんはいっけんにしかず",
+   "romaji": "Hyakubun wa ikken ni shikazu",
+   "es": "Ver una vez vale más que oír cien."
+  },
+  {
+   "index": 16,
+   "jp": "時は金なり",
+   "kana": "ときはかねなり",
+   "romaji": "Toki wa kane nari",
+   "es": "El tiempo es oro."
+  },
+  {
+   "index": 17,
+   "jp": "笑う門には福来る",
+   "kana": "わらうかどにはふくきたる",
+   "romaji": "Warau kado ni wa fuku kitaru",
+   "es": "La fortuna llega a la casa donde se ríe."
+  },
+  {
+   "index": 18,
+   "jp": "知らぬが仏",
+   "kana": "しらぬがほとけ",
+   "romaji": "Shiranu ga hotoke",
+   "es": "No saber es estar en paz."
+  },
+  {
+   "index": 19,
+   "jp": "二兎を追う者は一兎をも得ず",
+   "kana": "にとをおうものはいっとをもえず",
+   "romaji": "Nito wo ou mono wa itto wo mo ezu",
+   "es": "Quien persigue dos liebres no atrapa ninguna."
+  },
+  {
+   "index": 20,
+   "jp": "習うより慣れろ",
+   "kana": "ならうよりなれろ",
+   "romaji": "Narau yori narero",
+   "es": "La práctica enseña más que la lección."
+  },
+  {
+   "index": 21,
+   "jp": "弘法も筆の誤り",
+   "kana": "こうぼうもふでのあやまり",
+   "romaji": "Kōbō mo fude no ayamari",
+   "es": "Hasta el gran calígrafo se equivoca con el pincel."
+  },
+  {
+   "index": 22,
+   "jp": "果報は寝て待て",
+   "kana": "かほうはねてまて",
+   "romaji": "Kahō wa nete mate",
+   "es": "La buena suerte se espera durmiendo."
+  },
+  {
+   "index": 23,
+   "jp": "備えあれば憂いなし",
+   "kana": "そなえあればうれいなし",
+   "romaji": "Sonae areba urei nashi",
+   "es": "Quien está preparado no tiene de qué preocuparse."
+  },
+  {
+   "index": 24,
+   "jp": "三人寄れば文殊の知恵",
+   "kana": "さんにんよればもんじゅのちえ",
+   "romaji": "Sannin yoreba Monju no chie",
+   "es": "Tres cabezas juntas tienen la sabiduría de Monju."
+  },
+  {
+   "index": 25,
+   "jp": "灯台下暗し",
+   "kana": "とうだいもとくらし",
+   "romaji": "Tōdai moto kurashi",
+   "es": "Bajo el faro está oscuro: lo cercano pasa desapercibido."
+  },
+  {
+   "index": 26,
+   "jp": "郷に入っては郷に従え",
+   "kana": "ごうにいってはごうにしたがえ",
+   "romaji": "Gō ni itte wa gō ni shitagae",
+   "es": "Donde fueres, haz lo que vieres."
+  },
+  {
+   "index": 27,
+   "jp": "一石二鳥",
+   "kana": "いっせきにちょう",
+   "romaji": "Isseki nichō",
+   "es": "Una piedra, dos pájaros."
+  },
+  {
+   "index": 28,
+   "jp": "猫に小判",
+   "kana": "ねこにこばん",
+   "romaji": "Neko ni koban",
+   "es": "Monedas de oro a un gato."
+  },
+  {
+   "index": 29,
+   "jp": "覆水盆に返らず",
+   "kana": "ふくすいぼんにかえらず",
+   "romaji": "Fukusui bon ni kaerazu",
+   "es": "El agua derramada no vuelve a la bandeja."
+  },
+  {
+   "index": 30,
+   "jp": "待てば海路の日和あり",
+   "kana": "まてばかいろのひよりあり",
+   "romaji": "Mateba kairo no hiyori ari",
+   "es": "Quien espera encuentra buen tiempo para navegar."
+  },
+  {
+   "index": 31,
+   "jp": "光陰矢の如し",
+   "kana": "こういんやのごとし",
+   "romaji": "Kōin ya no gotoshi",
+   "es": "El tiempo vuela como una flecha."
+  },
+  {
+   "index": 32,
+   "jp": "縁の下の力持ち",
+   "kana": "えんのしたのちからもち",
+   "romaji": "En no shita no chikaramochi",
+   "es": "La fuerza que sostiene la casa sin ser vista."
+  },
+  {
+   "index": 33,
+   "jp": "口は災いの元",
+   "kana": "くちはわざわいのもと",
+   "romaji": "Kuchi wa wazawai no moto",
+   "es": "La boca es el origen de las desgracias."
+  },
+  {
+   "index": 34,
+   "jp": "虎穴に入らずんば虎子を得ず",
+   "kana": "こけつにいらずんばこじをえず",
+   "romaji": "Koketsu ni irazunba koji wo ezu",
+   "es": "Sin entrar en la cueva del tigre no hay cachorro."
+  },
+  {
+   "index": 35,
+   "jp": "好きこそ物の上手なれ",
+   "kana": "すきこそもののじょうずなれ",
+   "romaji": "Suki koso mono no jōzu nare",
+   "es": "Lo que amas es lo que llegas a dominar."
+  },
+  {
+   "index": 36,
+   "jp": "明日は明日の風が吹く",
+   "kana": "あしたはあしたのかぜがふく",
+   "romaji": "Ashita wa ashita no kaze ga fuku",
+   "es": "Mañana soplará el viento de mañana."
+  },
+  {
+   "index": 37,
+   "jp": "雀百まで踊り忘れず",
+   "kana": "すずめひゃくまでおどりわすれず",
+   "romaji": "Suzume hyaku made odori wasurezu",
+   "es": "El gorrión no olvida su baile ni a los cien años."
+  },
+  {
+   "index": 38,
+   "jp": "実るほど頭を垂れる稲穂かな",
+   "kana": "みのるほどこうべをたれるいなほかな",
+   "romaji": "Minoru hodo kōbe wo tareru inaho kana",
+   "es": "Cuanto más madura la espiga, más inclina la cabeza."
+  },
+  {
+   "index": 39,
+   "jp": "蛇の道は蛇",
+   "kana": "じゃのみちはへび",
+   "romaji": "Ja no michi wa hebi",
+   "es": "El camino de la serpiente lo conoce la serpiente."
+  },
+  {
+   "index": 40,
+   "jp": "腹が減っては戦ができぬ",
+   "kana": "はらがへってはいくさができぬ",
+   "romaji": "Hara ga hette wa ikusa ga dekinu",
+   "es": "Con el estómago vacío no se gana ninguna batalla."
+  },
+  {
+   "index": 41,
+   "jp": "急いては事を仕損じる",
+   "kana": "せいてはことをしそんじる",
+   "romaji": "Seite wa koto wo shisonjiru",
+   "es": "Con prisa, las cosas salen mal."
+  }
+ ]
+}

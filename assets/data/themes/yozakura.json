@@ -1,0 +1,82 @@
+{
+ "id": "yozakura",
+ "name": "Yozakura",
+ "kanji": "夜桜",
+ "kana": "よざくら",
+ "mode": "dark",
+ "description": "Violeta nocturno + rosa sakura",
+ "colorFormat": "CSS hex: #RRGGBB o #RRGGBBAA (la shell y el motor de temas lo convierten por destino)",
+ "wallpaper": "yozakura.jpg",
+ "colors": {
+  "bg": "#0d0912",
+  "surface0": "#151020",
+  "surface1": "#1b1528",
+  "surface2": "#241c34",
+  "surface3": "#2e2441",
+  "outline": "#2a2138",
+  "outlineStrong": "#453858",
+  "text": "#f6eef4",
+  "textMuted": "#b6a8be",
+  "textDim": "#75687e",
+  "accent": "#f0708f",
+  "accentHover": "#f791aa",
+  "accentSoft": "#f0708f29",
+  "onAccent": "#1a0d14",
+  "accent2": "#b4a2e6",
+  "success": "#8fd1a8",
+  "warning": "#f3c35b",
+  "error": "#ff5c7a",
+  "info": "#9cc7ef"
+ },
+ "glass": {
+  "alpha": 0.72,
+  "opaqueAlpha": 0.94,
+  "border": "#ffffff12",
+  "highlight": "#ffffff0b"
+ },
+ "focusRing": {
+  "active": [
+   "#f0708f",
+   "#f791aa"
+  ],
+  "inactive": "#2e2441",
+  "urgent": "#b4a2e6",
+  "windows": "#00a3af"
+ },
+ "shadow": "#00000099",
+ "scrim": "#0000006b",
+ "terminal": {
+  "background": "#0d0912",
+  "foreground": "#f6eef4",
+  "cursor": "#f0708f",
+  "cursorText": "#0d0912",
+  "selectionBackground": "#3d2340",
+  "selectionForeground": "#f6eef4",
+  "palette": [
+   "#1b1528",
+   "#ff5c7a",
+   "#8fd1a8",
+   "#f3c35b",
+   "#8aa6ef",
+   "#f0708f",
+   "#7fcbd6",
+   "#d8cde0",
+   "#4d4060",
+   "#ff8aa0",
+   "#b0e3c4",
+   "#f8d88e",
+   "#b0c3f7",
+   "#f59ab1",
+   "#a7dde6",
+   "#f6eef4"
+  ]
+ },
+ "system": {
+  "colorScheme": "prefer-dark",
+  "gtkTheme": "adw-gtk3-dark",
+  "iconTheme": "Papirus-Dark",
+  "papirusFolders": "pink",
+  "cursorTheme": "Bibata-Modern-Classic",
+  "kvantum": null
+ }
+}

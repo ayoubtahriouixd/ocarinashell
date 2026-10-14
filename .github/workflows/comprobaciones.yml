@@ -1,0 +1,59 @@
+name: comprobaciones
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  kit:
+    name: kit (guardia, scripts, datos)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Dependencias de las comprobaciones
+        run: pip install --quiet pyflakes kdl-py
+      - name: Hook de guardia (todas las pruebas)
+        run: python3 scripts/hooks/test-guard.py
+      - name: shellcheck
+        run: shellcheck install.sh scripts/*.sh scripts/hooks/*.sh
+      - name: Python sin errores (pyflakes)
+        run: python3 -m pyflakes tools/*.py scripts/hooks/*.py
+      - name: JSON válidos
+        run: find . -name '*.json' -not -path './.git/*' -print0 | xargs -0 -n1 python3 -m json.tool > /dev/null
+      - name: Atajos de niri (KDL)
+        run: python3 -c "import kdl, sys; [kdl.parse(open(f).read()) for f in sys.argv[1:]]" reference/*.kdl
+      - name: Datos reproducibles y contraste WCAG
+        run: |
+          python3 tools/build_data.py
+          git diff --exit-code -- assets/data
+
+  instalador-arch:
+    name: instalador en Arch (usuario normal)
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Paquetes mínimos
+        run: pacman -Syu --noconfirm --needed git python
+      - uses: actions/checkout@v4
+      - name: Instala el kit desde este commit como un usuario sin privilegios
+        run: |
+          useradd -m prueba
+          cp -a "$GITHUB_WORKSPACE" /tmp/kit
+          chown -R prueba /tmp/kit
+          su prueba -c "git -C /tmp/kit switch -q -c ci"
+          su prueba -c "OCARINA_REPO=${GITHUB_REPOSITORY} OCARINA_GIT_URL=file:///tmp/kit OCARINA_VERSION=ci \
+            bash /tmp/kit/install.sh --yes --no-sudo-temporal"
+          su prueba -c "test -f ~/ocarinashell/CLAUDE.md && git -C ~/ocarinashell remote get-url upstream"
+      - name: Segunda ejecución (ya instalado) y --check
+        run: |
+          su prueba -c "OCARINA_REPO=${GITHUB_REPOSITORY} OCARINA_GIT_URL=file:///tmp/kit bash /tmp/kit/install.sh --yes"
+          su prueba -c "OCARINA_REPO=${GITHUB_REPOSITORY} bash /tmp/kit/install.sh --check --yes"

@@ -1,0 +1,82 @@
+{
+ "id": "kohaku",
+ "name": "Kōhaku",
+ "kanji": "紅白",
+ "kana": "こうはく",
+ "mode": "light",
+ "description": "El logo hecho tema: washi blanco + sello rojo",
+ "colorFormat": "CSS hex: #RRGGBB o #RRGGBBAA (la shell y el motor de temas lo convierten por destino)",
+ "wallpaper": "kohaku-washi.jpg",
+ "colors": {
+  "bg": "#f4f1ec",
+  "surface0": "#ffffff",
+  "surface1": "#f8f5f0",
+  "surface2": "#efeae3",
+  "surface3": "#e6e0d7",
+  "outline": "#e3ddd4",
+  "outlineStrong": "#cdc5ba",
+  "text": "#18171c",
+  "textMuted": "#5f5953",
+  "textDim": "#9d968f",
+  "accent": "#e60033",
+  "accentHover": "#c8002d",
+  "accentSoft": "#e600331f",
+  "onAccent": "#ffffff",
+  "accent2": "#a8770a",
+  "success": "#2c7a52",
+  "warning": "#946300",
+  "error": "#c4002b",
+  "info": "#1f6f99"
+ },
+ "glass": {
+  "alpha": 0.72,
+  "opaqueAlpha": 0.94,
+  "border": "#00000012",
+  "highlight": "#ffffff99"
+ },
+ "focusRing": {
+  "active": [
+   "#e60033",
+   "#c8002d"
+  ],
+  "inactive": "#e6e0d7",
+  "urgent": "#a8770a",
+  "windows": "#00a3af"
+ },
+ "shadow": "#2a1a1033",
+ "scrim": "#1a141026",
+ "terminal": {
+  "background": "#fbf9f5",
+  "foreground": "#18171c",
+  "cursor": "#e60033",
+  "cursorText": "#ffffff",
+  "selectionBackground": "#f6cdd6",
+  "selectionForeground": "#18171c",
+  "palette": [
+   "#18171c",
+   "#c4002b",
+   "#2c7a52",
+   "#946300",
+   "#1e50a2",
+   "#884898",
+   "#00808a",
+   "#d9d2c8",
+   "#6f6862",
+   "#e60033",
+   "#3a9466",
+   "#b0800f",
+   "#3a6bc4",
+   "#a35cb0",
+   "#008a94",
+   "#ffffff"
+  ]
+ },
+ "system": {
+  "colorScheme": "prefer-light",
+  "gtkTheme": "adw-gtk3",
+  "iconTheme": "Papirus",
+  "papirusFolders": "red",
+  "cursorTheme": "Bibata-Modern-Ice",
+  "kvantum": null
+ }
+}

@@ -1,0 +1,16 @@
+* text=auto eol=lf
+
+*.png  binary
+*.jpg  binary
+*.webp binary
+*.wav  binary
+*.ttf  binary
+*.qsb  binary
+*.zip  binary
+
+# generados por tools/ (no cuentan en las estadísticas de lenguajes y se pliegan en los diffs)
+assets/mockups/src/*.html        linguist-generated
+assets/boot/src/*.html           linguist-generated
+assets/logo/preview.html         linguist-generated
+assets/logo/qml/OcarinaLogo.qml  linguist-generated
+assets/data/**                   linguist-generated

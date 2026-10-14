@@ -1,0 +1,82 @@
+{
+ "id": "matcha",
+ "name": "Matcha",
+ "kanji": "抹茶",
+ "kana": "まっちゃ",
+ "mode": "light",
+ "description": "Té verde y papel kinari",
+ "colorFormat": "CSS hex: #RRGGBB o #RRGGBBAA (la shell y el motor de temas lo convierten por destino)",
+ "wallpaper": "matcha-asanoha.jpg",
+ "colors": {
+  "bg": "#f3f1e7",
+  "surface0": "#fbfaf5",
+  "surface1": "#f6f4ea",
+  "surface2": "#ebe8da",
+  "surface3": "#e0dccb",
+  "outline": "#e2decf",
+  "outlineStrong": "#c9c3ad",
+  "text": "#1f2419",
+  "textMuted": "#575c4a",
+  "textDim": "#959a86",
+  "accent": "#5d7a16",
+  "accentHover": "#4b6612",
+  "accentSoft": "#69821b24",
+  "onAccent": "#ffffff",
+  "accent2": "#e60033",
+  "success": "#3a7a47",
+  "warning": "#8f6900",
+  "error": "#c8102e",
+  "info": "#246c94"
+ },
+ "glass": {
+  "alpha": 0.72,
+  "opaqueAlpha": 0.94,
+  "border": "#00000012",
+  "highlight": "#ffffff99"
+ },
+ "focusRing": {
+  "active": [
+   "#5d7a16",
+   "#4b6612"
+  ],
+  "inactive": "#e0dccb",
+  "urgent": "#e60033",
+  "windows": "#00a3af"
+ },
+ "shadow": "#2a1a1033",
+ "scrim": "#1a141026",
+ "terminal": {
+  "background": "#fbfaf5",
+  "foreground": "#1f2419",
+  "cursor": "#5d7a16",
+  "cursorText": "#ffffff",
+  "selectionBackground": "#dde5c4",
+  "selectionForeground": "#1f2419",
+  "palette": [
+   "#1f2419",
+   "#c8102e",
+   "#4e7a1f",
+   "#8f6900",
+   "#2a6aa0",
+   "#8a4f8a",
+   "#1f7470",
+   "#d6d2c1",
+   "#6b705d",
+   "#e60033",
+   "#69821b",
+   "#9a7a0a",
+   "#3f86bf",
+   "#a86aa8",
+   "#2a8a86",
+   "#fbfaf5"
+  ]
+ },
+ "system": {
+  "colorScheme": "prefer-light",
+  "gtkTheme": "adw-gtk3",
+  "iconTheme": "Papirus",
+  "papirusFolders": "green",
+  "cursorTheme": "Bibata-Modern-Ice",
+  "kvantum": null
+ }
+}

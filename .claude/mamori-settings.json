@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "defaultMode": "dontAsk",
+    "allow": [
+      "Read",
+      "Grep",
+      "Glob",
+      "Edit(~/ocarinashell/shell/**)",
+      "Edit(~/ocarinashell/config/**)",
+      "Edit(~/ocarinashell/templates/**)",
+      "Edit(~/ocarinashell/bin/**)",
+      "Edit(~/ocarinashell/snake/**)",
+      "Edit(~/ocarinashell/docs/mantenimiento/**)",
+      "Edit(~/.local/state/ocarinashell/mamori/plan.json)",
+      "Edit(~/.local/state/ocarinashell/mamori/claude/**)",
+      "WebSearch",
+      "WebFetch(domain:archlinux.org)",
+      "WebFetch(domain:gitlab.archlinux.org)",
+      "WebFetch(domain:wiki.archlinux.org)",
+      "WebFetch(domain:security.archlinux.org)",
+      "WebFetch(domain:discuss.cachyos.org)",
+      "WebFetch(domain:wiki.cachyos.org)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:gitlab.freedesktop.org)",
+      "WebFetch(domain:quickshell.org)",
+      "WebFetch(domain:niri-wm.github.io)",
+      "WebFetch(domain:ghostty.org)",
+      "WebFetch(domain:neovim.io)",
+      "WebFetch(domain:doc.qt.io)",
+      "Bash(git status)",
+      "Bash(git status *)",
+      "Bash(git diff)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git switch *)",
+      "Bash(git checkout -b *)",
+      "Bash(git branch *)",
+      "Bash(git revert --no-edit *)",
+      "Bash(niri validate *)",
+      "Bash(qmllint *)",
+      "Bash(/usr/lib/qt6/bin/qmllint *)",
+      "Bash(fish -n *)",
+      "Bash(ghostty +validate-config *)",
+      "Bash(journalctl *)",
+      "Bash(pacman -Q *)",
+      "Bash(pacman -Qi *)",
+      "Bash(pacman -Si *)",
+      "Bash(paru -Gp *)",
+      "Bash(paru -Si *)",
+      "Bash(paru -Qua)",
+      "Bash(paru -Pw)",
+      "Bash(checkupdates)",
+      "Bash(arch-audit *)",
+      "Bash(ocarina mamori status)",
+      "Bash(ocarina mamori status *)"
+    ],
+    "deny": [
+      "Bash(sudo *)",
+      "Bash(doas *)",
+      "Bash(run0 *)",
+      "Bash(pkexec *)",
+      "Bash(*ocarina-maint*)",
+      "Bash(ocarina-mamori *)",
+      "Bash(ocarina update*)",
+      "Bash(ocarina mamori run*)",
+      "Bash(ocarina mamori rollback*)",
+      "Bash(systemctl *)",
+      "Bash(bash *)",
+      "Bash(sh *)",
+      "Bash(python3 *)",
+      "Bash(qs *)",
+      "Bash(nvim *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(rm *)",
+      "Bash(git push*)",
+      "Bash(git merge*)",
+      "Bash(git reset*)",
+      "Bash(paru -S*)",
+      "Bash(pacman -S*)",
+      "Read(~/.ssh/**)",
+      "Read(~/.gnupg/**)",
+      "Read(~/.local/share/keyrings/**)",
+      "Read(~/.password-store/**)",
+      "Read(~/Documentos/**)",
+      "Read(~/Documents/**)",
+      "Read(~/Imágenes/**)",
+      "Read(~/Pictures/**)",
+      "Read(~/Descargas/**)",
+      "Read(~/Downloads/**)",
+      "Read(~/.local/share/ocarinashell/fune/**)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/ocarinashell/scripts/hooks/guard.sh\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "OCARINA_REPO=\"$HOME/ocarinashell\" bash \"$HOME/ocarinashell/scripts/hooks/validate.sh\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+# generados al trabajar
+__pycache__/
+*.pyc
+dist/
+docs/img/.tour/
+.ocarinashell-*/

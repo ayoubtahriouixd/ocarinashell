@@ -1,0 +1,348 @@
+/* OcarinaShell mockups — 1 CSS px = 1 logical px (P14s OLED 2880×1800 at scale 1.75 → 1646×1029).
+   Theme tokens live in tokens.css (generated from assets/data/themes/*.json by tools/mockups.py).
+   Every measure here is the one the QML must reproduce (docs/02-DISENO.md §5). */
+
+:root {
+  --ui: "Geist", "Zen Kaku Gothic New", system-ui, sans-serif;
+  --jp: "Zen Kaku Gothic New", "Geist", sans-serif;
+  --disp: "Shippori Mincho B1", "Zen Kaku Gothic New", serif;
+  --brush: "Yuji Syuku", "Shippori Mincho B1", serif;
+  --mono: "JetBrains Mono", "Zen Kaku Gothic New", monospace;
+  --brand: "Unbounded", "Geist", sans-serif;
+  --asagi: #00a3af;
+  --std: cubic-bezier(.2, 0, 0, 1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1646px; height: 1029px; overflow: hidden; }
+body { font: 400 13.5px/1.4 var(--ui); color: var(--text); background: #000; -webkit-font-smoothing: antialiased; }
+.screen { position: relative; width: 1646px; height: 1029px; overflow: hidden; background: var(--bg) center / cover no-repeat; }
+.abs { position: absolute; }
+.row { display: flex; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.grow { flex: 1; min-width: 0; }
+.muted { color: var(--text-muted); }
+.dim { color: var(--text-dim); }
+.red { color: var(--accent); }
+.gold { color: var(--accent2); }
+.tnum { font-feature-settings: "tnum" 1; }
+.jp { font-family: var(--jp); }
+.disp { font-family: var(--disp); }
+.mono { font-family: var(--mono); }
+.ell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Material Symbols Rounded (ligatures) */
+.ms { font-family: "Material Symbols Rounded"; font-weight: normal; font-style: normal; font-size: 20px; line-height: 1;
+  display: inline-block; white-space: nowrap; font-feature-settings: "liga"; vertical-align: middle;
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24; user-select: none; }
+.ms.f { font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24; }
+.ms.s16 { font-size: 16px; } .ms.s17 { font-size: 17px; } .ms.s18 { font-size: 18px; } .ms.s22 { font-size: 22px; }
+
+/* ---------------------------------------------------------------- glass (compositor blur + 72 % surface) */
+.glass { background: color-mix(in srgb, var(--surface0) 72%, transparent); backdrop-filter: blur(28px) saturate(1.3);
+  border: 1px solid var(--glass-border); box-shadow: inset 0 1px 0 var(--glass-hl), 0 14px 44px var(--shadow); }
+.glass.strong { background: color-mix(in srgb, var(--surface0) 86%, transparent); }
+.opaque { background: color-mix(in srgb, var(--surface0) 94%, transparent); border: 1px solid var(--outline);
+  box-shadow: 0 14px 44px var(--shadow); }
+.scrim { position: absolute; inset: 0; background: var(--scrim); }
+
+/* ---------------------------------------------------------------- 帯 Obi (bar) */
+.obi { position: absolute; top: 8px; left: 10px; right: 10px; height: 40px; border-radius: 14px; display: flex;
+  align-items: center; padding: 0 8px 0 12px; gap: 10px; z-index: 10; }
+.obi .brand { width: 36px; height: 21px; display: block; }
+.obi .sep { width: 1px; height: 18px; background: var(--outline-strong); }
+.ws { display: flex; gap: 4px; align-items: center; }
+.ws .c { position: relative; width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center;
+  font: 600 15px/1 var(--disp); color: var(--text-dim); opacity: .7; }
+.ws .c.busy { color: var(--text-muted); opacity: 1; }
+.ws .c .dots { position: absolute; bottom: 1px; left: 50%; transform: translateX(-50%); display: flex; gap: 2px; }
+.ws .c .dots i { width: 3px; height: 3px; border-radius: 2px; background: currentColor; opacity: .75; }
+.ws .c.on { background: linear-gradient(150deg, var(--accent-hover), var(--accent) 55%, color-mix(in srgb, var(--accent) 80%, #000));
+  color: var(--on-accent); opacity: 1; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .18), 0 3px 12px color-mix(in srgb, var(--accent) 50%, transparent); }
+.ws .c.on .dots i { background: var(--on-accent); }
+.title { display: flex; align-items: center; gap: 7px; max-width: 360px; color: var(--text-muted); font-size: 13px; }
+.title .ms { font-size: 17px; }
+.obi .right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.tray { display: flex; gap: 8px; padding: 0 4px; color: var(--text-muted); opacity: .8; }
+.tray .ms { font-size: 17px; }
+.ind { height: 24px; min-width: 24px; padding: 0 6px; border-radius: 8px; display: grid; place-items: center;
+  font: 600 13px/1 var(--disp); background: color-mix(in srgb, var(--text) 7%, transparent); color: var(--text); }
+.ind.asagi { color: var(--asagi); background: color-mix(in srgb, var(--asagi) 16%, transparent); }
+.ind.snake { color: var(--text); background: color-mix(in srgb, var(--text) 10%, transparent); }
+.ind.new { color: var(--accent2); background: color-mix(in srgb, var(--accent2) 15%, transparent); }
+.clu { height: 30px; display: flex; align-items: center; gap: 9px; padding: 0 10px; border-radius: 10px; color: var(--text); }
+.clu.hot { background: var(--surface2); }
+.clu .ms { font-size: 18px; }
+.bat { display: flex; align-items: center; gap: 5px; font: 600 12px/1 var(--ui); font-feature-settings: "tnum"; }
+.bat svg { width: 18px; height: 18px; }
+.prof { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; font: 600 12px/1 var(--disp);
+  background: color-mix(in srgb, var(--text) 9%, transparent); color: var(--text); }
+.prof.hot { background: var(--accent); color: var(--on-accent); }
+.bell { position: relative; width: 30px; height: 30px; display: grid; place-items: center; color: var(--text-muted); }
+.bell .ms { font-size: 19px; }
+.bell.dot::after { content: ""; position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 4px;
+  background: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--surface0) 80%, transparent); }
+
+/* ---------------------------------------------------------------- 島 Shima (island) */
+.shima { position: absolute; top: 13px; left: 50%; transform: translateX(-50%); height: 30px; border-radius: 15px;
+  background: #050405; border: 1px solid rgba(255, 255, 255, .07); display: flex; align-items: center; gap: 9px;
+  padding: 0 14px 0 12px; color: #f4efe6; font: 600 14.5px/1 var(--ui); font-feature-settings: "tnum"; z-index: 12;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, .5); white-space: nowrap; }
+.shima .eq { display: flex; align-items: flex-end; gap: 2px; height: 13px; }
+.shima .eq i { width: 2.5px; border-radius: 2px; background: var(--accent); }
+.shima .day { font: 500 13px/1 var(--jp); color: #aaa39b; }
+.shima .ko { font: 600 14px/1 var(--disp); color: var(--accent2); }
+.shima .hk { height: 20px; min-width: 20px; padding: 0 4px; border-radius: 6px; display: grid; place-items: center;
+  font: 600 13px/1 var(--disp); }
+.shima .hk.shinobi { background: #c0001f; color: #e8e2da; }
+.shima .hk.oni { background: #e60033; color: #050405; box-shadow: inset 0 0 0 1.5px #e6b422; }
+.shima .stat { font: 600 13px/1 var(--ui); color: #f4efe6; }
+.shima .stat b { font: 500 12.5px/1 var(--disp); color: #aaa39b; margin-right: 3px; }
+
+/* ---------------------------------------------------------------- niri windows */
+.win { position: absolute; border-radius: 14px; }
+.win > .body { position: absolute; inset: 0; border-radius: 14px; overflow: hidden; background: var(--surface0);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .45); }
+.win.focus::before { content: ""; position: absolute; inset: -4px; border-radius: 18px; padding: 3px;
+  background: linear-gradient(135deg, var(--ring-a), var(--ring-b) 55%, var(--accent2));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+.win.focus.asagi::before { background: linear-gradient(135deg, #00a3af, #4fc6cf); }
+.win.inactive::before { content: ""; position: absolute; inset: -4px; border-radius: 18px; padding: 1px; background: var(--ring-off);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+
+/* ---------------------------------------------------------------- terminal (Ghostty) + Neovim */
+.term { position: absolute; inset: 0; background: var(--t-bg); color: var(--t-fg); font: 400 13px/1.5 var(--mono);
+  padding: 14px 18px; white-space: pre; }
+.c0 { color: var(--t0); } .c1 { color: var(--t1); } .c2 { color: var(--t2); } .c3 { color: var(--t3); }
+.c4 { color: var(--t4); } .c5 { color: var(--t5); } .c6 { color: var(--t6); } .c7 { color: var(--t7); }
+.c8 { color: var(--t8); } .c9 { color: var(--t9); } .c10 { color: var(--t10); } .c11 { color: var(--t11); }
+.c12 { color: var(--t12); } .c13 { color: var(--t13); } .c14 { color: var(--t14); } .c15 { color: var(--t15); }
+.b { font-weight: 700; } .i { font-style: italic; }
+.ff { display: flex; gap: 22px; white-space: pre; }
+.ff img { width: 168px; height: auto; margin-top: 30px; align-self: flex-start; }
+.blocks { display: inline-flex; gap: 0; } .blocks i { width: 22px; height: 13px; display: inline-block; }
+.cursor { display: inline-block; width: 8px; height: 16px; background: var(--t-cursor); vertical-align: -3px; }
+.nv { position: absolute; inset: 0; background: var(--t-bg); color: var(--t-fg); font: 400 13px/20px var(--mono);
+  display: grid; grid-template-rows: 28px 1fr 24px 22px; }
+.nv .tabs { display: flex; align-items: center; gap: 2px; padding: 0 8px; background: color-mix(in srgb, var(--t-bg) 80%, #000);
+  font: 400 12px/1 var(--ui); color: var(--text-dim); }
+.nv .tab { height: 22px; display: flex; align-items: center; gap: 6px; padding: 0 10px; border-radius: 7px; }
+.nv .tab.on { background: var(--surface2); color: var(--text); }
+.nv .buf { display: grid; grid-template-columns: 46px 1fr; overflow: hidden; padding-top: 6px; }
+.nv .gut { text-align: right; padding-right: 12px; color: var(--t8); white-space: pre; }
+.nv .gut b { color: var(--accent); font-weight: 600; }
+.nv .code { white-space: pre; position: relative; }
+.nv .code .cl { position: absolute; left: -2px; right: 0; height: 20px; background: color-mix(in srgb, var(--t-fg) 5%, transparent); }
+.nv .sl { display: flex; align-items: stretch; font: 600 12px/24px var(--ui); background: color-mix(in srgb, var(--t-bg) 70%, var(--surface2)); }
+.nv .sl > span { padding: 0 10px; display: flex; align-items: center; gap: 6px; }
+.nv .sl .nvmode { background: var(--accent); color: var(--on-accent); gap: 7px; }
+.nv .sl .nvmode b { font: 700 14px/1 var(--disp); }
+.nv .sl .git { color: var(--text-muted); }
+.nv .sl .git b, .nv .sl .diag b { font: 600 12.5px/1 var(--disp); }
+.nv .sl .r { margin-left: auto; color: var(--text-muted); font-weight: 500; }
+.nv .cmd { padding: 0 10px; color: var(--text-dim); font: 400 12.5px/22px var(--mono); }
+
+/* ---------------------------------------------------------------- 文 Fumi (toast) */
+.fumi { position: absolute; right: 14px; top: 62px; width: 372px; border-radius: 18px; padding: 13px 15px 15px 19px;
+  overflow: hidden; z-index: 20; }
+.fumi::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); }
+.fumi .wm { position: absolute; right: 10px; top: -6px; font: 600 64px/1 var(--disp); color: var(--text); opacity: .045; }
+.fumi .hd { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-muted); }
+.fumi .hd .ic { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; background: var(--surface3); color: var(--text); }
+.fumi .hd .ic .ms { font-size: 14px; }
+.fumi .hd .t { margin-left: auto; color: var(--text-dim); }
+.fumi .tt { margin-top: 8px; font: 600 14.5px/1.3 var(--ui); }
+.fumi .bd { margin-top: 3px; font-size: 13px; color: var(--text-muted); line-height: 1.45; }
+.fumi .act { display: flex; gap: 6px; margin-top: 11px; flex-wrap: nowrap; }
+.btn { height: 30px; padding: 0 12px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  white-space: nowrap; font: 500 12.5px/1 var(--ui); background: var(--surface2); color: var(--text); border: 1px solid var(--outline); }
+.btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.btn.ghost { background: transparent; }
+.btn .ms { font-size: 16px; }
+.fumi .tm { position: absolute; left: 3px; right: 0; bottom: 0; height: 2px; background: var(--outline); }
+.fumi .tm i { display: block; height: 2px; width: 62%; background: var(--accent); opacity: .8; }
+.fumi.crit { box-shadow: inset 0 0 0 1px var(--accent), 0 14px 44px var(--shadow); }
+
+/* ---------------------------------------------------------------- shared panel (Engawa, Fune, Snake) */
+.panel { position: absolute; right: 10px; top: 56px; width: 420px; border-radius: 22px; padding: 16px; z-index: 15; }
+.phead { display: flex; align-items: center; gap: 11px; }
+.phead .who { flex: 1; min-width: 0; }
+.phead .who b { display: block; font: 600 15px/1.2 var(--ui); }
+.phead .who span { font-size: 12px; color: var(--text-muted); }
+.ibtn { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: var(--surface2); color: var(--text); }
+.ibtn .ms { font-size: 18px; }
+.ibtn.red { background: var(--accent-soft); color: var(--accent); }
+.hanko { display: grid; place-items: center; border-radius: 8px; font: 600 15px/1 var(--disp); background: var(--accent); color: var(--on-accent);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .22); }
+.hanko.asagi { background: var(--asagi); color: #fff; }
+
+/* Engawa tiles */
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+.tile { position: relative; height: 62px; border-radius: 16px; background: var(--surface1); border: 1px solid var(--outline);
+  display: flex; align-items: center; gap: 10px; padding: 0 10px 0 12px; overflow: hidden; }
+.tile .ico { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: var(--surface3); color: var(--text-muted); flex: none; }
+.tile .tx { min-width: 0; flex: 1; }
+.tile .tx b { display: block; font: 600 13px/1.25 var(--ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile .tx span { display: block; font-size: 11.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile .wmk { position: absolute; right: 26px; top: 50%; transform: translateY(-50%); font: 600 42px/1 var(--disp); opacity: .07; }
+.tile .chev { color: var(--text-dim); font-size: 18px; }
+.tile.on { background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 17%, var(--surface1)), var(--surface1) 75%);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--outline)); }
+.tile.on .ico { background: var(--accent-soft); color: var(--accent); text-shadow: 0 0 12px color-mix(in srgb, var(--accent) 60%, transparent); }
+.tile.on .wmk { color: var(--accent); opacity: .1; }
+
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.mode { position: relative; height: 70px; border-radius: 16px; padding: 0 12px; display: flex; align-items: center; gap: 11px;
+  background: var(--surface1); border: 1px solid var(--outline); overflow: hidden; }
+.mode .hk { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; font: 600 22px/1 var(--brush); flex: none; }
+.mode b { display: block; font: 600 13.5px/1.2 var(--ui); }
+.mode span { font-size: 11.5px; color: var(--text-muted); }
+.mode.shinobi { border: 1.5px dashed color-mix(in srgb, var(--accent) 65%, transparent); }
+.mode.shinobi .hk { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.mode.oni .hk { background: var(--accent); color: #0b0a0c; box-shadow: inset 0 0 0 2px #e6b422; }
+.mode.oni.on { background: linear-gradient(135deg, #e60033, #8a001f); border-color: #ff4d6a; color: #fff;
+  box-shadow: 0 0 26px rgba(230, 0, 51, .45); }
+
+.slider { position: relative; height: 34px; border-radius: 12px; background: var(--surface2); margin-top: 8px; overflow: hidden; }
+.slider .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 12px; background: var(--text); display: flex; align-items: center; }
+.slider .fill .ms { margin-left: 9px; color: var(--surface0); font-size: 18px; }
+.slider .v { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font: 600 12px/1 var(--ui); color: var(--text-muted); font-feature-settings: "tnum"; }
+/* per-screen brightness: device + value on the right; the .inv copy is clipped to the fill and drawn in surface0 */
+.slider .lb { position: absolute; inset: 0; padding-right: 12px; display: flex; align-items: center; justify-content: flex-end; gap: 9px;
+  font: 600 12px/1 var(--ui); color: var(--text-muted); font-feature-settings: "tnum"; pointer-events: none; }
+.slider .lb .dev { display: inline-flex; align-items: center; gap: 5px; font-weight: 500; }
+.slider .lb .dev .ms { font-size: 15px; }
+.slider .lb.inv { color: var(--surface0); }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface1);
+  border: 1px solid var(--outline); margin-top: 8px; }
+.seg span { height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 7px; font: 500 12.5px/1 var(--ui); color: var(--text-muted); }
+.seg span b { font: 600 15px/1 var(--disp); }
+.seg span.on { background: var(--surface3); color: var(--text); box-shadow: 0 1px 0 var(--glass-hl); }
+.media { margin-top: 8px; border-radius: 16px; padding: 12px; display: flex; gap: 12px; align-items: center; position: relative; overflow: hidden; }
+.cover { width: 56px; height: 56px; border-radius: 12px; flex: none; position: relative; overflow: hidden; }
+.media .tt b { display: block; font: 600 13.5px/1.25 var(--ui); }
+.media .tt span { font-size: 12px; color: rgba(255, 255, 255, .7); }
+.media .prog { height: 3px; border-radius: 2px; background: rgba(255, 255, 255, .18); margin-top: 8px; }
+.media .prog i { display: block; height: 3px; width: 38%; border-radius: 2px; background: #fff; }
+.media .ctl { display: flex; gap: 2px; margin-left: auto; color: #fff; }
+.media .ctl .ms { font-size: 22px; width: 30px; text-align: center; }
+.batt { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 0 2px; font-size: 12.5px; color: var(--text-muted); }
+.batt b { font: 600 15px/1 var(--ui); color: var(--text); font-feature-settings: "tnum"; }
+.chip { height: 24px; padding: 0 9px; border-radius: 12px; display: inline-flex; align-items: center; gap: 5px; font: 500 11.5px/1 var(--ui);
+  background: var(--surface2); color: var(--text-muted); border: 1px solid var(--outline); white-space: nowrap; }
+.chip b { font: 600 12px/1 var(--disp); color: var(--text); }
+.chip.red { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.chip.asagi { background: color-mix(in srgb, var(--asagi) 16%, transparent); color: var(--asagi); border-color: transparent; }
+.chip.ok { background: color-mix(in srgb, var(--success) 16%, transparent); color: var(--success); border-color: transparent; }
+
+/* ---------------------------------------------------------------- 鍵 Kagi (lock) */
+.kagi { position: absolute; inset: 0; }
+.kagi .bgblur { position: absolute; inset: -40px; background: center / cover no-repeat; filter: blur(34px) brightness(.62) saturate(1.1); }
+.kagi .vig { position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 50%, transparent 30%, rgba(0, 0, 0, .55) 100%); }
+
+/* ---------------------------------------------------------------- 鳥居 Torii (launcher) */
+.torii { position: absolute; left: 50%; top: 150px; width: 680px; transform: translateX(-50%); border-radius: 22px; overflow: hidden; z-index: 20; }
+.torii .field { height: 60px; display: flex; align-items: center; gap: 14px; padding: 0 18px; border-bottom: 1px solid var(--outline); }
+.torii .field .q { font: 400 24px/1 var(--ui); }
+.torii .field .caret { width: 2px; height: 28px; background: var(--accent); margin-left: -12px; border-radius: 1px; }
+.torii .field .hint { margin-left: auto; font: 500 13px/1 var(--jp); color: var(--text-dim); }
+.torii .chips { display: flex; gap: 6px; padding: 10px 14px 6px; }
+.torii .grp { padding: 10px 18px 4px; font: 600 11px/1 var(--ui); letter-spacing: .09em; text-transform: uppercase; color: var(--text-dim); }
+.res { position: relative; height: 56px; display: flex; align-items: center; gap: 12px; padding: 0 18px; }
+.res .ico { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; flex: none; position: relative; }
+.res .t b { display: block; font: 500 15px/1.25 var(--ui); }
+.res .t b em { font-style: normal; color: var(--accent); font-weight: 600; }
+.res .t span { font-size: 12.5px; color: var(--text-muted); }
+.res .k { margin-left: auto; display: flex; gap: 4px; }
+.res.sel { background: var(--surface2); }
+.res.sel::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0;
+  background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+.kbd { height: 22px; min-width: 22px; padding: 0 6px; border-radius: 6px; display: inline-grid; place-items: center; font: 500 11.5px/1 var(--ui);
+  color: var(--text-muted); background: var(--surface1); border: 1px solid var(--outline-strong); box-shadow: 0 1px 0 var(--outline-strong); }
+.fune-badge { position: absolute; right: -5px; bottom: -4px; width: 17px; height: 17px; border-radius: 5px; display: grid; place-items: center;
+  font: 600 10.5px/1 var(--disp); background: var(--asagi); color: #fff; box-shadow: 0 0 0 2px var(--surface0); }
+.torii .foot { display: flex; align-items: center; gap: 14px; padding: 10px 18px; border-top: 1px solid var(--outline); font-size: 12px; color: var(--text-muted); }
+.torii .foot span { display: inline-flex; align-items: center; gap: 6px; }
+
+/* ---------------------------------------------------------------- 電源 Dengen (power) */
+.dengen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; }
+.dcard { position: relative; width: 168px; height: 212px; border-radius: 26px; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 14px; overflow: hidden; }
+.dcard .k { font: 400 86px/1 var(--brush); }
+.dcard .l { font: 500 14px/1 var(--ui); color: var(--text-muted); }
+.dcard .key { position: absolute; top: 14px; right: 14px; }
+.dcard.sel { background: linear-gradient(160deg, #ff1f4f, #e60033 45%, #a3001f); color: #fff; transform: translateY(-8px);
+  box-shadow: 0 22px 50px rgba(230, 0, 51, .45), inset 0 1px 0 rgba(255, 255, 255, .25); border-color: transparent; }
+.dcard.sel .l { color: rgba(255, 255, 255, .85); }
+.dcard .hold { position: absolute; left: 18px; right: 18px; bottom: 16px; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .25); }
+.dcard .hold i { display: block; height: 4px; width: 58%; border-radius: 2px; background: #fff; }
+
+/* ---------------------------------------------------------------- 設定 Settei (settings window) */
+.settei { position: absolute; width: 1240px; height: 924px; border-radius: 18px; overflow: hidden; display: flex; z-index: 5;
+  background: var(--surface0); border: 1px solid var(--outline); box-shadow: 0 30px 80px var(--shadow); }
+.side { width: 262px; flex: none; padding: 20px 14px; background: var(--surface1); border-right: 1px solid var(--outline); display: flex; flex-direction: column; }
+.side .wm { display: flex; align-items: center; gap: 10px; padding: 2px 8px 18px; }
+.side .wm b { font: 600 17px/1 var(--brand); letter-spacing: -.01em; }
+.side .wm b em { font-style: normal; color: var(--accent); }
+.search { height: 38px; border-radius: 11px; background: var(--surface0); border: 1px solid var(--outline); display: flex; align-items: center;
+  gap: 8px; padding: 0 11px; color: var(--text-dim); font-size: 13px; margin-bottom: 12px; }
+.nav { display: flex; align-items: center; gap: 11px; height: 38px; padding: 0 8px; border-radius: 11px; font-size: 13.5px; color: var(--text-muted); }
+.nav .g { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; font: 600 13.5px/1 var(--disp);
+  background: var(--surface2); color: var(--text-muted); }
+.nav.on { background: var(--surface2); color: var(--text); font-weight: 600; }
+.nav.on .g { background: var(--accent); color: var(--on-accent); box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .2), 0 2px 8px color-mix(in srgb, var(--accent) 40%, transparent); }
+.nav .badge { margin-left: auto; height: 18px; padding: 0 6px; border-radius: 9px; font: 600 10.5px/18px var(--ui); background: var(--accent-soft); color: var(--accent); }
+.page { flex: 1; padding: 28px 34px; overflow: hidden; }
+.ph { display: flex; align-items: baseline; gap: 14px; margin-bottom: 6px; }
+.ph .k { font: 600 30px/1 var(--disp); color: var(--accent); }
+.ph h1 { font: 600 26px/1 var(--ui); letter-spacing: -.01em; }
+.sub { color: var(--text-muted); font-size: 13.5px; margin-bottom: 22px; }
+.sect { font: 600 11px/1 var(--ui); letter-spacing: .09em; text-transform: uppercase; color: var(--text-dim); margin: 22px 0 10px; }
+.card { background: var(--surface1); border: 1px solid var(--outline); border-radius: 16px; }
+.srow { display: flex; align-items: center; gap: 14px; min-height: 58px; padding: 0 18px; border-top: 1px solid var(--outline); }
+.srow:first-child { border-top: 0; }
+.srow .t { flex: 1; } .srow .t b { display: block; font: 500 14px/1.3 var(--ui); } .srow .t span { font-size: 12.5px; color: var(--text-muted); }
+.sw { width: 40px; height: 24px; border-radius: 12px; background: var(--surface3); position: relative; flex: none; }
+.sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 9px; background: var(--text-muted); }
+.sw.on { background: var(--accent); } .sw.on::after { left: 19px; background: #fff; }
+.drop { height: 34px; padding: 0 12px; border-radius: 10px; background: var(--surface0); border: 1px solid var(--outline-strong);
+  display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
+.hs { width: 220px; height: 6px; border-radius: 3px; background: var(--surface3); position: relative; }
+.hs i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--accent); }
+.hs b { position: absolute; top: 50%; width: 18px; height: 18px; border-radius: 9px; background: #fff; transform: translate(-50%, -50%);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .3), 0 0 0 1px var(--outline-strong); }
+
+/* theme cards (Settei · 外観) */
+.themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.tcard { border-radius: 16px; border: 1px solid var(--outline); background: var(--surface1); padding: 8px; }
+.tcard.on { border: 2px solid var(--accent); padding: 7px; box-shadow: 0 0 0 4px var(--accent-soft); }
+.tprev { position: relative; height: 112px; border-radius: 10px; overflow: hidden; background: center / cover no-repeat; }
+.tprev .mbar { position: absolute; left: 6px; right: 6px; top: 5px; height: 10px; border-radius: 4px; }
+.tprev .mwin { position: absolute; border-radius: 5px; }
+.tmeta { display: flex; align-items: center; gap: 8px; padding: 9px 4px 3px; }
+.tmeta .k { font: 600 17px/1 var(--disp); }
+.tmeta b { font: 600 13.5px/1 var(--ui); }
+.tmeta span { font-size: 11.5px; color: var(--text-muted); }
+.sws { margin-left: auto; display: flex; } .sws i { width: 14px; height: 14px; border-radius: 7px; margin-left: -4px; box-shadow: 0 0 0 2px var(--surface1); }
+.accs { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.acc { display: flex; flex-direction: column; align-items: center; gap: 6px; font: 600 13px/1 var(--disp); color: var(--text-muted); }
+.acc i { width: 34px; height: 34px; border-radius: 11px; display: block; }
+.acc.on i { box-shadow: 0 0 0 2px var(--surface0), 0 0 0 4px var(--text); }
+.acc.on { color: var(--text); }
+
+/* 配置 Haichi (display arranger) — mockup 12 */
+.canvas { position: relative; height: 210px; border-radius: 12px; background-color: var(--surface0); border: 1px solid var(--outline);
+  background-image: radial-gradient(color-mix(in srgb, var(--text) 10%, transparent) 1px, transparent 1.4px); background-size: 14px 14px; overflow: hidden; }
+.scr { position: absolute; border-radius: 9px; background: linear-gradient(160deg, var(--surface3), var(--surface2));
+  border: 1.5px solid var(--outline-strong); box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
+.scr.sel { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft), 0 6px 18px rgba(0, 0, 0, .35); }
+.scr .num { position: absolute; inset: 0 0 30px 0; display: grid; place-items: center; font: 600 50px/1 var(--disp); color: var(--text); opacity: .2; }
+.scr .hk { position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border-radius: 5px; display: grid; place-items: center;
+  font: 600 12px/1 var(--disp); background: var(--accent); color: var(--on-accent); }
+.scr .lbl { position: absolute; left: 10px; bottom: 9px; display: flex; flex-direction: column; gap: 3px; }
+.scr .lbl b { font: 600 12.5px/1.1 var(--ui); }
+.scr .lbl span { font: 500 10.5px/1.1 var(--ui); color: var(--text-muted); font-feature-settings: "tnum"; }
+.canvas .snap { position: absolute; width: 0; border-left: 1.5px dashed var(--accent); opacity: .85; }
+.banner { display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 14px; border-radius: 14px; margin: -8px 0 14px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface1)); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
+.banner > .ms { color: var(--accent); }

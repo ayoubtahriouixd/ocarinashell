@@ -1,0 +1,878 @@
+{
+ "comment": "Kaomoji para Torii (`:`), buscables por palabra en español (07-IDEAS).",
+ "kaomoji": [
+  {
+   "k": "(＾▽＾)",
+   "cat": "alegría",
+   "es": [
+    "feliz",
+    "alegría",
+    "sonrisa"
+   ]
+  },
+  {
+   "k": "ヽ(・∀・)ﾉ",
+   "cat": "alegría",
+   "es": [
+    "feliz",
+    "yupi",
+    "celebrar"
+   ]
+  },
+  {
+   "k": "(≧▽≦)",
+   "cat": "alegría",
+   "es": [
+    "feliz",
+    "emoción",
+    "genial"
+   ]
+  },
+  {
+   "k": "(✿◠‿◠)",
+   "cat": "alegría",
+   "es": [
+    "feliz",
+    "flor",
+    "dulce"
+   ]
+  },
+  {
+   "k": "٩(◕‿◕｡)۶",
+   "cat": "alegría",
+   "es": [
+    "feliz",
+    "alegría",
+    "bien"
+   ]
+  },
+  {
+   "k": "(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧",
+   "cat": "alegría",
+   "es": [
+    "magia",
+    "brillo",
+    "celebrar",
+    "alegría"
+   ]
+  },
+  {
+   "k": "＼(＾▽＾)／",
+   "cat": "alegría",
+   "es": [
+    "hurra",
+    "celebrar",
+    "feliz"
+   ]
+  },
+  {
+   "k": "(*^‿^*)",
+   "cat": "alegría",
+   "es": [
+    "sonrisa",
+    "contento"
+   ]
+  },
+  {
+   "k": "(´｡• ᵕ •｡`)",
+   "cat": "alegría",
+   "es": [
+    "tierno",
+    "contento"
+   ]
+  },
+  {
+   "k": "o(≧▽≦)o",
+   "cat": "alegría",
+   "es": [
+    "emoción",
+    "genial"
+   ]
+  },
+  {
+   "k": "☆*:.｡.o(≧▽≦)o.｡.:*☆",
+   "cat": "alegría",
+   "es": [
+    "celebrar",
+    "brillo",
+    "estrellas",
+    "fiesta"
+   ]
+  },
+  {
+   "k": "(◕‿◕✿)",
+   "cat": "alegría",
+   "es": [
+    "dulce",
+    "flor"
+   ]
+  },
+  {
+   "k": "(≧∇≦)ﾉ",
+   "cat": "risa",
+   "es": [
+    "risa",
+    "jaja"
+   ]
+  },
+  {
+   "k": "( ´∀｀ )b",
+   "cat": "risa",
+   "es": [
+    "bien",
+    "ok",
+    "pulgar"
+   ]
+  },
+  {
+   "k": "(♡°▽°♡)",
+   "cat": "amor",
+   "es": [
+    "amor",
+    "enamorado"
+   ]
+  },
+  {
+   "k": "(´∀｀)♡",
+   "cat": "amor",
+   "es": [
+    "amor",
+    "cariño"
+   ]
+  },
+  {
+   "k": "(づ｡◕‿‿◕｡)づ",
+   "cat": "amor",
+   "es": [
+    "abrazo",
+    "amor"
+   ]
+  },
+  {
+   "k": "(っ˘з(˘⌣˘ )",
+   "cat": "amor",
+   "es": [
+    "beso",
+    "amor"
+   ]
+  },
+  {
+   "k": "( ˘ ³˘)♥",
+   "cat": "amor",
+   "es": [
+    "beso"
+   ]
+  },
+  {
+   "k": "(♥ω♥*)",
+   "cat": "amor",
+   "es": [
+    "amor",
+    "enamorado"
+   ]
+  },
+  {
+   "k": "♡(｡- ω -)",
+   "cat": "amor",
+   "es": [
+    "amor",
+    "tierno"
+   ]
+  },
+  {
+   "k": "(っ´ω`c)",
+   "cat": "amor",
+   "es": [
+    "tierno",
+    "mejillas"
+   ]
+  },
+  {
+   "k": "(╥﹏╥)",
+   "cat": "tristeza",
+   "es": [
+    "llorar",
+    "triste"
+   ]
+  },
+  {
+   "k": "(ಥ﹏ಥ)",
+   "cat": "tristeza",
+   "es": [
+    "llorar",
+    "triste"
+   ]
+  },
+  {
+   "k": "(；ω；)",
+   "cat": "tristeza",
+   "es": [
+    "llorar",
+    "pena"
+   ]
+  },
+  {
+   "k": "(｡•́︿•̀｡)",
+   "cat": "tristeza",
+   "es": [
+    "triste",
+    "pena"
+   ]
+  },
+  {
+   "k": "( ´_ゝ`)",
+   "cat": "tristeza",
+   "es": [
+    "decepción",
+    "meh"
+   ]
+  },
+  {
+   "k": "(´；ω；`)",
+   "cat": "tristeza",
+   "es": [
+    "llorar",
+    "pena"
+   ]
+  },
+  {
+   "k": "(╬ Ò﹏Ó)",
+   "cat": "enfado",
+   "es": [
+    "enfado",
+    "furia"
+   ]
+  },
+  {
+   "k": "(＃｀Д´)",
+   "cat": "enfado",
+   "es": [
+    "enfado",
+    "grito"
+   ]
+  },
+  {
+   "k": "ヽ(`⌒´メ)ノ",
+   "cat": "enfado",
+   "es": [
+    "enfado",
+    "rabia"
+   ]
+  },
+  {
+   "k": "(｀へ´)",
+   "cat": "enfado",
+   "es": [
+    "enfado",
+    "molesto"
+   ]
+  },
+  {
+   "k": "(ಠ益ಠ)",
+   "cat": "enfado",
+   "es": [
+    "furia",
+    "rabia"
+   ]
+  },
+  {
+   "k": "( ｰ̀εｰ́ )",
+   "cat": "enfado",
+   "es": [
+    "enfurruñado",
+    "puchero"
+   ]
+  },
+  {
+   "k": "(╯°□°)╯︵ ┻━┻",
+   "cat": "mesa",
+   "es": [
+    "mesa",
+    "volcar",
+    "enfado",
+    "rabia"
+   ]
+  },
+  {
+   "k": "┬─┬ノ( º _ ºノ)",
+   "cat": "mesa",
+   "es": [
+    "mesa",
+    "ordenar",
+    "calma",
+    "arreglar"
+   ]
+  },
+  {
+   "k": "(ノಠ益ಠ)ノ彡┻━┻",
+   "cat": "mesa",
+   "es": [
+    "mesa",
+    "furia",
+    "volcar"
+   ]
+  },
+  {
+   "k": "┻━┻ ︵ヽ(`Д´)ﾉ︵ ┻━┻",
+   "cat": "mesa",
+   "es": [
+    "mesas",
+    "doble",
+    "furia"
+   ]
+  },
+  {
+   "k": "(°o°)",
+   "cat": "sorpresa",
+   "es": [
+    "sorpresa",
+    "oh"
+   ]
+  },
+  {
+   "k": "Σ(°ロ°)",
+   "cat": "sorpresa",
+   "es": [
+    "sorpresa",
+    "susto"
+   ]
+  },
+  {
+   "k": "(⊙_⊙)",
+   "cat": "sorpresa",
+   "es": [
+    "sorpresa",
+    "asombro"
+   ]
+  },
+  {
+   "k": "w(°ｏ°)w",
+   "cat": "sorpresa",
+   "es": [
+    "sorpresa",
+    "increíble"
+   ]
+  },
+  {
+   "k": "(ﾟДﾟ;)",
+   "cat": "sorpresa",
+   "es": [
+    "susto",
+    "sorpresa"
+   ]
+  },
+  {
+   "k": "ヽ(°〇°)ﾉ",
+   "cat": "sorpresa",
+   "es": [
+    "pánico",
+    "gritar"
+   ]
+  },
+  {
+   "k": "(⁄ ⁄•⁄ω⁄•⁄ ⁄)",
+   "cat": "vergüenza",
+   "es": [
+    "vergüenza",
+    "sonrojo"
+   ]
+  },
+  {
+   "k": "(〃▽〃)",
+   "cat": "vergüenza",
+   "es": [
+    "vergüenza",
+    "tímido"
+   ]
+  },
+  {
+   "k": "(*/ω＼*)",
+   "cat": "vergüenza",
+   "es": [
+    "esconderse",
+    "vergüenza"
+   ]
+  },
+  {
+   "k": "(^_^;)",
+   "cat": "nervios",
+   "es": [
+    "nervios",
+    "apuro"
+   ]
+  },
+  {
+   "k": "(・_・;)",
+   "cat": "nervios",
+   "es": [
+    "nervios",
+    "incómodo"
+   ]
+  },
+  {
+   "k": "(￣▽￣;)",
+   "cat": "nervios",
+   "es": [
+    "apuro",
+    "nervios"
+   ]
+  },
+  {
+   "k": "(・・?)",
+   "cat": "duda",
+   "es": [
+    "duda",
+    "confusión"
+   ]
+  },
+  {
+   "k": "(・_・ヾ",
+   "cat": "duda",
+   "es": [
+    "confusión",
+    "rascar"
+   ]
+  },
+  {
+   "k": "┐(￣ヘ￣)┌",
+   "cat": "duda",
+   "es": [
+    "no",
+    "sé",
+    "encogerse"
+   ]
+  },
+  {
+   "k": "¯\\_(ツ)_/¯",
+   "cat": "duda",
+   "es": [
+    "encogerse",
+    "no",
+    "sé",
+    "da",
+    "igual"
+   ]
+  },
+  {
+   "k": "( ˘•ω•˘ )",
+   "cat": "duda",
+   "es": [
+    "pensar",
+    "duda"
+   ]
+  },
+  {
+   "k": "(￢_￢)",
+   "cat": "duda",
+   "es": [
+    "sospecha",
+    "mirada"
+   ]
+  },
+  {
+   "k": "(¬‿¬)",
+   "cat": "duda",
+   "es": [
+    "pícaro",
+    "sospecha"
+   ]
+  },
+  {
+   "k": "ಠ_ಠ",
+   "cat": "duda",
+   "es": [
+    "desaprobación",
+    "mirada",
+    "juicio"
+   ]
+  },
+  {
+   "k": "(＾▽＾)ノ",
+   "cat": "saludo",
+   "es": [
+    "hola",
+    "saludo"
+   ]
+  },
+  {
+   "k": "( ´ ▽ ` )ﾉ",
+   "cat": "saludo",
+   "es": [
+    "hola",
+    "adiós"
+   ]
+  },
+  {
+   "k": "(^_^)/",
+   "cat": "saludo",
+   "es": [
+    "hola",
+    "saludo"
+   ]
+  },
+  {
+   "k": "ヾ(・ω・)ノ",
+   "cat": "saludo",
+   "es": [
+    "hola",
+    "adiós",
+    "chao"
+   ]
+  },
+  {
+   "k": "(￣▽￣)ノ",
+   "cat": "saludo",
+   "es": [
+    "hola",
+    "buenas"
+   ]
+  },
+  {
+   "k": "(｀・ω・´)ゞ",
+   "cat": "saludo",
+   "es": [
+    "entendido",
+    "ok",
+    "a",
+    "la",
+    "orden"
+   ]
+  },
+  {
+   "k": "(￣^￣)ゞ",
+   "cat": "saludo",
+   "es": [
+    "saludo",
+    "entendido"
+   ]
+  },
+  {
+   "k": "m(_ _)m",
+   "cat": "gracias",
+   "es": [
+    "perdón",
+    "gracias",
+    "reverencia"
+   ]
+  },
+  {
+   "k": "(人 •͈ᴗ•͈)",
+   "cat": "gracias",
+   "es": [
+    "gracias",
+    "por",
+    "favor"
+   ]
+  },
+  {
+   "k": "(b ᵔ▽ᵔ)b",
+   "cat": "gracias",
+   "es": [
+    "bien",
+    "perfecto",
+    "ok"
+   ]
+  },
+  {
+   "k": "(*￣▽￣)b",
+   "cat": "gracias",
+   "es": [
+    "genial",
+    "bien"
+   ]
+  },
+  {
+   "k": "( •̀ ω •́ )✧",
+   "cat": "ánimo",
+   "es": [
+    "confianza",
+    "listo",
+    "brillo"
+   ]
+  },
+  {
+   "k": "ᕦ(ò_óˇ)ᕤ",
+   "cat": "ánimo",
+   "es": [
+    "fuerza",
+    "músculo",
+    "ánimo"
+   ]
+  },
+  {
+   "k": "(ง •̀_•́)ง",
+   "cat": "ánimo",
+   "es": [
+    "luchar",
+    "ánimo",
+    "vamos"
+   ]
+  },
+  {
+   "k": "(๑•̀ㅂ•́)و✧",
+   "cat": "ánimo",
+   "es": [
+    "ánimo",
+    "vamos",
+    "éxito"
+   ]
+  },
+  {
+   "k": "\\(^o^)/",
+   "cat": "ánimo",
+   "es": [
+    "ganar",
+    "victoria",
+    "hurra"
+   ]
+  },
+  {
+   "k": "✧٩(•́⌄•́๑)و ✧",
+   "cat": "ánimo",
+   "es": [
+    "victoria",
+    "bien",
+    "hecho"
+   ]
+  },
+  {
+   "k": "(｀・ω・´)",
+   "cat": "ánimo",
+   "es": [
+    "decidido",
+    "serio"
+   ]
+  },
+  {
+   "k": "(－_－) zzZ",
+   "cat": "sueño",
+   "es": [
+    "dormir",
+    "sueño"
+   ]
+  },
+  {
+   "k": "(∪｡∪)｡｡｡zzZ",
+   "cat": "sueño",
+   "es": [
+    "dormir",
+    "sueño"
+   ]
+  },
+  {
+   "k": "(￣o￣) zzZZzzZZ",
+   "cat": "sueño",
+   "es": [
+    "dormir",
+    "roncar"
+   ]
+  },
+  {
+   "k": "(=_=)",
+   "cat": "sueño",
+   "es": [
+    "cansado",
+    "aburrido"
+   ]
+  },
+  {
+   "k": "(︶︹︺)",
+   "cat": "sueño",
+   "es": [
+    "cansado",
+    "fastidio"
+   ]
+  },
+  {
+   "k": "(×_×)",
+   "cat": "sueño",
+   "es": [
+    "agotado",
+    "ko",
+    "muerto"
+   ]
+  },
+  {
+   "k": "(；一_一)",
+   "cat": "sueño",
+   "es": [
+    "fastidio",
+    "meh"
+   ]
+  },
+  {
+   "k": "(っ˘ڡ˘ς)",
+   "cat": "comida",
+   "es": [
+    "comer",
+    "rico",
+    "delicioso"
+   ]
+  },
+  {
+   "k": "( ˘▽˘)っ♨",
+   "cat": "comida",
+   "es": [
+    "comida",
+    "caliente",
+    "té",
+    "ramen"
+   ]
+  },
+  {
+   "k": "(￣～￣)",
+   "cat": "comida",
+   "es": [
+    "masticar",
+    "comer"
+   ]
+  },
+  {
+   "k": "♪(´ε｀ )",
+   "cat": "música",
+   "es": [
+    "música",
+    "silbar"
+   ]
+  },
+  {
+   "k": "ヾ(´〇`)ﾉ♪♪♪",
+   "cat": "música",
+   "es": [
+    "cantar",
+    "música"
+   ]
+  },
+  {
+   "k": "(〜￣▽￣)〜",
+   "cat": "música",
+   "es": [
+    "bailar",
+    "música"
+   ]
+  },
+  {
+   "k": "┏(＾0＾)┛┗(＾0＾)┓",
+   "cat": "música",
+   "es": [
+    "bailar",
+    "fiesta"
+   ]
+  },
+  {
+   "k": "(=^･ω･^=)",
+   "cat": "animales",
+   "es": [
+    "gato",
+    "miau"
+   ]
+  },
+  {
+   "k": "ฅ^•ﻌ•^ฅ",
+   "cat": "animales",
+   "es": [
+    "gato",
+    "zarpas"
+   ]
+  },
+  {
+   "k": "(^・ω・^ )",
+   "cat": "animales",
+   "es": [
+    "gato"
+   ]
+  },
+  {
+   "k": "∪･ω･∪",
+   "cat": "animales",
+   "es": [
+    "perro",
+    "guau"
+   ]
+  },
+  {
+   "k": "ʕ•ᴥ•ʔ",
+   "cat": "animales",
+   "es": [
+    "oso"
+   ]
+  },
+  {
+   "k": "(ᵔᴥᵔ)",
+   "cat": "animales",
+   "es": [
+    "oso",
+    "tierno"
+   ]
+  },
+  {
+   "k": "(・x・)",
+   "cat": "animales",
+   "es": [
+    "conejo"
+   ]
+  },
+  {
+   "k": "／(･ × ･)＼",
+   "cat": "animales",
+   "es": [
+    "conejo"
+   ]
+  },
+  {
+   "k": "くコ:彡",
+   "cat": "animales",
+   "es": [
+    "calamar"
+   ]
+  },
+  {
+   "k": ">゜))))彡",
+   "cat": "animales",
+   "es": [
+    "pez"
+   ]
+  },
+  {
+   "k": "ε=ε=┌( >_<)┘",
+   "cat": "acción",
+   "es": [
+    "correr",
+    "prisa"
+   ]
+  },
+  {
+   "k": "┬┴┬┴┤(･_├┬┴┬┴",
+   "cat": "acción",
+   "es": [
+    "esconderse",
+    "espiar",
+    "mirar"
+   ]
+  },
+  {
+   "k": "(^_−)☆",
+   "cat": "acción",
+   "es": [
+    "guiño"
+   ]
+  },
+  {
+   "k": "(￣ω￣)☆",
+   "cat": "acción",
+   "es": [
+    "guiño",
+    "brillo"
+   ]
+  },
+  {
+   "k": "(⌐■_■)",
+   "cat": "acción",
+   "es": [
+    "gafas",
+    "molón",
+    "cool"
+   ]
+  }
+ ]
+}

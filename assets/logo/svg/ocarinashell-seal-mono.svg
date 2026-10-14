@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 84 84"><g transform="translate(0 0) scale(1)"><mask id="smsealmask" maskUnits="userSpaceOnUse" x="0" y="0" width="84" height="84">
+  <rect width="84" height="84" fill="#fff"/>
+  <rect x="5.5" y="5.5" width="73" height="73" rx="12.5" fill="none" stroke="#000" stroke-width="2.4"/><g><path d="M 21 25 L 39 42 L 21 59" fill="none" stroke="#000" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="45" y="53" width="20" height="8.5" rx="4.25" fill="#000"/></g></mask>
+  <rect width="84" height="84" rx="17" fill="currentColor" mask="url(#smsealmask)"/></g></svg>

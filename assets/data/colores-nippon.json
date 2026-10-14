@@ -1,0 +1,232 @@
+{
+ "comment": "Colores tradicionales japoneses (JIS 慣用色名 cuando existe). 'accents' = muestras de 外観 en Ajustes.",
+ "accents": [
+  "aka",
+  "shu",
+  "kin",
+  "wakatake",
+  "asagi",
+  "ruri",
+  "murasaki",
+  "kobai"
+ ],
+ "colors": [
+  {
+   "id": "aka",
+   "kanji": "赤",
+   "kana": "あか",
+   "es": "Rojo (赤, el de la marca)",
+   "hex": "#e60033"
+  },
+  {
+   "id": "shu",
+   "kanji": "朱",
+   "kana": "しゅ",
+   "es": "Bermellón",
+   "hex": "#eb6101"
+  },
+  {
+   "id": "kurenai",
+   "kanji": "紅",
+   "kana": "くれない",
+   "es": "Carmesí",
+   "hex": "#d7003a"
+  },
+  {
+   "id": "akane",
+   "kanji": "茜",
+   "kana": "あかね",
+   "es": "Rubia (granza)",
+   "hex": "#b7282e"
+  },
+  {
+   "id": "enji",
+   "kanji": "臙脂",
+   "kana": "えんじ",
+   "es": "Carmín oscuro",
+   "hex": "#b94047"
+  },
+  {
+   "id": "kobai",
+   "kanji": "紅梅",
+   "kana": "こうばい",
+   "es": "Ciruelo rosa",
+   "hex": "#f2a0a1"
+  },
+  {
+   "id": "sango",
+   "kanji": "珊瑚",
+   "kana": "さんご",
+   "es": "Coral",
+   "hex": "#f5b1aa"
+  },
+  {
+   "id": "sakura",
+   "kanji": "桜",
+   "kana": "さくら",
+   "es": "Cerezo",
+   "hex": "#fef4f4"
+  },
+  {
+   "id": "botan",
+   "kanji": "牡丹",
+   "kana": "ぼたん",
+   "es": "Peonía",
+   "hex": "#e7609e"
+  },
+  {
+   "id": "kaki",
+   "kanji": "柿",
+   "kana": "かき",
+   "es": "Caqui",
+   "hex": "#ed6d3d"
+  },
+  {
+   "id": "kohaku",
+   "kanji": "琥珀",
+   "kana": "こはく",
+   "es": "Ámbar",
+   "hex": "#bf783a"
+  },
+  {
+   "id": "yamabuki",
+   "kanji": "山吹",
+   "kana": "やまぶき",
+   "es": "Rosa amarilla (kerria)",
+   "hex": "#f8b500"
+  },
+  {
+   "id": "kin",
+   "kanji": "金",
+   "kana": "きん",
+   "es": "Oro",
+   "hex": "#e6b422"
+  },
+  {
+   "id": "moegi",
+   "kanji": "萌黄",
+   "kana": "もえぎ",
+   "es": "Verde brote",
+   "hex": "#aacf53"
+  },
+  {
+   "id": "wakakusa",
+   "kanji": "若草",
+   "kana": "わかくさ",
+   "es": "Hierba joven",
+   "hex": "#c3d825"
+  },
+  {
+   "id": "wakatake",
+   "kanji": "若竹",
+   "kana": "わかたけ",
+   "es": "Bambú joven",
+   "hex": "#68be8d"
+  },
+  {
+   "id": "matcha",
+   "kanji": "抹茶",
+   "kana": "まっちゃ",
+   "es": "Matcha",
+   "hex": "#c5c56a"
+  },
+  {
+   "id": "koke",
+   "kanji": "苔",
+   "kana": "こけ",
+   "es": "Musgo",
+   "hex": "#69821b"
+  },
+  {
+   "id": "asagi",
+   "kanji": "浅葱",
+   "kana": "あさぎ",
+   "es": "Cebolleta clara (cian)",
+   "hex": "#00a3af"
+  },
+  {
+   "id": "sora",
+   "kanji": "空",
+   "kana": "そら",
+   "es": "Cielo",
+   "hex": "#a0d8ef"
+  },
+  {
+   "id": "ruri",
+   "kanji": "瑠璃",
+   "kana": "るり",
+   "es": "Lapislázuli",
+   "hex": "#1e50a2"
+  },
+  {
+   "id": "gunjo",
+   "kanji": "群青",
+   "kana": "ぐんじょう",
+   "es": "Ultramar",
+   "hex": "#4c6cb3"
+  },
+  {
+   "id": "ai",
+   "kanji": "藍",
+   "kana": "あい",
+   "es": "Índigo",
+   "hex": "#165e83"
+  },
+  {
+   "id": "kon",
+   "kanji": "紺",
+   "kana": "こん",
+   "es": "Azul marino",
+   "hex": "#223a70"
+  },
+  {
+   "id": "sumire",
+   "kanji": "菫",
+   "kana": "すみれ",
+   "es": "Violeta",
+   "hex": "#7058a3"
+  },
+  {
+   "id": "murasaki",
+   "kanji": "紫",
+   "kana": "むらさき",
+   "es": "Púrpura",
+   "hex": "#884898"
+  },
+  {
+   "id": "kinari",
+   "kanji": "生成り",
+   "kana": "きなり",
+   "es": "Crudo (algodón natural)",
+   "hex": "#fbfaf5"
+  },
+  {
+   "id": "gofun",
+   "kanji": "胡粉",
+   "kana": "ごふん",
+   "es": "Blanco de concha",
+   "hex": "#fffffc"
+  },
+  {
+   "id": "nezumi",
+   "kanji": "鼠",
+   "kana": "ねずみ",
+   "es": "Gris ratón",
+   "hex": "#949495"
+  },
+  {
+   "id": "sumi",
+   "kanji": "墨",
+   "kana": "すみ",
+   "es": "Tinta",
+   "hex": "#595857"
+  },
+  {
+   "id": "shikkoku",
+   "kanji": "漆黒",
+   "kana": "しっこく",
+   "es": "Negro laca",
+   "hex": "#0d0015"
+  }
+ ]
+}

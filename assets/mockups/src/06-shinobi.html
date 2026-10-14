@@ -1,0 +1,95 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><title>06 · Shinobi — OcarinaShell</title><link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="mock.css"></head><body class="t-shinobi"><div class="screen" style="background:#000"><div class="win inactive" style="left:14px;top:60px;width:780px;height:955px"><div class="body" style=""><div class="term" style="opacity:.75"><span class="c8">╭─</span> <span class="c1 b">~/ocarinashell</span> <span class="c8">on</span> <span class="c5"><span class="disp">枝</span> main</span> <span class="c3"><span class="disp">変</span>2 <span class="disp">新</span>1</span><span class="c8" style="float:right">21:38</span>
+<span class="c8">╰─</span><span class="c1">❯</span> journalctl --user -u ocarinashell -n 4
+<span class="c8">oct 14 21:37 ocarinashell[1830]: shinobi: entering (battery 19 %, unplugged)</span>
+<span class="c8">oct 14 21:37 ocarinashell[1830]: snapshot → ~/.local/state/ocarinashell/shinobi-prev.json</span>
+<span class="c8">oct 14 21:37 ocarinashell[1830]: niri: include shinobi.kdl · 120→60 Hz · ppd power-saver</span>
+<span class="c8">oct 14 21:37 ocarinashell[1830]: shinobi: on · est. 14 h 20 min</span>
+
+<span class="c8">╭─</span> <span class="c1 b">~/ocarinashell</span> <span class="c8">on</span> <span class="c5"><span class="disp">枝</span> main</span> <span class="c3"><span class="disp">変</span>2 <span class="disp">新</span>1</span><span class="c8" style="float:right">21:38</span>
+<span class="c8">╰─</span><span class="c1">❯</span> <span class=cursor></span></div></div></div><div class="win inactive" style="left:808px;top:60px;width:824px;height:955px"><div class="body" style="box-shadow:none;border:1px solid #5c0010"><div style="position:absolute;inset:0;opacity:.62"><div class="nv">
+  <div class="tabs"><span class="tab on"><i class="ms s16">description</i> Workspaces.qml</span><span class="tab"><i class="ms s16">description</i> Theme.qml</span>
+    <span class="tab"><i class="ms s16">description</i> 02-DISENO.md</span><span style="margin-left:auto" class="disp">紅</span></div>
+  <div class="buf"><div class="gut"> 13
+ 12
+ 11
+ 10
+  9
+  8
+  7
+  6
+  5
+  4
+  3
+  2
+  1
+<b> 14</b>
+  1
+  2
+  3
+  4
+  5
+  6
+  7
+  8
+  9
+ 10
+ 11
+ 12
+ 13
+ 14
+ 15</div><div class="code"><div class="cl" style="top:260px"></div><span class="c5">pragma</span> ComponentBehavior: Bound
+<span class="c5">import</span> <span class="c3">QtQuick</span>
+<span class="c5">import</span> <span class="c3">qs.services</span>
+<span class="c5">import</span> <span class="c3">qs.components</span>
+
+<span class="c8 i">// 一 二 三 … — the active seal slides with a spring (Motion.spring.hanko)</span>
+<span class="c3">Row</span> {
+    <span class="c4">id</span>: <span class="c6">root</span>
+    <span class="c5">required property</span> <span class="c3">ShellScreen</span> <span class="c4">screen</span>
+    <span class="c4">spacing</span>: <span class="c6">Theme</span>.gap.xs
+
+    <span class="c3">Repeater</span> {
+        <span class="c4">model</span>: <span class="c6">Niri</span>.workspacesOn(<span class="c6">root</span>.screen)
+        <span class="c4">delegate</span>: <span class="c3">WorkspaceCell</span> {
+            <span class="c5">required property</span> <span class="c3">var</span> <span class="c4">modelData</span>
+            <span class="c4">numeral</span>: <span class="c6">Glossary</span>.numeral(modelData.idx)
+            <span class="c4">active</span>: modelData.isActive
+            <span class="c4">windows</span>: modelData.windowCount
+            <span class="c4">urgent</span>: modelData.isUrgent
+            <span class="c4">onClicked</span>: <span class="c6">Niri</span>.focusWorkspace(modelData.id)
+        }
+    }
+
+    <span class="c3">HankoIndicator</span> {
+        <span class="c4">target</span>: <span class="c6">root</span>.activeCell
+        <span class="c4">spring</span>: <span class="c6">Motion</span>.spring.hanko
+        <span class="c4">visible</span>: <span class="c6">Niri</span>.available
+    }
+}</div></div>
+  <div class="sl"><span class="nvmode"><b>常</b> NORMAL</span><span class="git"><b>枝</b> main <b class="c3">変</b>2</span>
+    <span>shell/modules/obi/Workspaces.qml</span><span class="diag" style="color:var(--t3)"><b>警</b> 1</span>
+    <span class="r">qml · utf-8 · 14:9 · 48 %</span></div>
+  <div class="cmd">:w  <span class="c8">"Workspaces.qml" 29L, 912B escritos · validado con qmllint ✓</span></div>
+</div></div></div></div><div class="obi opaque">
+  <svg class="brand" style="width:36px;height:21px;color:#7f7973" xmlns="http://www.w3.org/2000/svg" viewBox="20 30 430 270" class="os-root"><defs><clipPath id="mmclip"><path d="M -200 10 C -204 -62 -118 -96 -18 -93 C 84 -90 172 -70 206 -16 C 226 16 200 56 148 72 C 68 96 -42 106 -122 91 C -176 81 -197 50 -200 10 Z"/></clipPath></defs><g><g transform="translate(210 160) rotate(-14) scale(0.82)">
+  <mask id="mmmh" maskUnits="userSpaceOnUse" x="-260" y="-200" width="520" height="400">
+    <rect x="-260" y="-200" width="520" height="400" fill="#fff"/><circle cx="-58" cy="-42" r="14.5" fill="#000"/><circle cx="-4" cy="-48" r="14.5" fill="#000"/><circle cx="50" cy="-47" r="14.5" fill="#000"/><circle cx="102" cy="-37" r="13.5" fill="#000"/><circle cx="-16" cy="31" r="13" fill="#000"/><circle cx="46" cy="26" r="13" fill="#000"/><rect x="-124" y="-94" width="34" height="12" rx="6" fill="#000" transform="rotate(-5 -107 -88)"/>
+  </mask>
+  <g mask="url(#mmmh)"><rect x="-192" y="-134" width="78" height="60" rx="16" fill="currentColor" transform="rotate(-22 -153 -104)"/><path d="M -200 10 C -204 -62 -118 -96 -18 -93 C 84 -90 172 -70 206 -16 C 226 16 200 56 148 72 C 68 96 -42 106 -122 91 C -176 81 -197 50 -200 10 Z" fill="currentColor"/></g>
+</g><path d="M 376.98 70.95 A 36 36 0 0 1 406.73 106.4" fill="none" stroke="currentColor" stroke-width="14" stroke-linecap="round" opacity="1.0"/><path d="M 382.19 41.41 A 66 66 0 0 1 436.73 106.4" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" opacity="0.8"/></g></svg>
+  <span class="sep"></span>
+  <div class="ws"><div class="c busy">一<span class=dots><i></i></span></div><div class="c on">二<span class=dots><i></i><i></i></span></div><div class="c busy">三<span class=dots><i></i></span></div></div>
+  <span class="sep"></span>
+  <div class="title"><i class="ms">terminal</i><span class="ell">Ghostty</span></div>
+  <div class="right"><span class="sep"></span>
+    <div class="clu"><i class="ms f">wifi</i><i class="ms">bluetooth</i><i class="ms f">volume_up</i>
+      <span class="bat"><svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="7.2" fill="none" stroke="rgba(127,127,127,.35)" stroke-width="2.2"/><circle cx="9" cy="9" r="7.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="8.60 45.24" transform="rotate(-90 9 9)"/></svg>19</span><span class="prof">省</span></div>
+    <div class="bell"><i class="ms">notifications</i></div>
+  </div>
+</div><div class="shima"><span class="hk shinobi">忍</span><span style="color:#b8b2aa">21:38</span><span class="day" style="color:#7f7973">水 14</span></div><div class="fumi opaque" style="background:#050505;border-color:#1a1a1a"><span class="wm">忍</span>
+  <div class="hd"><span class="ic" style="background:#c0001f;color:#e8e2da;font:600 12px/1 var(--disp)">忍</span>Shinobi<span class="t">ahora</span></div>
+  <div class="tt" style="color:#b8b2aa">Modo ahorro extremo activado</div>
+  <div class="bd">Autonomía estimada <b style="color:#b8b2aa">14 h 20 min</b> · 3,1 W · 60 Hz · sin animaciones ni desenfoque ·
+    Bluetooth apagado · VM de Fune en pausa</div>
+  <div class="act"><span class="btn" style="background:#0a0a0a;border-color:#1a1a1a;color:#b8b2aa">Salir de Shinobi</span>
+    <span class="btn ghost" style="border-color:#1a1a1a;color:#7f7973">Ajustes</span></div></div></div></body></html>

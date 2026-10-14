@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=OcarinaShell
+Description=OcarinaShell — ocarina roja sobre blanco (紅白), arranque y apagado
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/ocarinashell
+ScriptFile=/usr/share/plymouth/themes/ocarinashell/ocarinashell.script

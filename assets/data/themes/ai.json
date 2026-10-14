@@ -1,0 +1,82 @@
+{
+ "id": "ai",
+ "name": "Ai",
+ "kanji": "藍",
+ "kana": "あい",
+ "mode": "dark",
+ "description": "Índigo aizome + oro",
+ "colorFormat": "CSS hex: #RRGGBB o #RRGGBBAA (la shell y el motor de temas lo convierten por destino)",
+ "wallpaper": "ai-seigaiha.jpg",
+ "colors": {
+  "bg": "#070b14",
+  "surface0": "#0d1322",
+  "surface1": "#121a2d",
+  "surface2": "#19233a",
+  "surface3": "#212d47",
+  "outline": "#1d2740",
+  "outlineStrong": "#34436a",
+  "text": "#eef1f8",
+  "textMuted": "#a3abc2",
+  "textDim": "#636d86",
+  "accent": "#e6b422",
+  "accentHover": "#f2c94c",
+  "accentSoft": "#e6b42229",
+  "onAccent": "#16120a",
+  "accent2": "#e60033",
+  "success": "#7bc4a0",
+  "warning": "#f8b500",
+  "error": "#ff5a6e",
+  "info": "#8fb2ff"
+ },
+ "glass": {
+  "alpha": 0.72,
+  "opaqueAlpha": 0.94,
+  "border": "#ffffff12",
+  "highlight": "#ffffff0b"
+ },
+ "focusRing": {
+  "active": [
+   "#e6b422",
+   "#f2c94c"
+  ],
+  "inactive": "#212d47",
+  "urgent": "#e60033",
+  "windows": "#00a3af"
+ },
+ "shadow": "#00000099",
+ "scrim": "#0000006b",
+ "terminal": {
+  "background": "#070b14",
+  "foreground": "#eef1f8",
+  "cursor": "#e6b422",
+  "cursorText": "#070b14",
+  "selectionBackground": "#22305a",
+  "selectionForeground": "#eef1f8",
+  "palette": [
+   "#121a2d",
+   "#e8505b",
+   "#7bc4a0",
+   "#e6b422",
+   "#5b8def",
+   "#b48ee0",
+   "#3fc1c9",
+   "#c8cfdf",
+   "#414d6b",
+   "#ff7a83",
+   "#9edbbb",
+   "#f2cd5e",
+   "#8fb2ff",
+   "#cdb0f0",
+   "#79dbe1",
+   "#eef1f8"
+  ]
+ },
+ "system": {
+  "colorScheme": "prefer-dark",
+  "gtkTheme": "adw-gtk3-dark",
+  "iconTheme": "Papirus-Dark",
+  "papirusFolders": "yellow",
+  "cursorTheme": "Bibata-Modern-Classic",
+  "kvantum": null
+ }
+}

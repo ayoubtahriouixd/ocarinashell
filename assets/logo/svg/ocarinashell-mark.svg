@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="20 30 430 270" class="os-root"><defs>
+  <radialGradient id="mbg" cx="40%" cy="30%" r="85%">
+    <stop offset="0" stop-color="#ffffff"/><stop offset=".62" stop-color="#ffffff"/><stop offset="1" stop-color="#f5f1ec"/>
+  </radialGradient>
+  <linearGradient id="mbody" x1="-185" y1="-95" x2="175" y2="95" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#ff7466"/><stop offset=".45" stop-color="#ea1f35"/><stop offset="1" stop-color="#a3001f"/>
+  </linearGradient>
+  <linearGradient id="mbelly" x1="0" y1="-5" x2="0" y2="100" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#56000f" stop-opacity="0"/><stop offset="1" stop-color="#56000f" stop-opacity=".5"/>
+  </linearGradient>
+  <linearGradient id="mrim" x1="-200" y1="-90" x2="120" y2="-40" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".55" stop-color="#fff" stop-opacity=".28"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="mmouth" x1="0" y1="-134" x2="0" y2="-74" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#ffb3aa"/><stop offset="1" stop-color="#f0574f"/>
+  </linearGradient>
+  <radialGradient id="mspec" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(-92 -60) rotate(-6) scale(96 26)">
+    <stop offset="0" stop-color="#fff" stop-opacity=".72"/><stop offset=".6" stop-color="#fff" stop-opacity=".2"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="mwarm" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(200 -10) scale(120 110)">
+    <stop offset="0" stop-color="#ffb08a" stop-opacity=".45"/><stop offset="1" stop-color="#ffb08a" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="mglow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(0 30) scale(250 150)">
+    <stop offset="0" stop-color="#ea1f35" stop-opacity=".16"/><stop offset="1" stop-color="#ea1f35" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="mshadow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(0 124) scale(178 21)">
+    <stop offset="0" stop-color="#7a0016" stop-opacity=".34"/><stop offset="1" stop-color="#7a0016" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="mwave" x1="0" y1="1" x2="1" y2="0">
+    <stop offset="0" stop-color="#d9002f"/><stop offset="1" stop-color="#ff5a48"/>
+  </linearGradient>
+  <linearGradient id="mseal" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#ef1d3c"/><stop offset="1" stop-color="#b3001e"/>
+  </linearGradient>
+  <linearGradient id="mshine" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".32"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="mfade" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity="1"/>
+  </linearGradient>
+  <mask id="mseimask"><rect width="512" height="512" fill="url(#mfade)"/></mask>
+  <clipPath id="mclip"><path d="M -200 10 C -204 -62 -118 -96 -18 -93 C 84 -90 172 -70 206 -16 C 226 16 200 56 148 72 C 68 96 -42 106 -122 91 C -176 81 -197 50 -200 10 Z"/></clipPath>
+  <clipPath id="msq"><rect width="512" height="512" rx="114"/></clipPath>
+</defs><g><g transform="translate(210 160) rotate(-14) scale(0.82)">
+  <ellipse cx="0" cy="124" rx="178" ry="21" fill="url(#mshadow)"/>
+  <g>
+  <rect x="-192" y="-134" width="78" height="60" rx="16" fill="url(#mmouth)" transform="rotate(-22 -153 -104)"/>
+  <path d="M -200 10 C -204 -62 -118 -96 -18 -93 C 84 -90 172 -70 206 -16 C 226 16 200 56 148 72 C 68 96 -42 106 -122 91 C -176 81 -197 50 -200 10 Z" fill="url(#mbody)"/>
+  <g clip-path="url(#mclip)">
+    <rect x="-230" y="-120" width="470" height="240" fill="url(#mbelly)"/>
+    <ellipse cx="200" cy="-10" rx="120" ry="110" fill="url(#mwarm)"/>
+    <rect x="-230" y="-120" width="470" height="240" fill="url(#mspec)"/>
+    
+  </g>
+  <path d="M -200 10 C -204 -62 -118 -96 -18 -93 C 84 -90 172 -70 206 -16 C 226 16 200 56 148 72 C 68 96 -42 106 -122 91 C -176 81 -197 50 -200 10 Z" fill="none" stroke="url(#mrim)" stroke-width="3" clip-path="url(#mclip)"/>
+  <rect x="-124" y="-94" width="34" height="12" rx="6" fill="#3a000c" transform="rotate(-5 -107 -88)"/>
+  <g><circle cx="-58" cy="-42" r="14.5" fill="#3a000c"/><path d="M -68.73 -35.91 A 14.5 14.5 0 0 0 -47.27 -35.91" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="2.6" stroke-linecap="round"/></g><g><circle cx="-4" cy="-48" r="14.5" fill="#3a000c"/><path d="M -14.73 -41.91 A 14.5 14.5 0 0 0 6.73 -41.91" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="2.6" stroke-linecap="round"/></g><g><circle cx="50" cy="-47" r="14.5" fill="#3a000c"/><path d="M 39.27 -40.91 A 14.5 14.5 0 0 0 60.73 -40.91" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="2.6" stroke-linecap="round"/></g><g><circle cx="102" cy="-37" r="13.5" fill="#3a000c"/><path d="M 92.01 -31.33 A 13.5 13.5 0 0 0 111.99 -31.33" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="2.6" stroke-linecap="round"/></g><g><circle cx="-16" cy="31" r="13" fill="#3a000c"/><path d="M -25.62 36.46 A 13 13 0 0 0 -6.38 36.46" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="2.6" stroke-linecap="round"/></g><g><circle cx="46" cy="26" r="13" fill="#3a000c"/><path d="M 36.38 31.46 A 13 13 0 0 0 55.62 31.46" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="2.6" stroke-linecap="round"/></g>
+  </g>
+</g><path d="M 376.98 70.95 A 36 36 0 0 1 406.73 106.4" fill="none" stroke="url(#mwave)" stroke-width="14" stroke-linecap="round" opacity="1.0"/><path d="M 382.19 41.41 A 66 66 0 0 1 436.73 106.4" fill="none" stroke="url(#mwave)" stroke-width="12" stroke-linecap="round" opacity="0.8"/></g></svg>
