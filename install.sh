@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2329   # cleanup and the checks are called through traps and check_line "$@"
+# shellcheck disable=SC2317,SC2329   # cleanup and the checks are called through traps and check_line "$@"
 # ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 #  OcarinaShell · オカリナシェル — instalador de los dotfiles · Created by Ayoub
 #
