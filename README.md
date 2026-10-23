@@ -270,7 +270,7 @@ punto de partida exacto, el snapshot «OcarinaShell: antes de instalar».
 
 ## 史 Cómo se hizo
 
-OcarinaShell la construyó [Claude Code](https://code.claude.com/docs/en/overview) en el portátil de Ayoub, en 18 fases
+OcarinaShell se construyó con 18 fases de instalacion
 con criterios de aceptación medibles: snapshot antes de cada una, capturas comparadas con los mockups, medidas de
 rendimiento, revisiones independientes con agentes y simulacros de averías. Todo está en el repo: las fases en
 [`docs/historia/fases`](docs/historia/fases), el porqué de cada decisión en [`docs/DECISIONES.md`](docs/DECISIONES.md)
@@ -350,8 +350,6 @@ AGENTS.md           guía para agentes de IA · CLAUDE.md memoria del proyecto p
 - El vídeo fluido usa [lsfg-vk](https://lsfg-vk.dev) (CC BY-NC-ND) con tu copia de
   [Lossless Scaling](https://store.steampowered.com/app/993090/Lossless_Scaling/): OcarinaShell los configura, nunca
   los copia ni los modifica.
-- Diseñado, especificado y construido con [Claude Code](https://code.claude.com/docs/en/overview), fase a fase
-  ([`docs/historia`](docs/historia/fases)).
 
 ## 約 Licencia
 
@@ -369,8 +367,7 @@ and tested in depth. Bar and live island, launcher, control centre, lock screen,
 (also by voice), maintenance that runs by itself with snapshots and rollback, Windows apps as native windows,
 system-wide frame generation for full-screen video, and Ghostty, fish and Neovim in the same design. Install with
 `git clone https://github.com/ayoubtahriouixd/ocarinashell ~/ocarinashell && cd ~/ocarinashell && ./install.sh`
-(`./install.sh --demo` shows the whole animated installer without changing anything). Built by Claude Code over 18
-phases (`docs/historia`). Docs are in Spanish; `AGENTS.md` guides AI agents working on the repo.
+(`./install.sh --demo` shows the whole animated installer without changing anything). (`docs/historia`). Docs are in Spanish; `AGENTS.md` guides AI agents working on the repo.
 
 </details>
 
