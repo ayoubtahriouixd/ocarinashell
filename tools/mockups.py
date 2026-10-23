@@ -756,7 +756,6 @@ def hiroba():
     import math as _m
     # sun arc: sunrise 06:34 → sunset 17:57; now 15:20 → t = 0.77
     t = (15 + 20 / 60 - (6 + 34 / 60)) / ((17 + 57 / 60) - (6 + 34 / 60))
-    W, H, R = 300, 96, 0
     cx, cy, rx, ry = 150, 92, 132, 80
     sx, sy = cx - rx * _m.cos(_m.pi * t), cy - ry * _m.sin(_m.pi * t)
     arc = f"M {cx - rx} {cy} A {rx} {ry} 0 0 1 {cx + rx} {cy}"
@@ -840,7 +839,6 @@ def p15():
 
 def chrysanthemum(size=44, color="var(--accent2)"):
     """Kamon-like chrysanthemum crest (16 petals) for the season card."""
-    import math as _m
     petals = "".join(f'<ellipse cx="0" cy="-12" rx="3.6" ry="10" transform="rotate({i * 22.5})" fill="{color}" opacity=".85"/>'
                      for i in range(16))
     return (f'<svg class="hb-kamon" viewBox="-24 -24 48 48" width="{size}" height="{size}">{petals}'
@@ -912,9 +910,6 @@ def p17():
     out = []
     for k, cap, st, top in rows:
         out.append(f'<div class="isl-row" style="top:{top}px"><div class="isl-cap"><b>{k}</b>{cap}</div>{island_v2(st)}</div>')
-    note = ('<div class="isl-row" style="top:1180px"><div class="isl-note">Aura: borde de 1 px que pasa de 紅 rojo a 金 oro · '
-            'los dos puntos de la hora en rojo · el día como sello · el emblema de la estación a la izquierda. '
-            'El destello y los pétalos son de un solo disparo (450 ms, hilo de render); sin movimiento reducido ni Shinobi.</div></div>')
     return f'<div class="screen" style="height:1029px"><div class="isl-sheet"></div>{"".join(out)}</div>'
 
 
