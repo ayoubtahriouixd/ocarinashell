@@ -8,7 +8,7 @@
 ### Un escritorio que se toca como un instrumento.
 
 Escritorio completo con estética japonesa para **CachyOS + niri + Quickshell**:<br>
-los dotfiles de Ayoub, terminados, probados a fondo y listos para instalar.
+los dotfiles OcarinaShell, terminados, probados a fondo y listos para instalar.
 
 [![versión](https://img.shields.io/github/v/release/ayoubtahriouixd/ocarinashell?style=flat-square&color=e60033&label=versi%C3%B3n)](https://github.com/ayoubtahriouixd/ocarinashell/releases/latest)
 [![comprobaciones](https://img.shields.io/github/actions/workflow/status/ayoubtahriouixd/ocarinashell/comprobaciones.yml?branch=main&style=flat-square&label=comprobaciones)](https://github.com/ayoubtahriouixd/ocarinashell/actions/workflows/comprobaciones.yml)
