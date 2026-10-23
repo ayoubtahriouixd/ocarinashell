@@ -1,0 +1,10 @@
+# OcarinaShell (fase 13, D-068): catch up after boot (a theme changed while the watcher was not running).
+[Unit]
+Description=OcarinaShell · boot theme check after boot
+
+[Timer]
+OnBootSec=2min
+Unit=ocarina-boot-sync.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,14 @@
+# ocarina-powerctl: argumentos fuera de lista (pkexec, sesión activa) — 2026-10-16 20:49:06
+$ ocarina-powerctl charge 10 100 → rc=2 · ocarina-powerctl: inicio fuera de rango (40–95): 10
+$ ocarina-powerctl charge 80 70 → rc=2 · ocarina-powerctl: el inicio (80) debe ser menor que el fin (70)
+$ ocarina-powerctl charge 75\;\ rm\ -rf\ / 80 → rc=2 · ocarina-powerctl: uso: charge <inicio 40–95> <fin 50–100> | charge off | charge restore
+$ ocarina-powerctl epp ../../../../etc/shadow → rc=2 · ocarina-powerctl: uso: epp <preferencia>
+$ ocarina-powerctl epp performance_x → rc=2 · ocarina-powerctl: EPP «performance_x» no está en la lista del kernel: default performance balance_performance balance_power power custom 
+$ ocarina-powerctl epp balance_power\$\(id\) → rc=2 · ocarina-powerctl: uso: epp <preferencia>
+$ ocarina-powerctl gpu manual → rc=2 · ocarina-powerctl: uso: gpu auto|low|high
+$ ocarina-powerctl boost on\ off → rc=2 · ocarina-powerctl: uso: boost on|off
+$ ocarina-powerctl wifi-ps on extra → rc=2 · ocarina-powerctl: uso: wifi-ps on|off
+$ ocarina-powerctl status\;id → rc=2 · ocarina-powerctl: operación no permitida: status\;id
+$ ocarina-powerctl write /etc/passwd root → rc=2 · ocarina-powerctl: operación no permitida: write
+$ ocarina-powerctl charge 075 0080 → rc=2 · ocarina-powerctl: uso: charge <inicio 40–95> <fin 50–100> | charge off | charge restore
+$ ocarina-powerctl charge -5 80 → rc=2 · ocarina-powerctl: uso: charge <inicio 40–95> <fin 50–100> | charge off | charge restore

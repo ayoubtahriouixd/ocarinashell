@@ -1,0 +1,191 @@
+#!/usr/bin/env python3
+"""ocarina-bootmark — the «this boot worked» mark (docs/06-ACTUALIZACIONES capa 5, fase 14).
+
+  ocarina-bootmark mark      run once per session by ocarina-bootmark.service: first check, then write the mark
+  ocarina-bootmark check     only the check (exit 0 = fine, 1 = alert); prints the verdict as JSON
+  ocarina-bootmark status    the marks and the last alert, as JSON
+
+A mark = this boot reached the graphical session: boot id, running kernel, boot time, when. Before writing it, the
+check looks for the two signs of a kernel that does not boot (Mamori retains it and goes back, phase 16):
+  • lts-after-new-kernel  this boot runs the LTS kernel, and a main kernel was installed after the last mark made
+                          on a main kernel (Ayoub had to pick the LTS in Limine)
+  • missing-mark          the previous boot has no mark, and a kernel was installed between the last mark and that
+                          boot (the new kernel never reached the desktop)
+A previous boot without a mark and without a new kernel is only noted (a shutdown at the greeter, a TTY session).
+Alerts go to ~/.local/state/ocarinashell/boot/alert.json (for Mamori) and to a notification.
+
+Tests (simulacro j, tests/bootmark-cases.sh): OCARINA_NO_NOTIFY=1 sends nothing; OCARINA_BOOTMARK_STATE=<dir> moves
+the state; OCARINA_BOOTMARK_FAKE=<file.json> replaces what
+the system says: {"bootId", "kernel", "btime", "kernels": [{"name", "version", "installed"}],
+"boots": [{"boot_id", "first_entry"}]} (first_entry in µs, as journalctl prints it; the current boot last).
+"""
+import json
+import os
+import platform
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+STATE = Path(os.environ.get("OCARINA_BOOTMARK_STATE")
+             or Path(os.environ.get("XDG_STATE_HOME") or Path.home() / ".local/state") / "ocarinashell/boot")
+MARKS = STATE / "marks.json"
+ALERT = STATE / "alert.json"
+PACMAN_LOCAL = Path("/var/lib/pacman/local")
+KEEP = 30
+
+
+def fake():
+    p = os.environ.get("OCARINA_BOOTMARK_FAKE")
+    return json.loads(Path(p).read_text()) if p else None
+
+
+def is_kernel(name):
+    # linux, linux-cachyos, linux-cachyos-lts… but not headers, docs, firmware, api-headers or tools
+    if name != "linux" and not name.startswith("linux-"):
+        return False
+    return not any(x in name for x in ("headers", "docs", "firmware", "tools", "api", "atm", "util"))
+
+
+def installed_kernels():
+    """[{name, version, installed (epoch)}] straight from pacman's local db (no locale-dependent parsing)."""
+    out = []
+    for d in PACMAN_LOCAL.iterdir() if PACMAN_LOCAL.is_dir() else []:
+        desc = d / "desc"
+        if not desc.is_file():
+            continue
+        fields, key = {}, None
+        for line in desc.read_text(errors="replace").splitlines():
+            if line.startswith("%") and line.endswith("%"):
+                key = line.strip("%")
+            elif line and key and key not in fields:
+                fields[key] = line
+        name = fields.get("NAME", "")
+        if is_kernel(name):
+            out.append({"name": name, "version": fields.get("VERSION", ""),
+                        "installed": int(fields.get("INSTALLDATE", "0") or 0)})
+    return sorted(out, key=lambda k: k["name"])
+
+
+def boots():
+    """journalctl --list-boots: [{boot_id, first_entry}] oldest first, the current one last."""
+    try:
+        r = subprocess.run(["journalctl", "--list-boots", "-o", "json", "--no-pager"],
+                           capture_output=True, text=True, timeout=10)
+        return [{"boot_id": b["boot_id"], "first_entry": b.get("first_entry", 0)} for b in json.loads(r.stdout or "[]")]
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return []
+
+
+def system():
+    f = fake()
+    if f is not None:
+        return f
+    btime = 0
+    for line in Path("/proc/stat").read_text().splitlines():
+        if line.startswith("btime "):
+            btime = int(line.split()[1])
+    return {"bootId": Path("/proc/sys/kernel/random/boot_id").read_text().strip().replace("-", ""),
+            "kernel": platform.release(), "btime": btime, "kernels": installed_kernels(), "boots": boots()}
+
+
+def load_marks():
+    try:
+        m = json.loads(MARKS.read_text())
+        return m if isinstance(m, list) else []
+    except (OSError, ValueError):
+        return []
+
+
+def is_lts(kernel_release):
+    return "lts" in kernel_release
+
+
+def check(sysinfo, marks):
+    """Returns {ok, alert, kind, message, note}."""
+    res = {"ok": True, "alert": None, "note": None}
+    if not marks:
+        res["note"] = "primera marca: nada con qué comparar"
+        return res
+    cur = sysinfo["bootId"]
+    main_kernels = [k for k in sysinfo["kernels"] if not k["name"].endswith("-lts")]
+    last = marks[-1]
+    # 1) booted the LTS after a new main kernel was installed
+    if is_lts(sysinfo["kernel"]):
+        last_main = next((m for m in reversed(marks) if not is_lts(m["kernel"])), None)
+        since = last_main["at"] if last_main else 0
+        newer = [k for k in main_kernels if k["installed"] > since]
+        if newer:
+            k = newer[0]
+            res.update(ok=False, alert={
+                "kind": "lts-after-new-kernel", "kernel": k["name"], "version": k["version"],
+                "message": f"Has arrancado con el kernel LTS después de instalar {k['name']} {k['version']}: "
+                           "puede que el nuevo no arranque. Mamori lo retendrá y volverá al anterior."})
+            return res
+    # 2) the previous boot never wrote its mark
+    prev = None
+    bl = sysinfo.get("boots", [])
+    ids = [b["boot_id"] for b in bl]
+    if cur in ids and ids.index(cur) > 0:
+        prev = bl[ids.index(cur) - 1]
+    if prev and prev["boot_id"] not in {m["bootId"] for m in marks}:
+        prev_start = prev.get("first_entry", 0) / 1e6
+        new = [k for k in sysinfo["kernels"] if last["at"] < k["installed"] <= prev_start]
+        if new:
+            k = new[0]
+            res.update(ok=False, alert={
+                "kind": "missing-mark", "kernel": k["name"], "version": k["version"], "bootId": prev["boot_id"],
+                "message": f"El arranque anterior, el primero tras instalar {k['name']} {k['version']}, no llegó al "
+                           "escritorio. Mamori retendrá ese kernel y volverá al anterior."})
+            return res
+        res["note"] = "el arranque anterior no llegó a la sesión (sin kernel nuevo: no es un fallo de arranque)"
+    return res
+
+
+def notify(alert):
+    if os.environ.get("OCARINA_NO_NOTIFY"):
+        return                                   # tests: never a real notification on Ayoub's screen
+    try:
+        subprocess.run(["notify-send", "-a", "OcarinaShell", "-u", "critical", "-i", "dialog-warning",
+                        "-h", "string:x-ocarina-kanji:守", "Arranque: posible kernel roto", alert["message"]],
+                       timeout=5, check=False, capture_output=True)
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+
+
+def write_json(path, obj):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(obj, ensure_ascii=False, indent=1) + "\n")
+    os.replace(tmp, path)
+
+
+def main(argv):
+    cmd = argv[1] if len(argv) > 1 else "status"
+    marks = load_marks()
+    if cmd == "status":
+        alert = json.loads(ALERT.read_text()) if ALERT.is_file() else None
+        print(json.dumps({"marks": marks[-5:], "alert": alert}, ensure_ascii=False))
+        return 0
+    if cmd not in ("mark", "check"):
+        print(__doc__.strip(), file=sys.stderr)
+        return 2
+    si = system()
+    if cmd == "mark" and any(m["bootId"] == si["bootId"] for m in marks):
+        print(json.dumps({"ok": True, "note": "este arranque ya tiene su marca"}, ensure_ascii=False))
+        return 0
+    res = check(si, marks)
+    print(json.dumps(res, ensure_ascii=False))
+    if cmd == "check":
+        return 0 if res["ok"] else 1
+    if res["alert"]:
+        write_json(ALERT, dict(res["alert"], at=int(time.time()), bootId=si["bootId"]))
+        notify(res["alert"])
+    marks.append({"bootId": si["bootId"], "kernel": si["kernel"], "btime": si.get("btime", 0), "at": int(time.time()),
+                  "kernels": {k["name"]: k["version"] for k in si["kernels"]}})
+    write_json(MARKS, marks[-KEEP:])
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

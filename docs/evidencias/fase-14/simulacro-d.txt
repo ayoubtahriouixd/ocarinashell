@@ -1,0 +1,27 @@
+# Simulacro d (fase 14): la shell revienta al arrancar → modo seguro en < 5 s → «Reintentar» la recupera
+Método: drop-in temporal en $XDG_RUNTIME_DIR (ExecStart = una config con `import Quickshell.Services.UPowerRenombrado`,
+como una actualización que rompe un import); se quita en cuanto entra el modo seguro.
+
+## 1ª pasada: FALLO REAL encontrado
+- modo seguro a los 283 ms del PRIMER fallo, 0 reinicios: con systemd 262 (RestartMode=normal) cada caída pasa por
+  «failed» y dispara OnFailure= al momento; el Conflicts= del modo seguro anulaba el reinicio.
+- Arreglo: RestartMode=direct en ocarinashell.service (D-072).
+
+## 2ª pasada (con el arreglo)
+- 4 caídas (status=255, «caused by @shell.qml[4:1]: module "Quickshell.Services.UPowerRenombrado" is not installed»),
+  reinicio cada ~1,2 s, «start-limit-hit» → OnFailure → modo seguro a los 4934 ms / 4970 ms del primer arranque roto.
+- Ayoub: la barra roja muestra la causa; «Diagnóstico» abre el panel 診.
+- SEGUNDO FALLO REAL: «Reintentar» no hacía nada — journal: «Cannot start process as command is empty» en cada
+  pulsación. Un array de modelData del Repeater llega VACÍO a un parámetro list<string> (Qt 6.12, verificado en un
+  arnés: TYPED len 0 / VAR len 2). Los botones del modo seguro no habían funcionado nunca. Arreglo: exec(cmd: var).
+
+## 3ª pasada (con los dos arreglos)
+- 4 caídas → modo seguro a los 4970 ms. Ayoub pulsa «Reintentar» → 13:55:09 «Starting OcarinaShell (Quickshell)…»,
+  «Stopped OcarinaShell · modo seguro», shell status sin fallos. ✓
+
+## Caída suelta en ejecución (SIGSEGV a qs)
+- Con el gestor de fallos de Quickshell: relanzaba la shell dentro del mismo PID, dejaba 2 zombis y el `udevadm
+  monitor` de la instancia muerta, y systemd no contaba la caída (un bucle nunca llegaría al modo seguro).
+  Arreglo: Environment=QS_DISABLE_CRASH_HANDLER=1 (D-072).
+- Después: vuelve en 2764 ms con PID nuevo (43917 → 44229), NRestarts=1, modo seguro inactivo, core en coredumpctl,
+  0 zombis. ✓

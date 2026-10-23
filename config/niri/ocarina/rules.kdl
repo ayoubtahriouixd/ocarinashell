@@ -1,0 +1,76 @@
+// Window rules. Generated rules (Fune, Honban, Mado) are included later and can override these.
+
+// Every window: rounded 14 px (docs/02-DISENO) and clipped to it, so shadows and the focus ring follow.
+window-rule {
+    geometry-corner-radius 14
+    clip-to-geometry true
+}
+
+// Dialogs and small tools float, centred (niri centres floating windows that have no position).
+window-rule {
+    match app-id=r#"^xdg-desktop-portal-(gnome|gtk)$"#
+    match app-id=r#"^org\.gnome\.Nautilus$"# title=r#"^(Abrir|Guardar|Seleccionar|Elegir|Open|Save|Select|Choose)\b"#
+    match title=r#"^(Abrir|Guardar|Seleccionar) (archivo|archivos|fichero|ficheros|carpeta)"#
+    match app-id=r#"^(org\.pulseaudio\.pavucontrol|pavucontrol)$"#
+    match app-id=r#"^nm-connection-editor$"#
+    match app-id=r#"^\.?blueman-manager(-wrapped)?$"#
+    match app-id=r#"^com\.gabm\.satty$"#
+    match app-id=r#"^org\.gnome\.(Calculator|FileRoller)$"#
+    open-floating true
+}
+
+// Picture-in-picture (Chrome, Chromium, Firefox): bottom-right, 480×270, never steals focus.
+window-rule {
+    match app-id=r#"^(google-chrome|chromium|Chromium)$"# title=r#"^Picture[ -]in[ -][Pp]icture$"#
+    match app-id=r#"^(google-chrome|chromium|Chromium)$"# title=r#"^Imagen en imagen$"#
+    match app-id=r#"firefox$"# title=r#"^(Picture-in-Picture|Imagen en imagen)$"#
+    open-floating true
+    open-focused false
+    default-column-width { fixed 480; }
+    default-window-height { fixed 270; }
+    default-floating-position x=24 y=24 relative-to="bottom-right"
+}
+
+// OcarinaShell floating windows (Settei…): every Quickshell FloatingWindow is titled «OcarinaShell · <name>».
+window-rule {
+    match title=r#"^OcarinaShell · "#
+    open-floating true
+}
+
+// 設定 Settei (the settings window): centred, 1240×924, radius 18 (docs/02-DISENO §5).
+window-rule {
+    match title=r#"^Ajustes de OcarinaShell$"#
+    open-floating true
+    default-column-width { fixed 1240; }
+    default-window-height { fixed 924; }
+    geometry-corner-radius 18
+    clip-to-geometry true
+}
+
+// Password managers never appear in screenshots or screen sharing (Ayoub's choice, D-021).
+window-rule {
+    match app-id=r#"^(org\.keepassxc\.KeePassXC|KeePassXC|Bitwarden|bitwarden|1Password|1password|com\.bitwarden\.desktop)$"#
+    block-out-from "screen-capture"
+}
+
+// Ghostty is slightly translucent (terminal.opacity, written by ocarina-theme effects; opaque in Shinobi/Oni):
+// behind it, the blurred wallpaper (xray: niri blurs the wallpaper once and reuses it, it never re-blurs windows).
+window-rule {
+    match app-id=r#"^com\.mitchellh\.ghostty$"#
+    background-effect {
+        blur true
+        noise 0.03
+    }
+}
+
+// 端 drop-down terminal (Mod+º → bin/ocarina-quickterm): floating at the top, almost full width, 45 % high.
+window-rule {
+    match app-id=r#"^com\.mitchellh\.ghostty$"# title=r#"^端 Terminal desplegable$"#
+    open-floating true
+    open-focused true
+    default-column-width { proportion 0.97; }
+    default-window-height { proportion 0.45; }
+    default-floating-position x=0 y=6 relative-to="top"
+    geometry-corner-radius 18
+    clip-to-geometry true
+}

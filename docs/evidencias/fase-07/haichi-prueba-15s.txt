@@ -1,0 +1,19 @@
+配置 Haichi · «revertir en 15 s» de punta a punta (2026-10-15, sin monitor externo: prueba invisible)
+qs ipc call displays trialNoop  → Displays.change("Prueba sin cambios", liveCfg())
+  - outputs.kdl regenerado por la shell, validado por niri (bin/ocarina-niri-gen) e instalado: mismo modo
+    2880x1800@120.000, escala 1,75, posición 0,0, VRR on-demand y focus-at-startup (leídos del fichero: niri solo
+    marca vrr_enabled mientras está activo).
+  - estado a 1,5 s: trial=true, countdown=14.
+  - a los 16 s, sin «Mantener»: trial=false y `diff outputs.before outputs.kdl` → IDÉNTICO AL ORIGINAL (revertido).
+  - journal de niri: sin errores de configuración (solo los avisos habituales de includes opcionales ausentes).
+Pendiente con el monitor de Ayoub: perfil guardado → desconectar/reconectar, cambio real de escala revertido,
+Duplicar (wl-mirror) y tapa cerrada.
+
+Tras la revisión QML (reversión que sobrevive a la shell, D-048):
+  - trialNoop → outputs.kdl.trial guardado + ocarina-haichi-revert.timer activo; «Mantener» (IPC keep) → sin .trial,
+    temporizador inactivo; estado trial=false.
+  - trialNoop sin respuesta → a los 15 s la shell restaura; sin .trial; temporizador desarmado.
+  - trialNoop y `systemctl --user kill -s KILL ocarinashell` a mitad → a los 17 s el temporizador de systemd ejecuta
+    `ocarina-niri-gen restore outputs` («ok» en su journal), sin .trial; la shell vuelve sola (Restart=always).
+  - Guardas del generador: un outputs.kdl con `binds { … spawn … }` (en línea aparte o colado tras `transform "normal" }`)
+    y un overrides.kdl con `window-rule` o un nodo desconocido se rechazan antes de llamar a niri.

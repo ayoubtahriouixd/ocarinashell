@@ -1,0 +1,14 @@
+# OcarinaShell · 滑 Nameraka (vídeo fluido): the daemon starts on the first connection (Engawa, Mod+Alt+F, the CLI)
+# and exits after 60 s switched off. docs/01-ARQUITECTURA §19
+[Unit]
+Description=OcarinaShell · 滑 Nameraka (socket)
+PartOf=graphical-session.target
+
+[Socket]
+ListenStream=%t/ocarinashell/nameraka.sock
+SocketMode=0600
+DirectoryMode=0700
+RemoveOnStop=yes
+
+[Install]
+WantedBy=graphical-session.target

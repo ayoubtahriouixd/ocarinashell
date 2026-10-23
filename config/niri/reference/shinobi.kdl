@@ -1,0 +1,26 @@
+// 忍 Shinobi reference — Modes renders ~/.local/state/ocarinashell/niri/shinobi.kdl with exactly this while the mode
+// is on (an empty file otherwise). Everything still and dark: no animations, no shadows, a dim focus ring.
+animations {
+    off
+}
+layout {
+    shadow {
+        off
+    }
+    focus-ring {
+        active-color "#5c0010"
+        active-gradient from="#5c0010" to="#5c0010"
+        inactive-color "#000000"
+    }
+}
+overview {
+    workspace-shadow {
+        off
+    }
+}
+layer-rule {
+    match namespace="^ocarina-"
+    shadow {
+        off
+    }
+}

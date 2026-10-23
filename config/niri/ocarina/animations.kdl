@@ -1,0 +1,121 @@
+// Motion with a signature (docs/00-VISION · 作画 sakuga): springs for anything spatial, two custom shaders for
+// opening and closing windows. Shaders are GLSL ES 1.00 (texture2D, premultiplied alpha). `niri validate` does
+// NOT compile them: after editing, check `journalctl --user -b -g 'shader' _COMM=niri` (niri falls back to the
+// default animation if compilation fails). Shinobi turns everything off from shinobi.kdl (included later).
+animations {
+    workspace-switch {
+        spring damping-ratio=1.0 stiffness=900 epsilon=0.0001
+    }
+
+    // These three must share parameters: niri keeps them in sync.
+    horizontal-view-movement {
+        spring damping-ratio=0.95 stiffness=760 epsilon=0.0001
+    }
+    window-movement {
+        spring damping-ratio=0.95 stiffness=760 epsilon=0.0001
+    }
+    window-resize {
+        spring damping-ratio=0.95 stiffness=760 epsilon=0.0001
+    }
+
+    overview-open-close {
+        spring damping-ratio=0.95 stiffness=700 epsilon=0.0001
+    }
+    config-notification-open-close {
+        spring damping-ratio=0.7 stiffness=900 epsilon=0.001
+    }
+    exit-confirmation-open-close {
+        spring damping-ratio=0.7 stiffness=600 epsilon=0.01
+    }
+    screenshot-ui-open {
+        duration-ms 200
+        curve "ease-out-quad"
+    }
+    recent-windows-close {
+        spring damping-ratio=1.0 stiffness=800 epsilon=0.001
+    }
+
+    // 墨 Ink bloom: radial reveal from the centre with a soft noisy front, a slight scale-up and a faint
+    // lacquer-red tint on the front of the ink that fades as the window settles.
+    window-open {
+        duration-ms 320
+        curve "cubic-bezier" 0.2 0.8 0.2 1
+        custom-shader r"
+            float ink_hash(vec2 p) {
+                return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+            }
+            float ink_noise(vec2 p) {
+                vec2 i = floor(p);
+                vec2 f = fract(p);
+                f = f * f * (3.0 - 2.0 * f);
+                float a = ink_hash(i);
+                float b = ink_hash(i + vec2(1.0, 0.0));
+                float c = ink_hash(i + vec2(0.0, 1.0));
+                float d = ink_hash(i + vec2(1.0, 1.0));
+                return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+            }
+            vec4 open_color(vec3 coords_geo, vec3 size_geo) {
+                float p = niri_clamped_progress;
+                float scale = 0.94 + 0.06 * p;
+                vec2 uv = (coords_geo.xy - vec2(0.5)) / scale + vec2(0.5);
+                if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0)
+                    return vec4(0.0);
+
+                vec4 color = texture2D(niri_tex, (niri_geo_to_tex * vec3(uv, 1.0)).st);
+
+                // aspect-correct distance from the centre, 1.0 at the corners
+                float dist = length((uv - vec2(0.5)) * size_geo.xy) * 2.0 / length(size_geo.xy);
+                float n = ink_noise(uv * size_geo.xy / 90.0 + niri_random_seed * 50.0);
+                float front = p * 1.25 - 0.1 + (n - 0.5) * 0.18;
+                float mask = 1.0 - smoothstep(front - 0.12, front, dist);
+
+                // lacquer red (#e60033) on the ink front, premultiplied like the texture
+                float rim = smoothstep(front - 0.14, front - 0.03, dist) * mask * (1.0 - p);
+                color.rgb = mix(color.rgb, vec3(0.902, 0.0, 0.2) * color.a, rim * 0.4);
+
+                return color * mask;
+            }
+        "
+    }
+
+    // 溶 Dissolve: two-octave noise threshold eats the window while it drifts slightly upwards,
+    // with a thin ember edge where it dissolves.
+    window-close {
+        duration-ms 260
+        curve "ease-out-quad"
+        custom-shader r"
+            float ink_hash(vec2 p) {
+                return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+            }
+            float ink_noise(vec2 p) {
+                vec2 i = floor(p);
+                vec2 f = fract(p);
+                f = f * f * (3.0 - 2.0 * f);
+                float a = ink_hash(i);
+                float b = ink_hash(i + vec2(1.0, 0.0));
+                float c = ink_hash(i + vec2(0.0, 1.0));
+                float d = ink_hash(i + vec2(1.0, 1.0));
+                return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+            }
+            vec4 close_color(vec3 coords_geo, vec3 size_geo) {
+                float p = niri_clamped_progress;
+                vec2 uv = coords_geo.xy + vec2(0.0, 0.05 * p);
+                if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0)
+                    return vec4(0.0);
+
+                vec4 color = texture2D(niri_tex, (niri_geo_to_tex * vec3(uv, 1.0)).st);
+
+                vec2 px = uv * size_geo.xy;
+                float n = ink_noise(px / 40.0 + niri_random_seed * 50.0) * 0.7
+                        + ink_noise(px / 10.0) * 0.3;
+                float t = p * 1.15 - 0.1;
+                float mask = smoothstep(t, t + 0.08, n);
+
+                float ember = (1.0 - smoothstep(t + 0.01, t + 0.05, n)) * mask;
+                color.rgb = mix(color.rgb, vec3(0.902, 0.0, 0.2) * color.a, ember * 0.6);
+
+                return color * mask;
+            }
+        "
+    }
+}

@@ -1,0 +1,19 @@
+# OcarinaShell · the power button opens 電源 Dengen instead of switching the laptop off (D-041).
+# niri hard-codes XF86PowerOff → suspend unless `disable-power-key-handling`; with it, logind would power off at once.
+# This unit holds logind's `handle-power-key` inhibitor so the key reaches niri's bind (`ocarina power`). It does not
+# depend on the shell: if the shell is down, `ocarina power` falls back to suspend. If this unit stops, logind's
+# default (HandlePowerKey=poweroff) comes back; holding the button ~5 s still forces the hardware off.
+[Unit]
+Description=OcarinaShell · botón de encendido → Dengen (inhibidor handle-power-key)
+PartOf=graphical-session.target
+After=graphical-session.target
+Requisite=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/systemd-inhibit --what=handle-power-key --mode=block --who=OcarinaShell --why="El botón de encendido abre Dengen" /usr/bin/sleep infinity
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=graphical-session.target

@@ -1,0 +1,73 @@
+{
+ "name": "review-changelog",
+ "label": "changelog",
+ "maxTokens": 700,
+ "system": "Eres Snake, revisor de compatibilidad de OcarinaShell. Lees las notas de versión de un paquete y una lista de APIs que usa el repositorio (resultado de grep). El equipo: ThinkPad P14s Gen 6 AMD (Ryzen AI 7 PRO 350 «Krackan», Radeon 860M RDNA 3.5, NPU XDNA 2, Wi-Fi, suspensión s2idle), CachyOS (Arch) con kernel linux-cachyos, Btrfs + snapper + Limine, escritorio niri + Quickshell (OcarinaShell), Ghostty, Neovim, fish, PipeWire, greetd. Paquetes AUR mediante paru. breaking describe el CHANGELOG en sí: true si anuncia cambios incompatibles (algo eliminado o renombrado, un cambio de comportamiento por defecto, una sección «Breaking»), aunque no afecten a este repo. affects_repo=true SOLO si alguno de esos cambios toca una API de la lista dada. recommendation: «apply» si no afecta, «mature» si hay riesgo pero el repo no se ve afectado directamente (esperar unos días), «hold» si rompe algo que el repo usa.",
+ "prompt": "Revisa este changelog frente a las APIs usadas.",
+ "schema": {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+   "breaking": {
+    "type": "boolean"
+   },
+   "affects_repo": {
+    "type": "boolean"
+   },
+   "items": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "api": {
+       "type": "string",
+       "maxLength": 80
+      },
+      "change": {
+       "type": "string",
+       "maxLength": 200
+      },
+      "impact": {
+       "type": "string",
+       "maxLength": 200
+      }
+     },
+     "required": [
+      "api",
+      "change",
+      "impact"
+     ]
+    },
+    "maxItems": 6
+   },
+   "recommendation": {
+    "enum": [
+     "apply",
+     "mature",
+     "hold"
+    ]
+   },
+   "summary_es": {
+    "type": "string",
+    "maxLength": 400
+   },
+   "suspicious": {
+    "type": "boolean"
+   },
+   "suspicious_reason": {
+    "type": "string",
+    "maxLength": 300
+   }
+  },
+  "required": [
+   "breaking",
+   "affects_repo",
+   "items",
+   "recommendation",
+   "summary_es",
+   "suspicious",
+   "suspicious_reason"
+  ]
+ }
+}

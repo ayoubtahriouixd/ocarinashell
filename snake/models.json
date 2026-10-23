@@ -1,0 +1,47 @@
+{
+  "_doc": "蛇 Snake models (fase 15, docs/SNAKE.md). Official GGUF repos only, revision pinned, sha256 = HF lfs.oid (checked again after the download). ram = what the loaded model takes (weights + KV at 16 k + buffers), used by the policy: free RAM ≥ ram + 4 GiB. request = extra fields of every chat request. flm = FastFlowLM tag for the NPU (no JSON schema there). eval = total of `ocarina-snake eval` (40 cases), the score 守 Mamori compares new models against.",
+  "default": "gpt-oss-20b",
+  "fast": "qwen3.5-4b",
+  "models": {
+    "gpt-oss-20b": {
+      "name": "gpt-oss-20b", "license": "Apache-2.0", "family": "OpenAI gpt-oss (MoE 21B · 3,6B activos)",
+      "repo": "ggml-org/gpt-oss-20b-GGUF", "rev": "ef9b12f2ff56c69cf32153a02784e7a3c88bf524",
+      "file": "gpt-oss-20b-MXFP4.gguf", "size": 12109566624,
+      "sha256": "27cd6c432c7672cb812a92f611cf3ba7bbc35928262bb1e1253ff4ee6ae35901",
+      "ram": 13958643712, "request": {"reasoning_effort": "low"}, "flm": "gpt-oss:20b",
+      "eval": {"score": 94.7, "date": "2026-10-17", "backend": "vulkan"}
+    },
+    "qwen3.6-35b-a3b": {
+      "name": "Qwen3.6-35B-A3B", "license": "Apache-2.0", "family": "Qwen3.6 (MoE 35B · 3B activos)",
+      "repo": "unsloth/Qwen3.6-35B-A3B-GGUF", "rev": "a483e9e6cbd595906af30beda3187c2663a1118c",
+      "file": "Qwen3.6-35B-A3B-UD-IQ4_XS.gguf", "size": 17730509792,
+      "sha256": "649d7508507b84638732c4f52c24c8b15843c6dca2f3ff793ae07c14a67ebbb3",
+      "ram": 19327352832, "request": {"reasoning_effort": "none"}, "flm": "qwen3.6-moe:35b-a3b",
+      "eval": {"score": null, "date": "2026-10-17", "excluded": "agota la GTT de la Radeon 860M (D-073)"}
+    },
+    "gemma-4-26b-a4b": {
+      "name": "Gemma 4 26B-A4B (QAT)", "license": "Apache-2.0", "family": "Google Gemma 4 (MoE 26B · 4B activos)",
+      "repo": "google/gemma-4-26B-A4B-it-qat-q4_0-gguf", "rev": "d1c082be9cf3c8a514acf63b8761f4b41935842e",
+      "file": "gemma-4-26B_q4_0-it.gguf", "size": 14439363584,
+      "sha256": "3eca3b8f6d7baf218a7dd6bba5fb59a56ee25fe2d567b6f5f589b4f697eca51d",
+      "ram": 16106127360, "request": {"reasoning_effort": "none"},
+      "eval": {"score": 97.4, "date": "2026-10-17", "backend": "vulkan"}
+    },
+    "qwen3.5-9b": {
+      "name": "Qwen3.5-9B", "license": "Apache-2.0", "family": "Qwen3.5 (denso 9B)",
+      "repo": "unsloth/Qwen3.5-9B-GGUF", "rev": "3885219b6810b007914f3a7950a8d1b469d598a5",
+      "file": "Qwen3.5-9B-Q4_K_M.gguf", "size": 5680522464,
+      "sha256": "03b74727a860a56338e042c4420bb3f04b2fec5734175f4cb9fa853daf52b7e8",
+      "ram": 7516192768, "request": {"reasoning_effort": "none"}, "flm": "qwen3.5:9b",
+      "eval": {"score": 86.8, "date": "2026-10-17", "backend": "vulkan"}
+    },
+    "qwen3.5-4b": {
+      "name": "Qwen3.5-4B", "license": "Apache-2.0", "family": "Qwen3.5 (denso 4B)",
+      "repo": "unsloth/Qwen3.5-4B-GGUF", "rev": "e87f176479d0855a907a41277aca2f8ee7a09523",
+      "file": "Qwen3.5-4B-Q4_K_M.gguf", "size": 2740937888,
+      "sha256": "00fe7986ff5f6b463e62455821146049db6f9313603938a70800d1fb69ef11a4",
+      "ram": 4294967296, "request": {"reasoning_effort": "none"}, "flm": "qwen3.5:4b",
+      "eval": {"score": 84.2, "date": "2026-10-17", "backend": "vulkan"}
+    }
+  }
+}

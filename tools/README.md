@@ -21,6 +21,7 @@ logo fuera de la shell.
 | `textpath.py` | utilidad: texto → contornos SVG con HarfBuzz | |
 | `htmlshot.py` | utilidad: HTML/SVG → PNG con Chromium (la usan logo_png, mockups y boot_assets) | |
 | `build_data.py` | `assets/data/*.json`: 7 temas (+ ANSI), 24 sekki + 72 kō, 42 kotowaza, glosario kanji, 31 colores, 105 kaomoji | comprueba contraste WCAG de cada tema y sale con error si algo no llega a AA |
+| `emoji_es.py` | `assets/data/emoji-es.json`: nombres y palabras clave de 2307 emoji en español (Unicode CLDR 48, + palabras japonesas) | descarga única; la shell nunca descarga nada |
 | `wallpapers.py [nombre…] [/dir] [--preview]` | `assets/wallpapers/*.jpg` (2880×1800, uno por tema) | `--preview` = hoja de contactos en `assets/wallpapers/preview/` |
 | `sounds.py` | `assets/sounds/*.wav` (48 kHz, timbre de ocarina, pentatónica de La menor) | análisis espectral |
 | `mockups.py [--fonts DIR] [--only NN,…] [--sheet]` | `assets/mockups/NN-*.png` + `src/*.html` + `src/tokens.css` (de los temas) | revisión visual pantalla a pantalla |

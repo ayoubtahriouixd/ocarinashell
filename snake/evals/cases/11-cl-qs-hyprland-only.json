@@ -1,0 +1,14 @@
+{
+ "id": "cl-qs-hyprland-only",
+ "category": "changelog",
+ "task": "review-changelog",
+ "input": "Quickshell 0.3.3 — release notes\nBreaking changes:\n- Hyprland: the `HyprlandFocusGrab.windows` property was renamed to `HyprlandFocusGrab.targets`.\nFixes: memory leak in SystemTray icons; Wayland text-input warnings silenced.\nAPIs de Quickshell usadas en el repo (git grep):\nshell/modules/shima/Equalizer.qml:40: PwNodePeakMonitor {\nshell/modules/hiroba/NekoCard.qml:131: PwNodePeakMonitor {\nshell/services/Notifs.qml:12: NotificationServer {\nshell/modules/obi/Tray.qml:8: SystemTray.items\nshell/services/Lock.qml:20: WlSessionLock {\nshell/modules/panels/PanelHost.qml:13: PanelWindow { WlrLayershell.namespace\n(El repo no usa nada de Quickshell.Hyprland: corre sobre niri.)",
+ "expect": {
+  "breaking": true,
+  "affects_repo": false,
+  "recommendation": [
+   "apply",
+   "mature"
+  ]
+ }
+}

@@ -1,0 +1,29 @@
+signal time=1792108332.501482 sender=org.freedesktop.DBus -> destination=:1.332 serial=4294967295 path=/org/freedesktop/DBus; interface=org.freedesktop.DBus; member=NameAcquired
+   string ":1.332"
+signal time=1792108332.501505 sender=org.freedesktop.DBus -> destination=:1.332 serial=4294967295 path=/org/freedesktop/DBus; interface=org.freedesktop.DBus; member=NameLost
+   string ":1.332"
+method call time=1792108343.634989 sender=:1.36 -> destination=org.freedesktop.Notifications serial=113 path=/org/freedesktop/Notifications; interface=org.freedesktop.Notifications; member=Notify
+   string ""
+   uint32 0
+   string ""
+   string "Comando completado"
+   string "Command took 11s 1ms and exited with code 0."
+   array [
+      string "default"
+      string ""
+   ]
+   array [
+      dict entry(
+         string "desktop-entry"
+         variant             string "com.mitchellh.ghostty"
+      )
+      dict entry(
+         string "urgency"
+         variant             byte 1
+      )
+      dict entry(
+         string "image-path"
+         variant             string "com.mitchellh.ghostty"
+      )
+   ]
+   int32 -1

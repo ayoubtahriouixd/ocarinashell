@@ -1,0 +1,18 @@
+// Alt+Tab: niri's native switcher. Mod+Tab stays the overview (binds.kdl).
+// Writing `binds {}` here replaces ALL default switcher binds.
+recent-windows {
+    debounce-ms 750
+    open-delay-ms 150
+    highlight {
+        active-color "#e6003366"
+        urgent-color "#e6b422cc"
+        padding 24
+        corner-radius 16
+    }
+    binds {
+        Alt+Tab               { next-window; }
+        Alt+Shift+Tab         { previous-window; }
+        Alt+masculine         { next-window filter="app-id"; }       // Alt+º (ES keyboard)
+        Alt+Shift+masculine   { previous-window filter="app-id"; }
+    }
+}

@@ -1,0 +1,13 @@
+# 守 Mamori · the daily cycle (docs/06 capa 6 › Cuándo actúa, fase 16). Persistent: a laptop asleep at 04:00 runs it
+# on waking up; the conditions (AC, network, idle…) decide whether it acts or retries in 30 min.
+[Unit]
+Description=守 Mamori · mantenimiento diario
+
+[Timer]
+OnCalendar=*-*-* 04:00:00
+Persistent=true
+RandomizedDelaySec=20m
+Unit=ocarina-mamori@timer.service
+
+[Install]
+WantedBy=timers.target

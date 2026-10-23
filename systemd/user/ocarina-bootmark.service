@@ -1,0 +1,20 @@
+# OcarinaShell · marca de arranque correcto (docs/06 capa 5, fase 14): once per session, after the shell is up.
+# Also catches transactions made with no session running (TTY, chroot): their smoke tests run now, passive.
+[Unit]
+Description=OcarinaShell · marca de arranque correcto
+After=graphical-session.target ocarinashell.service
+PartOf=graphical-session.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# give the shell time to become the notification server before any alert is sent
+ExecStartPre=/bin/sleep 8
+ExecStart=%h/.local/bin/ocarina-bootmark mark
+ExecStartPost=-%h/.local/bin/ocarina-postupdate --at-login
+# 守 Mamori: a failed kernel (the alert above), the reboot flag, a cycle cut by the shutdown
+ExecStartPost=-%h/.local/bin/ocarina-mamori boot
+Nice=10
+
+[Install]
+WantedBy=graphical-session.target

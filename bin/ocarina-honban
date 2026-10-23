@@ -1,0 +1,120 @@
+#!/usr/bin/env python3
+"""ocarina-honban — 本番 Honban: production SSH windows (docs/07-IDEAS, phase 8). Python stdlib only.
+
+  ocarina-honban apply [--quiet]   regenerate ~/.local/state/ocarinashell/niri/honban-rules.kdl (validated by
+                                   ocarina-niri-gen; rewritten only when it changes)
+  ocarina-honban list              host<TAB>prod for every Host of the ssh config (+ ssh.prodHosts)
+  ocarina-honban is-prod <host>    exit 0 when <host> is production
+
+Production = the `# ocarina: prod` comment inside its Host block, or the host listed in Settei → ssh.prodHosts.
+Only Host names are read (bin/ocarina-ssh-hosts): never keys, known_hosts or any other option.
+`ocarina ssh <host>` opens Ghostty titled «ssh · <host>»; for production hosts the rule draws a solid red ring and a
+2 px border (never in user-rules.kdl, which belongs to 窓 Mado).
+"""
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+HOME = Path.home()
+BIN = Path(__file__).resolve().parent
+CONFIG = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config")) / "ocarinashell"
+STATE = Path(os.environ.get("XDG_STATE_HOME", HOME / ".local/state")) / "ocarinashell"
+SAFE = re.compile(r"^[A-Za-z0-9._@-]{1,253}$")   # anything else is never put into a niri regex
+
+
+def settings():
+    try:
+        s = json.loads((CONFIG / "settings.json").read_text(encoding="utf-8")).get("ssh", {})
+        return s if isinstance(s, dict) else {}
+    except (OSError, ValueError, AttributeError):
+        return {}
+
+
+def hosts():
+    s = settings()
+    if s.get("enabled") is False:
+        return []
+    cfg = s.get("configPath") or str(HOME / ".ssh/config")
+    try:
+        out = subprocess.run([str(BIN / "ocarina-ssh-hosts"), os.path.expanduser(cfg)], capture_output=True,
+                             text=True, timeout=5).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        out = ""
+    extra = [h for h in (s.get("prodHosts") or []) if isinstance(h, str)]
+    seen, res = set(), []
+    for line in out.splitlines():
+        h, _, p = line.partition("\t")
+        if h and h not in seen:
+            seen.add(h)
+            res.append((h, p == "1" or h in extra))
+    res += [(h, True) for h in extra if h not in seen]
+    return res
+
+
+def colour():
+    try:
+        tok = json.loads((STATE / "theme.json").read_text(encoding="utf-8"))["tokens"]
+        c = tok.get("error") or "#ff4d6a"
+    except (OSError, ValueError, KeyError, TypeError):
+        c = "#ff4d6a"
+    return c if re.fullmatch(r"#[0-9a-fA-F]{6}", c) else "#ff4d6a"
+
+
+def render(prod):
+    head = ["// GENERATED — owner: 本番 Honban (bin/ocarina-honban). Do not edit: change ~/.ssh/config («# ocarina: prod»)",
+            "// or Settei → ssh.prodHosts. Production SSH windows: solid red ring (no gradient) + 2 px border."]
+    names = [h for h in prod if SAFE.match(h)]
+    if not names:
+        return "\n".join(head) + "\n"
+    red = colour()
+    alt = "|".join(re.escape(h) for h in sorted(names))
+    return "\n".join(head + [
+        "window-rule {",
+        f'    match app-id=r#"^com\\.mitchellh\\.ghostty$"# title=r#"^ssh · ({alt})$"#',
+        "    focus-ring {",
+        "        width 3",
+        f'        active-gradient from="{red}" to="{red}" angle=0',
+        f'        active-color "{red}"',
+        f'        inactive-color "{red}"',
+        "    }",
+        "    border {",
+        "        on",
+        "        width 3",
+        f'        active-color "{red}"',
+        f'        inactive-color "{red}"',      # it must read «production» without focus too
+        "    }",
+        "}",
+    ]) + "\n"
+
+
+def apply(quiet):
+    text = render([h for h, p in hosts() if p])
+    r = subprocess.run([str(BIN / "ocarina-niri-gen"), "apply", "honban-rules"], input=text, text=True,
+                       capture_output=True)
+    if r.returncode != 0:
+        print(f"ocarina-honban: niri rechazó honban-rules.kdl: {r.stderr.strip()}", file=sys.stderr)
+        return 1
+    if not quiet:
+        print(f"honban-rules.kdl: {text.count('|') + 1 if 'window-rule' in text else 0} host(s) de producción")
+    return 0
+
+
+def main(argv):
+    cmd = argv[0] if argv else ""
+    if cmd == "apply":
+        return apply("--quiet" in argv)
+    if cmd == "list":
+        for h, p in hosts():
+            print(f"{h}\t{1 if p else 0}")
+        return 0
+    if cmd == "is-prod" and len(argv) > 1:
+        return 0 if any(h == argv[1] and p for h, p in hosts()) else 1
+    print(__doc__.strip().split("\n\n")[1], file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

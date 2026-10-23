@@ -1,0 +1,7 @@
+# OcarinaShell (fase 13) — /etc/greetd/ocarina-test.toml: the greeter's dry run on vt 7 (scripts/root/probar-greeter.sh)
+[terminal]
+vt = 7
+
+[default_session]
+command = "/usr/local/lib/ocarinashell/greeter-launch --test"
+user = "greeter"

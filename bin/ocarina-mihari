@@ -1,0 +1,267 @@
+#!/usr/bin/env python3
+"""ocarina-mihari — sampler for 見張 Mihari. Lives only while Mihari is open (Quickshell starts and stops it).
+
+Prints one JSON object per line every second: CPU (total, per core, frequency), memory, GPU (amdgpu busy %, VRAM,
+GTT, package watts), temperatures, fans, battery watts, network rates, load; and every 2 s the process list.
+Same formulas as btop's defaults: CPU from /proc/stat deltas, memory used = total − available, process CPU % of
+the whole machine (not per core), process memory = RSS.
+
+usage: ocarina-mihari [interval=1.0] [--light]   (--light: no process list — 広場 Hiroba's glance)
+       ocarina-mihari kill TERM|KILL <pid> <starttime>   (refuses if the pid was reused or belongs to the session)
+"""
+import glob
+import json
+import os
+import pwd
+import sys
+import time
+
+LIGHT = "--light" in sys.argv
+_args = [a for a in sys.argv[1:] if a != "--light"]
+INTERVAL = float(_args[0]) if _args and _args[0] != "kill" else 1.0
+HZ = os.sysconf("SC_CLK_TCK")
+PAGE = os.sysconf("SC_PAGE_SIZE")
+NCPU = os.cpu_count() or 1
+
+
+def read(path: str, default: str = "") -> str:
+    try:
+        with open(path, "rb") as f:
+            return f.read().decode("utf-8", "replace")
+    except OSError:
+        return default
+
+
+def num(path: str, default: float = 0) -> float:
+    try:
+        return float(read(path).strip() or default)
+    except ValueError:
+        return default
+
+
+# ── CPU ──────────────────────────────────────────────────────────────────────────────────────
+def cpu_times() -> list[tuple[int, int]]:
+    """(busy, total) jiffies for "cpu" and each "cpuN" line."""
+    out = []
+    for line in read("/proc/stat").splitlines():
+        if not line.startswith("cpu"):
+            break
+        v = [int(x) for x in line.split()[1:]]
+        idle = v[3] + (v[4] if len(v) > 4 else 0)            # idle + iowait
+        total = sum(v[:8])                                  # guest time is already inside user/nice
+        out.append((total - idle, total))
+    return out
+
+
+def cpu_freq_ghz() -> float:
+    f = [num(p) for p in glob.glob("/sys/devices/system/cpu/cpu[0-9]*/cpufreq/scaling_cur_freq")]
+    return round(sum(f) / len(f) / 1e6, 2) if f else 0
+
+
+# ── memory ───────────────────────────────────────────────────────────────────────────────────
+def memory() -> dict:
+    m = {}
+    for line in read("/proc/meminfo").splitlines():
+        k, _, v = line.partition(":")
+        m[k] = int(v.split()[0]) * 1024 if v.split() else 0
+    total, avail = m.get("MemTotal", 0), m.get("MemAvailable", 0)
+    return {"total": total, "used": total - avail, "cached": m.get("Cached", 0) + m.get("Buffers", 0),
+            "swapTotal": m.get("SwapTotal", 0), "swapUsed": m.get("SwapTotal", 0) - m.get("SwapFree", 0)}
+
+
+# ── GPU (amdgpu) ─────────────────────────────────────────────────────────────────────────────
+GPU = next((os.path.dirname(p) for p in sorted(glob.glob("/sys/class/drm/card*/device/gpu_busy_percent"))), "")
+
+
+def hwmon() -> dict:
+    """name → directory, discovered once."""
+    out = {}
+    for d in glob.glob("/sys/class/hwmon/hwmon*"):
+        out.setdefault(read(d + "/name").strip(), d)
+    return out
+
+
+HW = hwmon()
+
+
+def gpu() -> dict:
+    if not GPU:
+        return {}
+    g = {"busy": num(GPU + "/gpu_busy_percent"),
+         "vramUsed": num(GPU + "/mem_info_vram_used"), "vramTotal": num(GPU + "/mem_info_vram_total"),
+         "gttUsed": num(GPU + "/mem_info_gtt_used"), "gttTotal": num(GPU + "/mem_info_gtt_total")}
+    if "amdgpu" in HW:
+        g["watts"] = round(num(HW["amdgpu"] + "/power1_input") / 1e6, 1)   # µW: SoC package power (PPT)
+    return g
+
+
+# ── sensors ──────────────────────────────────────────────────────────────────────────────────
+SENSORS = [  # (label shown, hwmon name, file)
+    ("CPU", "k10temp", "temp1_input"),
+    ("GPU", "amdgpu", "temp1_input"),
+    ("NVMe", "nvme", "temp1_input"),
+    ("Wi-Fi", "mt7925_phy0", "temp1_input"),
+    ("Placa", "acpitz", "temp1_input"),
+]
+
+
+def temps() -> list[dict]:
+    out = []
+    for label, name, f in SENSORS:
+        if name in HW and os.path.exists(HW[name] + "/" + f):
+            out.append({"label": label, "c": round(num(HW[name] + "/" + f) / 1000, 1)})
+    return out
+
+
+def fans() -> list[int]:
+    d = HW.get("thinkpad") or HW.get("acpi_fan")
+    return [int(num(p)) for p in sorted(glob.glob(d + "/fan[0-9]_input"))] if d else []
+
+
+def battery() -> dict:
+    b = next(iter(sorted(glob.glob("/sys/class/power_supply/BAT*"))), "")
+    if not b:
+        return {}
+    w = num(b + "/power_now")
+    if not w:
+        w = num(b + "/current_now") * num(b + "/voltage_now") / 1e6
+    return {"watts": round(w / 1e6, 2), "status": read(b + "/status").strip(), "pct": num(b + "/capacity")}
+
+
+# ── network ──────────────────────────────────────────────────────────────────────────────────
+VIRTUAL = ("lo", "veth", "docker", "br-", "virbr", "vnet", "tun", "tap", "wg")
+
+
+def net_bytes() -> tuple[int, int]:
+    rx = tx = 0
+    for line in read("/proc/net/dev").splitlines()[2:]:
+        name, _, rest = line.partition(":")
+        name = name.strip()
+        if name.startswith(VIRTUAL):
+            continue
+        v = rest.split()
+        rx += int(v[0])
+        tx += int(v[8])
+    return rx, tx
+
+
+# ── processes ────────────────────────────────────────────────────────────────────────────────
+users: dict[int, str] = {}
+names: dict[int, tuple[str, str]] = {}      # pid → (name, cmd), read once per pid
+
+
+def user(uid: int) -> str:
+    if uid not in users:
+        try:
+            users[uid] = pwd.getpwuid(uid).pw_name
+        except KeyError:
+            users[uid] = str(uid)
+    return users[uid]
+
+
+def proc_sample() -> dict[int, tuple[int, int, int, int]]:
+    """pid → (cpu ticks, rss bytes, uid, start time)"""
+    out = {}
+    for d in os.scandir("/proc"):
+        if not d.name.isdigit():
+            continue
+        pid = int(d.name)
+        s = read(f"/proc/{pid}/stat")
+        r = s.rfind(")")
+        if r < 0:
+            continue
+        f = s[r + 2:].split()
+        try:
+            uid = d.stat().st_uid
+        except OSError:
+            continue
+        out[pid] = (int(f[11]) + int(f[12]), int(f[21]) * PAGE, uid, int(f[19]))
+        if pid not in names:
+            comm = s[s.find("(") + 1:r]
+            cmd = read(f"/proc/{pid}/cmdline").replace("\0", " ").strip()
+            # comm is cut at 15 chars: prefer the executable's name when it starts the same way
+            exe = os.path.basename(cmd.split(" ")[0]) if cmd else ""
+            name = exe if exe.startswith(comm) and len(comm) == 15 else comm
+            names[pid] = (name, cmd[:160] or f"[{comm}]")
+    for pid in list(names):
+        if pid not in out:
+            del names[pid]
+    return out
+
+
+# the desktop session itself: never killed from Mihari (CLAUDE.md, golden rule 2)
+PROTECTED = {"niri", "qs", "quickshell", "systemd", "dbus-broker", "dbus-broker-launch", "dbus-daemon", "pipewire",
+             "pipewire-pulse", "wireplumber", "xwayland-satellite", "Xwayland", "greetd", "login", "sddm"}
+
+
+def kill(sig: str, pid: int, start: int) -> int:
+    """Send SIGTERM/SIGKILL only if <pid> is still the process sampled with <start> and is not part of the session."""
+    import signal
+    s = read(f"/proc/{pid}/stat")
+    r = s.rfind(")")
+    if r < 0:
+        print("el proceso ya no existe", file=sys.stderr)
+        return 3
+    if int(s[r + 2:].split()[19]) != start:
+        print("el PID ya es de otro proceso", file=sys.stderr)
+        return 4
+    if s[s.find("(") + 1:r] in PROTECTED or pid == 1:
+        print("protegido: es parte de la sesión", file=sys.stderr)
+        return 5
+    try:
+        os.kill(pid, signal.SIGKILL if sig == "KILL" else signal.SIGTERM)
+    except PermissionError:
+        print("sin permiso: es de otro usuario", file=sys.stderr)
+        return 1
+    return 0
+
+
+def main() -> None:
+    prev_cpu = cpu_times()
+    prev_net, prev_t = net_bytes(), time.monotonic()
+    prev_procs, prev_pt = ({} if LIGHT else proc_sample()), time.monotonic()
+    tick = 0
+    while True:
+        time.sleep(INTERVAL)
+        tick += 1
+        now = time.monotonic()
+        cur = cpu_times()
+        usage = []
+        for (b0, t0), (b1, t1) in zip(prev_cpu, cur):
+            usage.append(round(100 * (b1 - b0) / (t1 - t0), 1) if t1 > t0 else 0)
+        prev_cpu = cur
+        rx, tx = net_bytes()
+        dt = now - prev_t
+        out = {
+            "cpu": {"total": usage[0] if usage else 0, "cores": usage[1:], "ghz": cpu_freq_ghz()},
+            "load": [round(float(x), 2) for x in read("/proc/loadavg").split()[:3]],
+            "mem": memory(), "gpu": gpu(), "temps": temps(), "fans": fans(), "bat": battery(),
+            "net": {"rx": max(0, (rx - prev_net[0]) / dt), "tx": max(0, (tx - prev_net[1]) / dt)},
+        }
+        prev_net, prev_t = (rx, tx), now
+        if tick % 2 == 0 and not LIGHT:
+            procs = proc_sample()
+            pdt = now - prev_pt
+            rows = []
+            for pid, (ticks, rss, uid, start) in procs.items():
+                before = prev_procs.get(pid)
+                cpu = 100 * (ticks - before[0]) / HZ / pdt / NCPU if before else 0
+                name, cmd = names.get(pid, ("?", ""))
+                rows.append({"pid": pid, "name": name, "cmd": cmd, "user": user(uid), "cpu": round(cpu, 1), "rss": rss,
+                             "start": start, "protected": name in PROTECTED or pid == 1})
+            prev_procs, prev_pt = procs, now
+            out["procs"] = rows
+        try:
+            sys.stdout.write(json.dumps(out, separators=(",", ":")) + "\n")
+            sys.stdout.flush()
+        except BrokenPipeError:
+            return
+
+
+if __name__ == "__main__":
+    if len(sys.argv) == 5 and sys.argv[1] == "kill":
+        sys.exit(kill(sys.argv[2], int(sys.argv[3]), int(sys.argv[4])))
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass

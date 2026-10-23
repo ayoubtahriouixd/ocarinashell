@@ -1,0 +1,25 @@
+{
+ "id": "diag-qs-wayland-gone",
+ "category": "diagnose",
+ "task": "diagnose",
+ "_origin": "Caso real de la primera semana de Mamori (2026-10-17): Snake culpó a Mesa de 6 cierres de qs que eran la sesión de niri terminando.",
+ "input": "Unidad: quickshell se cierra solo (6 veces en 24 h). coredumpctl:\noct 17 12:55:17 systemd-coredump[11390]: Process 11387 (qs) of user 1000 dumped core (signal 6/ABRT)\noct 17 12:55:20 systemd-coredump[11505]: Process 11502 (qs) of user 1000 dumped core (signal 6/ABRT)\noct 17 12:55:22 systemd-coredump[11525]: Process 11522 (qs) of user 1000 dumped core (signal 6/ABRT)\njournalctl --user, justo antes:\noct 17 12:55:17 qs[1199]: WARN quickshell.io.socket: Socket error QLocalSocket::PeerClosedError\noct 17 12:55:17 qs[1199]: WARN: The Wayland connection broke. Did the Wayland compositor die?\noct 17 12:55:17 qs[11370]: WARN : Failed to create wl_display (Conexión rehusada)\noct 17 12:55:17 qs[11370]: INFO qt.qpa.plugin: Could not load the Qt platform plugin \"wayland\"\njournalctl -k: 12:56:17 arranque nuevo del kernel (el equipo se reinició).\nMesa 26.2.1 sin cambios en 9 días.",
+ "expect": {
+  "category": [
+   "compositor",
+   "other"
+  ],
+  "fix.kind": [
+   "none",
+   "manual"
+  ],
+  "cause": {
+   "contains": [
+    "wayland|compositor|niri|sesión|reinici"
+   ],
+   "notContains": [
+    "mesa"
+   ]
+  }
+ }
+}

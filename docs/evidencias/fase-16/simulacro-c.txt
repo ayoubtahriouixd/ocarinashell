@@ -1,0 +1,72 @@
+# Simulacro c · PKGBUILD sospechoso
+# 2026-10-17 21:16
+
+$ ocarina-mamori run   (código 0)
+
+--- plan.json (AUR) ---
+{
+ "name": "papirus-folders",
+ "old": "1.14.0-1",
+ "new": "1.14.1-1",
+ "approved": false,
+ "commit": "0000000000000000000000000000000000000000",
+ "trivial": false,
+ "reason": "Snake lo marca como sospechoso: Descarga y ejecución directa de un script externo sin verificación de sumas ni origen confiable.",
+ "snake": {
+  "verdict": "suspicious",
+  "trivial": false,
+  "reasons": [
+   "El PKGBUILD descarga un script desde el dominio \"papirus-folders-cdn.top\" y lo ejecuta directamente con `bash` mediante una tubería (`curl ... | bash`). Este comportamiento constituye una descarga de código externo no verificado y su inejec"
+  ],
+  "summary_es": "El paquete ejecuta un script externo descargado de un dominio no relacionado con el upstream, lo que representa un riesgo de seguridad. Se considera sospechoso.",
+  "suspicious": true,
+  "suspicious_reason": "Descarga y ejecución directa de un script externo sin verificación de sumas ni origen confiable."
+ }
+}
+--- holds.json ---
+{
+ "papirus-folders": {
+  "until": 1794863767,
+  "reason": "Snake lo marca como sospechoso: Descarga y ejecución directa de un script externo sin verificación de sumas ni origen confiable.",
+  "kind": "auto",
+  "version": "1.14.1-1",
+  "since": 1792271767
+ }
+}
+
+--- historial ---
+{"at": 1792271767, "kind": "review", "title": "AUR: papirus-folders 1.14.1-1 NO se instala", "detail": "Snake lo marca como sospechoso: Descarga y ejecución directa de un script externo sin verificación de sumas ni origen confiable.", "result": "attention"}
+
+--- journal ---
+[simulación] notas en docs/mantenimiento/2026-10-17.md:
+
+## 21:15 · ciclo de 守 Mamori (IA: snake)
+
+Decisión: **hold** — noticia con intervención manual: linux-firmware >= 20250613.12fe085f-5 upgrade requires manual intervention
+
+### Noticias
+
+- [linux-firmware >= 20250613.12fe085f-5 upgrade requires manual intervention](https://archlinux.org/news/linux-firmware-2025061312fe085f-5-upgrade-requires-manual-intervention/) — intervención manual: sí; aplica: yes. La noticia indica que, para actualizar a linux‑firmware 20250613.12fe085f‑5, los usuarios deben eliminar manualmente el paquete linux‑firmware y luego reinstala
+  - pacman -Rdd linux-firmware
+  - pacman -Syu linux-firmware
+[hold/hold] Retenido: linux-firmware (y su lote) · noticia con intervención manual: linux-firmware >= 20250613.12fe085f-5 upgrade requires manual intervention
+[dry-run] notificación: Noticia con un paso a mano — linux-firmware >= 20250613.12fe085f-5 upgrade requires manual intervention
+• pacman -Rdd linux-firmware
+• pacman -Syu linux-firmware
+[hold/attention] Noticia con intervención manual · linux-firmware >= 20250613.12fe085f-5 upgrade requires manual intervention
+ciclo terminado: held
+[simulación] notas en docs/mantenimiento/2026-10-17.md:
+
+## 21:16 · ciclo de 守 Mamori (IA: snake)
+
+Decisión: **nothing** — 
+
+### AUR
+
+- papirus-folders 1.14.0-1 → 1.14.1-1: NO se instala — Snake lo marca como sospechoso: Descarga y ejecución directa de un script externo sin verificación de sumas ni origen confiable. · Snake: suspicious (El paquete ejecuta un script externo descargado de un dominio no relacionado con el upstream, lo que representa un riesgo de seguridad. Se considera sospechoso.) · <https://aur.archlinux.org/cgit/aur.git/log/?h=papirus-folders>
+[review/attention] AUR: papirus-folders 1.14.1-1 NO se instala · Snake lo marca como sospechoso: Descarga y ejecución directa de un script externo sin verificación de sumas ni origen confiable.
+[dry-run] notificación: Paquete del AUR sospechoso — papirus-folders 1.14.1-1: Snake lo marca como sospechoso: Descarga y ejecución directa de un script externo sin verificación de sumas ni origen confiable.
+ciclo terminado: nothing
+
+
+VEREDICTO: SUPERADO: no se instala, retenido 30 días y aviso crítico

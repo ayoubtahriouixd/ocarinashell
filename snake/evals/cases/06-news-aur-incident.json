@@ -1,0 +1,13 @@
+{
+ "id": "news-aur-incident",
+ "category": "news",
+ "task": "triage-news",
+ "input": "Título: Active AUR malicious packages incident\nWe are currently experiencing a high volume of malicious package adoptions and updates in the Arch User Repository.\nWe are actively working to track down existing malicious commits and attempting to prevent additional malicious commits from being pushed.\nWhile this is happening, users may see issues with: creating new accounts on the AUR, pushing package updates, adopting or creating new packages.\nWe continue to encourage all users of AUR packages to review all PKGBUILD and install script changes when updating, especially during this time.",
+ "expect": {
+  "news_asks_manual_steps": false,
+  "applies_here": [
+   "yes",
+   "unknown"
+  ]
+ }
+}

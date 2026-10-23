@@ -1,0 +1,21 @@
+brillo=16 %
+pantalla.eDP-1=2880x1800@120
+perfil=performance
+turbo=True
+epp=performance
+gpu=auto
+carga=75-80
+wifi-ahorro.wlan0=off
+ventilador=auto
+scx=lavd
+bluetooth=false
+teclado=0
+tema=sumi
+niri.shinobi=0
+niri.oni=1
+vrr=variable-refresh-rate on-demand=true
+governor=performance
+no-molestar=False
+unidad.ocarina-cliphist-img=inactive
+unidad.ocarina-nightlight=active
+efectos={"cursor":false,"motion":false}

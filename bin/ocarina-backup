@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# ocarina-backup (`ocarina backup`) — 控 Hikae ligero: snapper snapshots of @home (D-070, scripts/root/snapper-home.sh).
+# Works without root: snapper's config «home» lists Ayoub in ALLOW_USERS and SYNC_ACL lets him read the snapshots.
+#   ocarina backup status            config, timeline, number of snapshots, newest and oldest, space they hold
+#   ocarina backup now ["texto"]     a snapshot right now (kept like any other, by number)
+#   ocarina backup list [ruta]       the snapshots; with a path, only those that contain it (and its size there)
+#   ocarina backup restore <ruta> [<número>]
+#                                    copies <ruta> as it was in snapshot <número> (default: the newest one that has
+#                                    it) to ~/Restaurado/<fecha-del-snapshot>/<ruta relativa a ~>. Never over the
+#                                    original; never outside ~/Restaurado. Prints the restored path.
+#   ocarina backup check             is it working? (config, timers, a snapshot in the last 2 h) — exit 1 if not
+# Snapshots live on the same SSD as the data: they cover «borré / estropeé un fichero», not a dead disk or a theft.
+set -euo pipefail
+
+cfg=home
+snaps=/home/.snapshots
+restore_root="$HOME/Restaurado"
+have() { command -v "$1" >/dev/null 2>&1; }
+die() { echo "ocarina backup: $*" >&2; exit 1; }
+have snapper || die "falta snapper"
+
+configured() { snapper --csvout list-configs 2>/dev/null | cut -d, -f1 | grep -qx "$cfg"; }
+need_config() { configured || die "no hay config «$cfg» de snapper: sudo bash ~/ocarinashell/scripts/root/fase-14.sh"; }
+# number<TAB>epoch<TAB>description, oldest first, without snapshot 0 (the live filesystem)
+rows() {
+  snapper --csvout --iso -c "$cfg" list --columns number,date,description 2>/dev/null | python3 -I -c 'import csv, sys, datetime
+r = csv.reader(sys.stdin); next(r, None)
+for n, d, desc in r:
+    if n == "0" or not d:
+        continue
+    t = int(datetime.datetime.fromisoformat(d).timestamp())
+    print(n, t, desc.replace("\t", " "), sep="\t")'
+}
+when() { date -d "@$1" '+%Y-%m-%d %H:%M'; }
+
+# a path inside ~ given as ~/x, /home/<user>/x or relative to the current directory → relative to ~
+rel_of() {
+  local p
+  p="$(realpath -ms -- "$1")"
+  [[ "$p" == "$HOME" || "$p" == "$HOME"/* ]] || die "solo rutas dentro de tu carpeta personal: $1"
+  [[ "$p" == "$restore_root" || "$p" == "$restore_root"/* ]] && die "eso ya es una restauración"
+  printf '%s\n' "${p#"$HOME"/}"
+}
+# /home/.snapshots/N/snapshot is the @home subvolume, so ~/x lives at <snapshot>/<user>/x
+in_snap() { printf '%s/%s/snapshot/%s/%s\n' "$snaps" "$1" "${HOME#/home/}" "$2"; }
+
+cmd="${1:-status}"; shift || true
+case "$cmd" in
+  status)
+    need_config
+    mapfile -t r < <(rows)
+    tl="$(snapper -c "$cfg" get-config 2>/dev/null | awk -F'│' '/TIMELINE_CREATE/ {gsub(/ /, "", $2); print $2}')"
+    echo "控 Hikae · snapshots de ~ (snapper «$cfg»): ${#r[@]} · timeline: ${tl:-?}"
+    if ((${#r[@]})); then
+      IFS=$'\t' read -r n t d <<<"${r[-1]}"; echo "  el más reciente: #$n · $(when "$t") · $d"
+      IFS=$'\t' read -r n t d <<<"${r[0]}";  echo "  el más antiguo:  #$n · $(when "$t") · $d"
+    fi
+    systemctl is-active -q snapper-timeline.timer && echo "  snapper-timeline.timer activo" || echo "  ⚠ snapper-timeline.timer inactivo"
+    echo "  (mismo SSD que los datos: protege de borrados y errores, no de un disco muerto ni de un robo)"
+    ;;
+  now)
+    need_config
+    desc="${1:-a mano}"
+    [[ "$desc" =~ ^[[:alnum:][:space:]áéíóúüñÁÉÍÓÚÜÑ.,:_()/+-]{1,64}$ ]] || die "descripción no válida"
+    n="$(snapper -c "$cfg" create -p -c number -d "ocarina backup: $desc")"
+    echo "snapshot #$n de ~ hecho"
+    ;;
+  list)
+    need_config
+    if [[ $# -eq 0 ]]; then
+      rows | while IFS=$'\t' read -r n t d; do printf '  #%-5s %s  %s\n' "$n" "$(when "$t")" "$d"; done
+    else
+      rel="$(rel_of "$1")"; found=0
+      while IFS=$'\t' read -r n t d; do
+        f="$(in_snap "$n" "$rel")"
+        [[ -e "$f" ]] || continue
+        found=1; printf '  #%-5s %s  %8s  %s\n' "$n" "$(when "$t")" "$(du -sh -- "$f" 2>/dev/null | cut -f1)" "$d"
+      done < <(rows)
+      ((found)) || echo "  ningún snapshot contiene ~/$rel"
+    fi
+    ;;
+  restore)
+    need_config
+    [[ $# -ge 1 && $# -le 2 ]] || die "uso: ocarina backup restore <ruta> [<número>]"
+    rel="$(rel_of "$1")"; want="${2:-}"
+    [[ -z "$want" || "$want" =~ ^[1-9][0-9]*$ ]] || die "número de snapshot no válido: $want"
+    n="" t=""
+    while IFS=$'\t' read -r rn rt _; do
+      [[ -e "$(in_snap "$rn" "$rel")" ]] || continue
+      if [[ -n "$want" ]]; then [[ "$rn" == "$want" ]] && { n=$rn; t=$rt; }
+      else n=$rn; t=$rt; fi                       # rows are oldest first: the last match is the newest
+    done < <(rows)
+    [[ -n "$n" ]] || die "ningún snapshot${want:+ #$want} contiene ~/$rel"
+    src="$(in_snap "$n" "$rel")"
+    dest="$restore_root/$(date -d "@$t" '+%Y-%m-%d_%H%M')-#$n/$rel"
+    [[ -e "$dest" ]] && die "ya restaurado antes: $dest"
+    mkdir -p "$(dirname "$dest")"
+    # --reflink: same filesystem, so the copy shares blocks with the snapshot (instant, no extra space until edited)
+    cp -a --reflink=auto -- "$src" "$dest"
+    echo "$dest"
+    ;;
+  check)
+    need_config
+    bad=0
+    systemctl is-active -q snapper-timeline.timer || { echo "✗ snapper-timeline.timer inactivo"; bad=1; }
+    systemctl is-active -q snapper-cleanup.timer || { echo "✗ snapper-cleanup.timer inactivo"; bad=1; }
+    last="$(rows | tail -n1 | cut -f2)"
+    if [[ -z "$last" ]] || (( $(date +%s) - last > 7200 )); then echo "✗ ningún snapshot de ~ en las últimas 2 h"; bad=1; fi
+    ((bad)) || echo "✓ snapshots de ~ al día (el último: $(when "$last"))"
+    exit "$bad"
+    ;;
+  *) sed -n '2,15p' "$(readlink -f "${BASH_SOURCE[0]}")" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

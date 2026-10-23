@@ -177,10 +177,12 @@ def limine_block(v):
            "light": ("18171c;c4002b;2c7a52;946300;1e50a2;884898;00808a;615b55",
                      "6f6862;e60033;3a9466;b0800f;3a6bc4;a35cb0;008a94;18171c", "18171c", "000000")}[v]
     return f"""# ── OcarinaShell · tema de Limine ({'oscuro' if v == 'dark' else 'claro'}) — generado por tools/boot_assets.py
-# Menú centrado dentro de la tarjeta del fondo (2880×1800); sin marca de Limine ni ayuda en inglés (la ayuda va en el fondo).
+# Menú centrado dentro de la tarjeta del fondo (2880×1800); sin marca de Limine ni ayuda en inglés (la ayuda va en el fondo);
+# terse: sin «Loading kernel…» al arrancar una entrada.
 interface_resolution: 2880x1800
 interface_branding:
 interface_help_hidden: yes
+terse: yes
 wallpaper: boot():/ocarinashell-limine.png
 wallpaper_style: stretched
 backdrop: {VAR[v]['bg'].lstrip('#')}
@@ -304,7 +306,11 @@ for (i = 0; i < 17; i++) {                          // 17 petals fit in the fiel
 note = Sprite();
 note.SetPosition(Math.Int(CX), Math.Int(H - 90 * k), 17);
 
+// Shutdown and reboot come after the in-session farewell (modules/dengen/Farewell.qml), which already shows the
+// icon and message at full strength and plays this same loop: start inside it, 5 frames before a hole sounds, so the
+// splash (often on screen for only 1–2 s) moves from its first moment. Boot plays the entrance.
 t = 0;
+if (mode == "shutdown" || mode == "reboot") t = 280;
 
 fun ramp(t0, len) {
     v = (global.t - t0) / len;

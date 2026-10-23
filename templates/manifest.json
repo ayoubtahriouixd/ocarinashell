@@ -1,0 +1,20 @@
+{
+  "_doc": "ocarina-theme: template (relative to templates/) → destination, validator (niri|ghostty|fish|lua|json|toml|null) and reload. Every destination has ONE owner: this file.",
+  "targets": [
+    {"template": "niri/colors.kdl",           "dest": "~/.local/state/ocarinashell/niri/colors.kdl",           "validate": "niri"},
+    {"template": "ghostty/colors.conf",       "dest": "~/.local/state/ocarinashell/theme/ghostty.conf",         "validate": "ghostty", "reload": "ghostty"},
+    {"template": "nvim/palette.lua",          "dest": "~/.local/state/ocarinashell/theme/palette.lua",          "validate": "lua"},
+    {"template": "fish/colors.fish",          "dest": "~/.local/state/ocarinashell/theme/colors.fish",          "validate": "fish"},
+    {"template": "starship/starship.toml",    "dest": "~/.config/starship.toml",                                "validate": "toml"},
+    {"template": "btop/ocarina.theme",        "dest": "~/.config/btop/themes/ocarina.theme",                    "validate": null},
+    {"template": "yazi/flavor.toml",          "dest": "~/.config/yazi/flavors/ocarina.yazi/flavor.toml",        "validate": "toml"},
+    {"template": "lazygit/config.yml",        "dest": "~/.config/lazygit/config.yml",                           "validate": null},
+    {"template": "fastfetch/config.jsonc",    "dest": "~/.config/fastfetch/config.jsonc",                       "validate": null},
+    {"template": "gtk/gtk.css",               "dest": "~/.config/gtk-3.0/gtk.css",                              "validate": null},
+    {"template": "gtk/gtk.css",               "dest": "~/.config/gtk-4.0/gtk.css",                              "validate": null},
+    {"template": "qt6ct/ocarina-colors.conf", "dest": "~/.config/qt6ct/colors/ocarina.conf",                    "validate": null},
+    {"template": "qt6ct/qt6ct.conf",          "dest": "~/.config/qt6ct/qt6ct.conf",                             "validate": null},
+    {"template": "swaylock/config",           "dest": "~/.config/swaylock/config",                              "validate": null},
+    {"template": "mangohud/MangoHud.conf",    "dest": "~/.config/MangoHud/MangoHud.conf",                       "validate": null}
+  ]
+}

@@ -72,7 +72,11 @@ for (i = 0; i < 17; i++) {                          // 17 petals fit in the fiel
 note = Sprite();
 note.SetPosition(Math.Int(CX), Math.Int(H - 90 * k), 17);
 
+// Shutdown and reboot come after the in-session farewell (modules/dengen/Farewell.qml), which already shows the
+// icon and message at full strength and plays this same loop: start inside it, 5 frames before a hole sounds, so the
+// splash (often on screen for only 1–2 s) moves from its first moment. Boot plays the entrance.
 t = 0;
+if (mode == "shutdown" || mode == "reboot") t = 280;
 
 fun ramp(t0, len) {
     v = (global.t - t0) / len;

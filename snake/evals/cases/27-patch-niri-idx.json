@@ -1,0 +1,14 @@
+{
+ "id": "patch-niri-idx",
+ "category": "patch",
+ "task": "propose-patch",
+ "input": "Error: Workspaces.qml:42: TypeError: Cannot read property 'idx' of undefined\nCausa: niri 26.10 renombró el campo `idx` de `niri msg -j workspaces` a `index`.\nFichero shell/modules/obi/Workspaces.qml (líneas 38-46):\n    Repeater {\n        model: Niri.workspacesOn(root.screen)\n        delegate: WorkspaceCell {\n            required property var modelData\n            numeral: Glossary.numeral(modelData.idx)\n            active: modelData.is_active\n            windows: modelData.windowCount\n        }\n    }",
+ "expect": {
+  "diff": {
+   "contains": [
+    "Workspaces.qml",
+    "index"
+   ]
+  }
+ }
+}

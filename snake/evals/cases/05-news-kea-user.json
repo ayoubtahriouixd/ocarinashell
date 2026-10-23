@@ -1,0 +1,14 @@
+{
+ "id": "news-kea-user",
+ "category": "news",
+ "task": "triage-news",
+ "input": "Título: kea >= 1:3.0.3-6 update requires manual intervention\nThe kea package has moved all services to run as a dedicated kea user (instead of root) for improved security. This change requires permission updates to the runtime files created by the kea services.\nUsers upgrading from an existing kea installation should therefore run the following commands after the upgrade:\nchown kea: /var/lib/kea/* /var/log/kea/* /run/lock/kea/logger_lockfile\nsystemctl try-restart kea-ctrl-agent.service kea-dhcp{4,6,-ddns}.service",
+ "expect": {
+  "news_asks_manual_steps": true,
+  "steps": {
+   "contains": [
+    "chown"
+   ]
+  }
+ }
+}

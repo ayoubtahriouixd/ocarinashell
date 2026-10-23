@@ -1,0 +1,18 @@
+{
+  "_doc": "蛇 Snake assistant actions (fase 15): the ONLY things the assistant can propose. The model answers an id; the shell shows argv and runs `ocarina-snake run-action <id> --confirmed` only after the user presses «Ejecutar». argv[0] must be «ocarina». Nothing destructive, everything reversible.",
+  "actions": [
+    {"id": "shinobi-off", "argv": ["ocarina", "shinobi", "off"], "label": "Salir de 忍 Shinobi", "detail": "Restaura el estado previo exacto (snapshot de Shinobi)."},
+    {"id": "shinobi-on", "argv": ["ocarina", "shinobi", "on"], "label": "Entrar en 忍 Shinobi", "detail": "Ahorro extremo; se deshace con «ocarina shinobi off»."},
+    {"id": "oni-off", "argv": ["ocarina", "oni", "off"], "label": "Salir de 鬼 Oni", "detail": "Vuelve al estado anterior a Oni."},
+    {"id": "nameraka-off", "argv": ["ocarina", "nameraka", "off"], "label": "Apagar 滑 vídeo fluido", "detail": "Quita la generación de fotogramas."},
+    {"id": "shell-restart", "argv": ["ocarina", "restart"], "label": "Reiniciar la shell", "detail": "Reinicia Quickshell (las ventanas no se cierran)."},
+    {"id": "doctor", "argv": ["ocarina", "doctor", "--quiet"], "label": "Revisar la salud del sistema", "detail": "Solo lectura: comprueba servicios, paquetes y configuración."},
+    {"id": "smoke", "argv": ["ocarina", "doctor", "--smoke"], "label": "Pruebas de humo", "detail": "Solo lectura: pruebas pasivas de la shell."},
+    {"id": "update-check", "argv": ["ocarina", "update", "--check"], "label": "Ver actualizaciones pendientes", "detail": "Solo lectura: noticias y paquetes pendientes, no instala nada."},
+    {"id": "backup-now", "argv": ["ocarina", "backup", "now"], "label": "Copia de ~ ahora", "detail": "Snapshot de tu carpeta personal (控 Hikae)."},
+    {"id": "dnd-off", "argv": ["ocarina", "notifications", "dnd", "off"], "label": "Quitar No molestar", "detail": "Vuelven a aparecer las notificaciones."},
+    {"id": "focus-stop", "argv": ["ocarina", "focus", "stop"], "label": "Terminar 集中 Shūchū", "detail": "Para la sesión de foco."},
+    {"id": "fune-stop", "argv": ["ocarina", "fune", "stop"], "label": "Apagar Windows (船 Fune)", "detail": "Apagado ordenado de la máquina virtual; libera su RAM."},
+    {"id": "snake-stop", "argv": ["ocarina", "snake", "stop"], "label": "Descargar Snake", "detail": "Libera ya la memoria del modelo."}
+  ]
+}

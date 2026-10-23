@@ -1,0 +1,16 @@
+{
+ "id": "tr-anime",
+ "category": "translate",
+ "task": "translate",
+ "input": "俺はまだ諦めない！仲間を守るためなら何でもする。",
+ "expect": {
+  "translation_es": {
+   "contains": [
+    "rend|venc|abandon|desist|tir",
+    "amig|compañer",
+    "proteg"
+   ]
+  },
+  "source_lang": "ja"
+ }
+}

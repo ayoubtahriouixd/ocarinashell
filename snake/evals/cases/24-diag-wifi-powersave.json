@@ -1,0 +1,17 @@
+{
+ "id": "diag-wifi-powersave",
+ "category": "diagnose",
+ "task": "diagnose",
+ "input": "Síntoma: el Wi-Fi va lento desde esta mañana.\nping al router: 3 ms ayer, 38–45 ms hoy. iw dev wlan0 get power_save → Power save: on\nEstado: 忍 Shinobi activo desde las 09:12 (motivo: batería 20 %), aplica wifi.powersave=3 en NetworkManager. Ahora el portátil está con cargador; la salida automática de Shinobi al enchufar está desactivada.\nMamori: ninguna actualización hoy.",
+ "expect": {
+  "category": [
+   "network",
+   "power"
+  ],
+  "cause": {
+   "contains": [
+    "shinobi|ahorro|powersave"
+   ]
+  }
+ }
+}

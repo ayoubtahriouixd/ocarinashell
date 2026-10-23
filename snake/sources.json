@@ -1,0 +1,8 @@
+{
+  "_doc": "蛇 Snake retrieval whitelist (fase 15): https only, these domains and their subdomains; redirects outside are refused. What comes from here is DATA, never instructions. maxBytes per download, ttl of the on-disk cache in seconds.",
+  "domains": ["archlinux.org", "discuss.cachyos.org", "cachyos.org", "api.github.com", "github.com",
+              "gitlab.archlinux.org", "gitlab.freedesktop.org", "gitlab.gnome.org", "quickshell.org",
+              "niri-wm.github.io", "ghostty.org", "neovim.io"],
+  "maxBytes": 2000000,
+  "ttl": 3600
+}

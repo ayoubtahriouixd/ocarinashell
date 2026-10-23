@@ -1,0 +1,339 @@
+#!/usr/bin/env python3
+"""ocarina-mamori — 守 Mamori, the autopilot of OcarinaShell (docs/06-ACTUALIZACIONES capa 6, fase 16, D-007).
+
+  ocarina mamori status [--json]           state, last and next cycle, holds, what waits for Ayoub
+  ocarina mamori run [--interactive] [--dry-run]
+                                           one cycle: conditions → health → inventory → policy → snapshot →
+                                           upgrade → smoke tests (adapt or roll back) → AUR → periodic → report.
+                                           --interactive (= `ocarina update`): Ayoub watching, asks before applying,
+                                           skips the idle rule and maturation. --dry-run: nothing changes.
+  ocarina mamori plan [--refresh] [--json] the decision about what is pending (--refresh: inventory + policy now,
+                                           in dry-run)
+  ocarina mamori conditions [--json]       may it act now? (and why not)
+  ocarina mamori heal [--dry-run]          only health and self-repair (safe mode triggers this)
+  ocarina mamori boot                      after login: boot mark, reboot flag, a cycle left pending
+  ocarina mamori pause [<días>] · resume   emergency switch (default 7 days)
+  ocarina mamori hold <pkg> <días> [motivo] · unhold <pkg> · holds
+  ocarina mamori rollback                  undo the last update (asks in a terminal)
+  ocarina mamori report [--weekly [--quiet]]   the last events; --weekly writes this week's summary now
+                                           (--quiet: the existing one if there is one; no commit, no notification)
+  ocarina mamori periodic [<job>] [--force] [--dry-run]
+  ocarina mamori adapt [--dry-run]         simulation: adapt the code to the current failed smoke tests
+  ocarina mamori jail                      prepare Claude Code's isolated workspace (~/.local/share/ocarinashell/mamori-claude)
+  ocarina mamori answer <tag> -- <notify-send …>   (internal) waits for a notification button
+Everything goes to the journal: journalctl -t ocarina-mamori. Python stdlib only.
+"""
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
+
+from mamori import common as c  # noqa: E402
+
+
+def usage(code=2):
+    print(__doc__.split("\n\n", 1)[1].rsplit("Everything goes", 1)[0], file=sys.stderr if code else sys.stdout)
+    sys.exit(code)
+
+
+def ago(ts):
+    if not ts:
+        return "nunca"
+    d = c.now() - ts
+    if d < 0:
+        d = -d
+        return "en " + (f"{d // 60} min" if d < 3600 else f"{d // 3600} h" if d < 86400 else f"{d // 86400} días")
+    return "hace " + (f"{d // 60} min" if d < 3600 else f"{d // 3600} h" if d < 86400 else f"{d // 86400} días")
+
+
+def cmd_status(args):
+    st = c.status()
+    if st.get("state") != "running" and (st.get("nextRun") or 0) < c.now():
+        st["nextRun"] = c.next_timer()
+    s = c.settings()
+    h = c.holds()
+    if "--json" in args:
+        out = dict(st, settings=s, holdsList=h, paused=st.get("pausedUntil", 0) > c.now(),
+                   maint=Path(c.MAINT).exists())
+        print(json.dumps(out, ensure_ascii=False))
+        return 0
+    paused = st.get("pausedUntil", 0) > c.now()
+    print(f"守 Mamori · {'EN PAUSA hasta el ' + c.stamp(st['pausedUntil']) if paused else ('activo' if s['enabled'] else 'piloto automático apagado')}"
+          f" · IA: {s['ai']}")
+    print(f"  estado: {st.get('summary') or st.get('state', 'sin ciclos todavía')}"
+          + (f" — {st['deferReason']}" if st.get("deferReason") else ""))
+    print(f"  último ciclo: {ago(st.get('lastRun'))} ({st.get('lastResult', '—')}) · próximo: {ago(st.get('nextRun'))}")
+    p = st.get("pending") or {}
+    if p:
+        print(f"  pendiente: {p.get('repo', 0)} de repos, {p.get('aur', 0)} del AUR · decisión: {p.get('decision')}"
+              + (f" hasta el {c.stamp(p['until'])}" if p.get("until") else ""))
+    for k, v in h.items():
+        print(f"  retenido: {k}{' ' + v['version'] if v.get('version') else ''} hasta el {c.stamp(v['until'])} — {v.get('reason', '')}")
+    if (c.STATE / "reboot-pending").exists():
+        print("  新 reinicio pendiente: " + ", ".join((c.load_json(c.STATE / "reboot-pending", {}) or {}).get("why", [])))
+    return 0
+
+
+def cmd_run(args):
+    from mamori import cycle
+    c.INTERACTIVE = "--interactive" in args
+    trig = args[args.index("--trigger") + 1] if "--trigger" in args[:-1] else ("manual" if c.INTERACTIVE else "timer")
+    res = cycle.run(trig)
+    return 0 if res in ("ok", "nothing", "held", "deferred", "paused", "busy") else 1
+
+
+def cmd_plan(args):
+    if "--refresh" in args:
+        from mamori import inventory, policy
+        c.DRY = True
+        plan = policy.decide(inventory.run())
+    else:
+        plan = c.load_json(c.STATE / "plan.json", {}) or {}
+    if "--json" in args:
+        print(json.dumps(plan, ensure_ascii=False, indent=1))
+        return 0
+    if not plan:
+        print("守 aún no hay plan (ocarina mamori plan --refresh)")
+        return 0
+    print(f"守 Plan del {c.stamp(plan.get('at'))} · IA: {plan.get('ai')} · decisión: {plan.get('decision')}"
+          + (f" hasta el {c.stamp(plan['until'])}" if plan.get("until") else ""))
+    for r in plan.get("reasons", []):
+        print(f"  · {r}")
+    if plan.get("kernelHolds"):
+        print("  · kernels retenidos solos (pacman -Syu --ignore): " + ", ".join(plan["kernelHolds"]))
+    for p in plan.get("repo", []):
+        print(f"    {p['name']} {p['old']} → {p['new']}" + (f"  [{', '.join(p['class'])}]" if p.get("class") else ""))
+    for a in plan.get("aur", []):
+        print(f"    AUR {a['name']} {a.get('old')} → {a.get('new')}: {'aprobado' if a.get('approved') else 'no'}"
+              f" — {a.get('reason', '')}")
+    for n in plan.get("news", []):
+        print(f"    noticia: {n['title']} — manual: {n.get('manual')} · aplica: {n.get('applies')}"
+              + (" · BLOQUEA" if n.get("blocking") else ""))
+    for d in plan.get("firmware", []):
+        print(f"    firmware: {d['name']} {d['old']} → {d['new']}" + (" (aprobación)" if d.get("system") else ""))
+    return 0
+
+
+def cmd_conditions(args):
+    from mamori import conditions
+    r = conditions.check("install", "--interactive" in args)
+    if "--json" in args:
+        print(json.dumps(r, ensure_ascii=False))
+    else:
+        print("守 puede actuar ahora" if r["ok"] else "守 ahora no: " + "; ".join(r["reasons"]))
+    return 0 if r["ok"] else 1
+
+
+def cmd_heal(args):
+    from mamori import health
+    lock = c.CycleLock()
+    if not lock.acquire():
+        print("守 hay un ciclo en marcha: él ya revisa la salud")
+        return 0
+    found = health.run()
+    for f in found:
+        print(f"  · {f['title']}")
+    print(f"守 salud: {len(found)} problema(s) revisado(s)")
+    return 0
+
+
+def cmd_boot(args):
+    from mamori import apply, rollback
+    apply.clear_reboot_pending_if_booted()
+    rollback.boot_failure()
+    st = c.status()
+    cyc = st.get("cycle") or {}
+    if st.get("due") or (cyc and not cyc.get("finished") and "snapshot" in cyc.get("done", [])):
+        subprocess.run(["systemctl", "--user", "start", "--no-block", "ocarina-mamori@boot.service"])
+    return 0
+
+
+def cmd_pause(args):
+    days = 7
+    if args:
+        try:
+            days = max(0.01, min(90, float(args[0])))
+        except ValueError:
+            usage()
+    until = c.now() + int(days * c.DAY)
+    c.update_status(pausedUntil=until, state="paused", summary="En pausa")
+    c.history("info", f"Mamori en pausa {days:g} días", f"hasta el {c.stamp(until)}", "info")
+    print(f"守 en pausa hasta el {c.stamp(until)} (ocarina mamori resume para reanudar)")
+    return 0
+
+
+def cmd_resume(args):
+    c.update_status(pausedUntil=0, state="idle", summary="Todo en orden", due=True)
+    c.history("info", "Mamori reanudado", "", "info")
+    print("守 reanudado: revisará en el próximo momento tranquilo")
+    return 0
+
+
+def cmd_hold(args):
+    if len(args) < 2:
+        usage()
+    try:
+        days = max(1, min(180, float(args[1])))
+    except ValueError:
+        usage()
+    h = c.set_hold(args[0], days, " ".join(args[2:]) or "retenido por ti", "user")
+    c.history("hold", f"Retenido por ti: {args[0]}", f"hasta el {c.stamp(h['until'])}", "hold")
+    print(f"守 {args[0]} retenido hasta el {c.stamp(h['until'])} (y con él su lote, salvo que sea un kernel)")
+    return 0
+
+
+def cmd_unhold(args):
+    if len(args) != 1:
+        usage()
+    gone = c.clear_hold(args[0])
+    if gone:
+        c.history("hold", f"Liberado: {args[0]}", "la retención se quitó a mano", "ok")
+        c.update_status(due=True)
+    print(f"守 {args[0]} {'liberado' if gone else 'no estaba retenido'}")
+    return 0
+
+
+def cmd_holds(args):
+    h = c.holds()
+    if "--json" in args:
+        print(json.dumps(h, ensure_ascii=False))
+        return 0
+    if not h:
+        print("守 nada retenido")
+    for k, v in h.items():
+        print(f"  {k}{' ' + v['version'] if v.get('version') else ''} · hasta el {c.stamp(v['until'])} · "
+              f"{'tuyo' if v.get('kind') == 'user' else 'de Mamori'} · {v.get('reason', '')}")
+    return 0
+
+
+def cmd_rollback(args):
+    from mamori import rollback
+    p = rollback.last_pair()
+    if not p.get("pre"):
+        print("守 no hay ninguna transacción que deshacer")
+        return 1
+    print(f"守 Deshacer la última actualización: snapshot #{p['pre']}..#{p.get('post')} · «{p.get('description', '')}»")
+    if sys.stdin.isatty() and "--yes" not in args:
+        try:
+            if input("  ¿Seguro? [s/N] ").strip().lower() not in ("s", "si", "sí", "y"):
+                return 1
+        except EOFError:
+            return 1
+    lock = c.CycleLock()
+    if not lock.acquire():
+        print("守 hay un ciclo en marcha: espera a que termine")
+        return 1
+    ok, detail = rollback.undo_last("deshecha por ti", hold_names=[])
+    print(("✓ " if ok else "✗ ") + detail)
+    return 0 if ok else 1
+
+
+def cmd_report(args):
+    from mamori import report
+    if "--weekly" in args:
+        path = report.weekly(force=True, quiet="--quiet" in args)
+        print(f"守 resumen semanal: {path}")
+        return 0
+    for e in c.read_history(30):
+        print(f"{c.stamp(e['at'])}  {report.RESULT.get(e['result'], '·')} {e['title']}"
+              + (f" — {e['detail']}" if e.get("detail") else ""))
+    return 0
+
+
+def cmd_periodic(args):
+    from mamori import periodic
+    only = next((a for a in args if not a.startswith("--")), None)
+    for name, ok, detail in periodic.run(only, force="--force" in args):
+        print(f"  {'✓' if ok else '✗'} {name}: {detail}")
+    return 0
+
+
+def cmd_adapt(args):
+    from mamori import adapt, health, verify
+    ok, fails = verify.smoke(True)
+    if ok:
+        print("守 las pruebas de humo están en verde: nada que adaptar")
+        return 0
+    fixed, why = adapt.adapt(fails, health.journal("ocarinashell.service", 150), ["(simulacro)"])
+    print(("✓ adaptado: " if fixed else "✗ sin adaptación: ") + why)
+    return 0 if fixed else 1
+
+
+def cmd_answer(args):
+    """Detached: run notify-send (with -A actions, it waits) and act on the button Ayoub pressed."""
+    if not args or "--" not in args:
+        usage()
+    tag = args[0]
+    argv = args[args.index("--") + 1:]
+    if "--wait" not in argv:
+        argv.insert(1, "--wait")
+    r = subprocess.run(argv, capture_output=True, text=True)
+    choice = r.stdout.strip().splitlines()[-1] if r.stdout.strip() else ""
+    asks = c.load_json(c.STATE / "asks.json", {}) or {}
+    ask = asks.pop(tag, {})
+    c.save_json(c.STATE / "asks.json", asks)
+    c.jlog(f"respuesta a «{tag}»: {choice or '(cerrada)'}")
+    kind = ask.get("kind")
+    if kind == "news" and choice in ("done", "skip"):
+        from mamori import inventory
+        inventory.mark_news_handled([ask["id"]])
+        c.history("hold", "Noticia resuelta" if choice == "done" else "Noticia descartada", ask.get("title", ""), "ok")
+        c.update_status(due=True)
+        subprocess.run(["systemctl", "--user", "start", "--no-block", "ocarina-mamori@answer.service"])
+    elif kind == "news" and choice == "open" and ask.get("url", "").startswith("https://"):
+        subprocess.Popen(["xdg-open", ask["url"]])
+    elif kind == "firmware" and choice == "approve":
+        # BIOS/EC: fwupd asks polkit (your password) — the root helper never flashes system firmware
+        c.history("firmware", f"Firmware aprobado: {ask.get('name')} {ask.get('new')}", "lo instala fwupd", "ok")
+        subprocess.Popen(["ghostty", "+new-window", "-e", "fwupdmgr", "update", ask["id"]])
+    elif kind == "reboot" and choice == "now":
+        from mamori import cycle
+        cycle.reboot_now("lo pediste tú")
+    elif kind == "reboot" and choice == "tonight":
+        rp = c.load_json(c.STATE / "reboot-pending", {}) or {}
+        rp["tonight"] = True
+        c.save_json(c.STATE / "reboot-pending", rp)
+    return 0
+
+
+def cmd_jail(args):
+    from mamori import ai
+    if not ai.prepare_jail():
+        print("守 no pude preparar el espacio aislado (¿.claude/skills/mantener ocupado por otra cosa?)", file=sys.stderr)
+        return 1
+    print(f"守 espacio aislado de Claude Code listo: {ai.JAIL}")
+    print(f"   (cd {ai.JAIL} && claude -p \"/mantener …\" --add-dir {c.REPO} --add-dir {c.STATE} --max-turns N)")
+    return 0
+
+
+COMMANDS = {"jail": cmd_jail, "status": cmd_status, "run": cmd_run, "plan": cmd_plan, "conditions": cmd_conditions,
+            "heal": cmd_heal, "boot": cmd_boot, "pause": cmd_pause, "resume": cmd_resume, "hold": cmd_hold,
+            "unhold": cmd_unhold, "holds": cmd_holds, "rollback": cmd_rollback, "report": cmd_report,
+            "periodic": cmd_periodic, "adapt": cmd_adapt, "answer": cmd_answer}
+
+
+def main(argv):
+    rc = _main(argv)
+    if argv and argv[0] in ("pause", "resume", "hold", "unhold", "rollback"):
+        c.ping_shell()
+    return rc
+
+
+def _main(argv):
+    if not argv or argv[0] in ("-h", "--help", "help"):
+        usage(0)
+    cmd, rest = argv[0], argv[1:]
+    if cmd not in COMMANDS:
+        print(f"守 subcomando desconocido: {cmd}", file=sys.stderr)
+        usage()
+    if "--dry-run" in rest:
+        c.DRY = True
+        rest = [a for a in rest if a != "--dry-run"]
+    return COMMANDS[cmd](rest)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

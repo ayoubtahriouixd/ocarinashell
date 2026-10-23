@@ -1,0 +1,157 @@
+#!/usr/bin/env bash
+# ocarina-niri-gen — installs a generated niri include (~/.local/state/ocarinashell/niri/<name>.kdl). Owners:
+# Settei → overrides, Displays (配置 Haichi) → outputs, 本番 Honban (bin/ocarina-honban) → honban-rules,
+# 船 Fune (bin/ocarina-fune) → fune-rules,
+# Modes (忍 Shinobi) → shinobi, Modes (鬼 Oni) → oni, Ajustes › Atajos (bin/ocarina-binds) → user-binds.
+# The new contents come on stdin; they are validated with
+# `niri validate` as a standalone config and only then moved into place atomically (niri reloads included files by
+# itself). Defence in depth: each file may only contain its own kind of nodes (no binds, spawn, include, rules…).
+#   apply <name>        read the new file from stdin, check, validate, install (prints «ok» or the error on stderr)
+#   revert <name>       put <name>.kdl.prev back (validated too)
+#   trial-start outputs keep the known-good outputs.kdl as outputs.kdl.trial (only if no trial is running) and arm a
+#                       systemd timer that restores it in 17 s even if the shell dies, reloads or hangs
+#   trial-end outputs   «Mantener»: disarm the timer, forget the copy
+#   restore outputs     put outputs.kdl.trial back and disarm (the timer, «Revertir», or the shell at start-up)
+#   path <name>
+set -euo pipefail
+
+self="$(readlink -f "$0")"
+dir="${XDG_STATE_HOME:-$HOME/.local/state}/ocarinashell/niri"
+name="${2:-}"
+case "$name" in
+  overrides|outputs|honban-rules|fune-rules|shinobi|oni|user-binds) ;;
+  *) echo "uso: ocarina-niri-gen apply|revert|trial-start|trial-end|restore|path overrides|outputs|honban-rules|fune-rules|shinobi|oni|user-binds" >&2; exit 2 ;;
+esac
+file="$dir/$name.kdl"
+unit="ocarina-haichi-revert"
+header='// GENERATED — owner: Displays (配置 Haichi). Empty: niri uses its defaults (every screen on, automatic layout).'
+
+check_binds() {   # $1 = file: one binds block whose actions all exist in the kit's binds.kdl (or switch a key off)
+  local src line action
+  src="$(dirname "$(readlink -f "${XDG_CONFIG_HOME:-$HOME/.config}/niri/config.kdl")")/ocarina/binds.kdl"
+  [[ -f "$src" ]] || { echo "no encuentro $src" >&2; return 1; }
+  while IFS= read -r line; do
+    [[ -z "${line//[[:space:]]/}" || "$line" =~ ^[[:space:]]*// || "$line" == "binds {" || "$line" == "}" ]] && continue
+    if [[ ! "$line" =~ ^\ {4}[A-Za-z0-9_+]+(\ [a-z-]+=[^{]*)?\ \{\ (.*)\ \}$ ]]; then
+      echo "línea no permitida en user-binds.kdl: $line" >&2; return 1
+    fi
+    action="${BASH_REMATCH[2]}"
+    [[ "$action" == 'spawn "true";' ]] && continue
+    if ! grep -qF -- "{ $action }" "$src" && ! grep -qF -- "{ ${action%;} }" "$src"; then
+      echo "acción que no está en binds.kdl: $action" >&2; return 1
+    fi
+  done < "$1"
+}
+
+check() {   # $1 = file: only the node kinds this file owns, at any depth (comments are not looked at)
+  local code bad="" rc=0
+  [[ "$name" == user-binds ]] && { check_binds "$1"; return; }
+  code="$(sed 's://.*$::' "$1")"
+  local deny='binds|spawn|spawn-sh|include|window-rule|layer-rule|environment|prefer-no-csd|screenshot-path|hotkey-overlay|switch-events|cursor|xwayland-satellite|workspace'
+  # honban-rules is made of window rules: those (and only those) are allowed there
+  [[ "$name" == honban-rules ]] && deny="${deny/window-rule|/}|open-on-output|open-on-workspace|block-out-from"
+  # fune-rules: window rules for Windows apps (asagi ring, floating dialogs); never where they open or hidden
+  [[ "$name" == fune-rules ]] && deny="${deny/window-rule|/}|open-on-output|open-on-workspace|block-out-from"
+  # oni: window rules too (VRR for games), nothing that moves or hides windows
+  [[ "$name" == oni ]] && deny="${deny/window-rule|/}|open-on-output|open-on-workspace|block-out-from|open-fullscreen|open-maximized"
+  # shinobi switches niri's shadows off on the shell's layers too: layer rules (and nothing else from the list)
+  [[ "$name" == shinobi ]] && deny="${deny/layer-rule|/}|block-out-from"
+  if bad="$(grep -nE "(^|[[:space:];{}])($deny)([[:space:]]|\$|\\{)" <<< "$code")"; then
+    echo "contenido no permitido en $name.kdl: ${bad%%$'\n'*}" >&2
+    return 1
+  fi
+  if [[ "$name" == outputs ]]; then
+    bad="$(grep -nvE '^(output "[A-Za-z0-9_-]+" \{|\}|[[:space:]]+.*|)$' <<< "$code")" || rc=$?
+  elif [[ "$name" == honban-rules || "$name" == fune-rules || "$name" == oni ]]; then
+    bad="$(grep -nvE '^(window-rule \{|\}|[[:space:]]+.*|)$' <<< "$code")" || rc=$?
+  elif [[ "$name" == shinobi ]]; then
+    bad="$(grep -nvE '^((layout|animations|overview|layer-rule) \{|\}|[[:space:]]+.*|)$' <<< "$code")" || rc=$?
+  else
+    bad="$(grep -nvE '^((input|layout|animations|debug) \{|\}|[[:space:]]+.*|)$' <<< "$code")" || rc=$?
+  fi
+  [[ $rc -ne 0 || -z "$bad" ]] || { echo "nodo no permitido en $name.kdl: ${bad%%$'\n'*}" >&2; return 1; }
+}
+
+validate() {   # $1 = file
+  local out
+  check "$1" || return 1
+  if ! out="$(niri validate -c "$1" 2>&1)"; then
+    printf '%s\n' "$out" | sed 's/\x1b\[[0-9;]*m//g' | grep -v ' WARN \| DEBUG \| INFO ' | tail -n 12 >&2
+    return 1
+  fi
+  # valid but deprecated: installed anyway (it works today), said out loud (docs/06 capa 3.7: a bug to fix)
+  if grep -qi deprecat <<< "$out"; then
+    printf '%s\n' "$out" | sed 's/\x1b\[[0-9;]*m//g' | grep -i deprecat | sed 's/^/aviso: /' >&2
+  fi
+}
+
+install_from() {   # $1 = temp file already written
+  local tmp="$1"
+  validate "$tmp" || return 1
+  chmod 0644 "$tmp"
+  if [[ -f "$file" ]] && cmp -s "$tmp" "$file"; then
+    rm -f "$tmp"; echo ok; return 0
+  fi
+  [[ -f "$file" ]] && cp -f "$file" "$file.prev"
+  mv -f "$tmp" "$file"
+  echo ok
+}
+
+disarm() {
+  systemctl --user stop "$unit.timer" "$unit.service" >/dev/null 2>&1 || true
+  systemctl --user reset-failed "$unit.timer" "$unit.service" >/dev/null 2>&1 || true
+}
+
+case "${1:-}" in
+  path) printf '%s\n' "$file" ;;
+  apply)
+    mkdir -p "$dir"
+    tmp="$(mktemp "$dir/.$name.XXXXXX.kdl")"
+    trap 'rm -f "$tmp"' EXIT
+    cat > "$tmp"
+    install_from "$tmp"
+    trap - EXIT ;;
+  revert)
+    [[ -f "$file.prev" ]] || { echo "no hay versión anterior de $name.kdl" >&2; exit 1; }
+    tmp="$(mktemp "$dir/.$name.XXXXXX.kdl")"
+    trap 'rm -f "$tmp"' EXIT
+    cp -f "$file.prev" "$tmp"
+    validate "$tmp"
+    chmod 0644 "$tmp"
+    mv -f "$tmp" "$file"
+    rm -f "$file.prev"
+    trap - EXIT
+    echo ok ;;
+  trial-start)
+    [[ "$name" == outputs ]] || { echo "solo outputs tiene prueba" >&2; exit 2; }
+    mkdir -p "$dir"
+    if [[ ! -f "$file.trial" ]]; then
+      if [[ -f "$file" ]]; then cp -f "$file" "$file.trial"; else printf '%s\n' "$header" > "$file.trial"; fi
+    fi
+    disarm
+    systemd-run --user --quiet --collect --unit="$unit" --on-active=17s --timer-property=AccuracySec=1s \
+      --setenv=OCARINA_HAICHI_TIMER=1 \
+      --description="OcarinaShell · revertir la prueba de pantallas" "$self" restore outputs
+    echo ok ;;
+  trial-end)
+    disarm
+    rm -f "$file.trial"
+    echo ok ;;
+  restore)
+    [[ -f "$file.trial" ]] || { disarm; echo "nada que revertir"; exit 0; }
+    tmp="$(mktemp "$dir/.$name.XXXXXX.kdl")"
+    trap 'rm -f "$tmp"' EXIT
+    cp -f "$file.trial" "$tmp"
+    if ! validate "$tmp"; then
+      # the saved copy no longer validates (niri updated?): niri's defaults always show every screen
+      printf '%s\n' "$header" > "$tmp"
+    fi
+    chmod 0644 "$tmp"
+    mv -f "$tmp" "$file"
+    rm -f "$file.trial"
+    trap - EXIT
+    # disarm last: when the timer itself runs this, stopping its own service would kill us before the restore
+    [[ -n "${OCARINA_HAICHI_TIMER:-}" ]] || disarm
+    echo ok ;;
+  *) echo "uso: ocarina-niri-gen apply|revert|trial-start|trial-end|restore|path overrides|outputs|honban-rules|fune-rules|shinobi|oni|user-binds" >&2; exit 2 ;;
+esac

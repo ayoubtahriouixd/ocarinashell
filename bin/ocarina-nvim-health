@@ -1,0 +1,245 @@
+#!/usr/bin/env python3
+"""ocarina-nvim-health — headless health of the Neovim config, and safe plugin updates for 守 Mamori (phase 16).
+
+  ocarina-nvim-health [--json]            check the real config: starts without errors, start-up time (median of 7)
+                                          under the budget, :checkhealth without errors, LSP attaches (Lua, QML)
+  ocarina-nvim-health update [--apply] [--json]
+                                          `Lazy! sync` in a sandbox (copy of config/nvim + the installed plugins,
+                                          separate XDG dirs: the real Neovim is never touched), then the same checks
+                                          there. Without --apply it only reports what would change. With --apply and
+                                          all green: the new lazy-lock.json is committed on a branch
+                                          `mamori/nvim-<date>` (temporary git worktree), fast-forwarded into the
+                                          current branch, applied with `Lazy! restore` and checked again; if that
+                                          fails it is reverted (git revert + Lazy! restore). Never pushes.
+
+Known errors that are not ours (optional snacks.image tools: LaTeX, Mermaid; no graphics terminal when headless)
+are listed in IGNORED and reported apart. Exit code: 0 healthy, 1 problems, 2 usage/environment error.
+Python stdlib only.
+"""
+import json
+import os
+import re
+import shutil
+import statistics
+import subprocess
+import sys
+import tempfile
+import time
+from datetime import datetime
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+CONFIG = REPO / "config/nvim"
+LOCK = CONFIG / "lazy-lock.json"
+HOME = Path.home()
+DATA = Path(os.environ.get("XDG_DATA_HOME", HOME / ".local/share")) / "nvim"
+STATE = Path(os.environ.get("XDG_STATE_HOME", HOME / ".local/state")) / "ocarinashell"
+CACHE = Path(os.environ.get("XDG_CACHE_HOME", HOME / ".cache")) / "ocarinashell"
+BUDGET_MS = 30.0
+IGNORED = [
+    r"None of the tools found: 'tectonic', 'pdflatex'",
+    r"Tool not found: 'mmdc'",
+    r"your terminal does not support the kitty graphics protocol",
+]
+LSP_PROBES = [("config/nvim/lua/ocarina/fx.lua", "lua_ls"), ("shell/modules/obi/Workspaces.qml", "qmlls")]
+
+
+def utf8(env):
+    """Neovim reports a non-UTF-8 locale as a health error: callers like doctor.sh may run with LC_ALL=C."""
+    env = dict(env if env is not None else os.environ)
+    loc = env.get("LC_ALL") or env.get("LC_CTYPE") or env.get("LANG") or ""
+    if "utf-8" not in loc.lower() and "utf8" not in loc.lower():
+        env["LC_ALL"] = "C.UTF-8"
+    return env
+
+
+def nvim(args, env=None, timeout=120, cwd=None):
+    env = utf8(env)
+    return subprocess.run(["nvim", "--headless", *args], capture_output=True, text=True, timeout=timeout, env=env,
+                          cwd=cwd or REPO)
+
+
+def check(env=None, lsp=True):
+    """Runs every check with the given environment (None = the real one). Returns a dict."""
+    res = {"ok": True, "problems": [], "ignored": []}
+    work = Path(tempfile.mkdtemp(prefix="ocarina-nvim-health."))
+    try:
+        # 1 · starts and quits without errors
+        r = nvim(["+qa"], env)
+        out = (r.stdout + r.stderr).strip()
+        if r.returncode != 0 or re.search(r"E\d+:|Error", out):
+            res["problems"].append(f"el arranque muestra errores: {out[-400:]}")
+
+        # 2 · start-up time (median of 7)
+        times = []
+        for i in range(7):
+            log = work / f"st{i}.log"
+            nvim(["--startuptime", str(log), "+qa"], env)
+            m = re.search(r"^(\d+\.\d+)\s+\d+\.\d+: --- NVIM STARTED ---", log.read_text(), re.M)
+            if m:
+                times.append(float(m.group(1)))
+        res["startup_ms"] = round(statistics.median(times), 1) if times else None
+        if not times:
+            res["problems"].append("no se pudo medir el arranque")
+        elif res["startup_ms"] > BUDGET_MS:
+            res["problems"].append(f"arranque {res['startup_ms']} ms > {BUDGET_MS:g} ms")
+
+        # 3 · :checkhealth (UIEnter so the UI-time modules run their setup as in a real session)
+        report = work / "health.txt"
+        nvim(["+doautocmd UIEnter", "+checkhealth", f"+w! {report}", "+qa!"], env, timeout=240)
+        text = report.read_text(encoding="utf-8", errors="replace") if report.exists() else ""
+        if not text:
+            res["problems"].append(":checkhealth no produjo informe")
+        errors = [l.strip("- ").strip() for l in text.splitlines() if "ERROR" in l and "❌" in l]
+        for e in errors:
+            (res["ignored"] if any(re.search(p, e) for p in IGNORED) else res["problems"]).append(
+                e if any(re.search(p, e) for p in IGNORED) else f"checkhealth: {e}")
+        res["health_warnings"] = sum(1 for l in text.splitlines() if "WARNING" in l and "⚠" in l)
+
+        # 4 · LSP attaches
+        if lsp:
+            res["lsp"] = {}
+            for rel, server in LSP_PROBES:
+                if not (REPO / rel).exists():
+                    continue
+                code = ("lua local t=vim.uv.now() while vim.uv.now()-t<15000 do "
+                        f"if #vim.lsp.get_clients({{bufnr=0,name='{server}'}})>0 then break end vim.wait(100) end "
+                        f"io.stdout:write(#vim.lsp.get_clients({{bufnr=0,name='{server}'}})>0 and 'LSP_OK' or 'LSP_NO')")
+                r = nvim([str(REPO / rel), f"+{code}", "+qa!"], env, timeout=60)
+                ok = "LSP_OK" in r.stdout
+                res["lsp"][server] = ok
+                if not ok:
+                    res["problems"].append(f"{server} no se conecta a {rel}")
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    res["ok"] = not res["problems"]
+    return res
+
+
+def lock_diff(old, new):
+    a = json.loads(old.read_text()) if old.exists() else {}
+    b = json.loads(new.read_text()) if new.exists() else {}
+    out = []
+    for name in sorted(set(a) | set(b)):
+        ca, cb = a.get(name, {}).get("commit"), b.get(name, {}).get("commit")
+        if ca != cb:
+            out.append({"plugin": name, "from": (ca or "—")[:8], "to": (cb or "—")[:8]})
+    return out
+
+
+def git(*args, check_=True):
+    return subprocess.run(["git", "-C", str(REPO), *args], capture_output=True, text=True, check=check_)
+
+
+def update(apply):
+    res = {"ok": False, "changes": [], "applied": False}
+    box = Path(tempfile.mkdtemp(prefix="nvim-update.", dir=CACHE if CACHE.is_dir() else None))
+    try:
+        cfg = box / "config/nvim"
+        shutil.copytree(CONFIG, cfg, symlinks=True)
+        (box / "data/nvim").mkdir(parents=True)
+        if (DATA / "lazy").is_dir():  # btrfs: reflink copy, instant
+            subprocess.run(["cp", "-a", "--reflink=auto", str(DATA / "lazy"), str(box / "data/nvim/lazy")],
+                           check=True)
+        if (DATA / "site").is_dir():
+            subprocess.run(["cp", "-a", "--reflink=auto", str(DATA / "site"), str(box / "data/nvim/site")],
+                           check=True)
+        env = dict(os.environ, XDG_CONFIG_HOME=str(box / "config"), XDG_DATA_HOME=str(box / "data"),
+                   XDG_STATE_HOME=str(box / "state"), XDG_CACHE_HOME=str(box / "cache"))
+        r = nvim(["+Lazy! sync", "+qa"], env, timeout=900)
+        if r.returncode != 0:
+            res["problems"] = [f"Lazy! sync falló: {(r.stdout + r.stderr)[-400:]}"]
+            return res
+        res["changes"] = lock_diff(LOCK, cfg / "lazy-lock.json")
+        if not res["changes"]:
+            res["ok"] = True
+            return res
+        res["sandbox"] = check(env, lsp=True)
+        res["problems"] = res["sandbox"]["problems"]
+        if res["problems"]:
+            return res
+        res["ok"] = True
+        pending = STATE / "mamori"
+        pending.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(cfg / "lazy-lock.json", pending / "nvim-lazy-lock.json")
+        if apply:
+            apply_lock(cfg / "lazy-lock.json", res)
+        return res
+    finally:
+        shutil.rmtree(box, ignore_errors=True)
+
+
+def apply_lock(new_lock, res):
+    if git("status", "--porcelain", "--", str(LOCK)).stdout.strip():
+        res["ok"] = False
+        res["problems"] = ["lazy-lock.json tiene cambios sin commit: no lo toco"]
+        return
+    branch = f"mamori/nvim-{datetime.now():%Y%m%d-%H%M}"
+    wt = Path(tempfile.mkdtemp(prefix="mamori-wt."))
+    shutil.rmtree(wt)
+    try:
+        git("worktree", "add", "-q", "-b", branch, str(wt), "HEAD")
+        shutil.copy2(new_lock, wt / "config/nvim/lazy-lock.json")
+        msg = "mamori: plugins de Neovim actualizados\n\n" + "\n".join(
+            f"- {c['plugin']}: {c['from']} → {c['to']}" for c in res["changes"])
+        subprocess.run(["git", "-C", str(wt), "commit", "-q", "-am", msg], check=True, capture_output=True)
+    finally:
+        git("worktree", "remove", "--force", str(wt), check_=False)
+    r = git("merge", "--ff-only", "-q", branch, check_=False)
+    if r.returncode != 0:
+        res["ok"] = False
+        res["problems"] = [f"no se pudo fusionar {branch} (sin fast-forward); queda la rama para revisarla"]
+        return
+    nvim(["+Lazy! restore", "+qa"], timeout=900)
+    after = check(None, lsp=True)
+    res["after"] = after
+    if after["ok"]:
+        res["applied"] = True
+        res["branch"] = branch
+        return
+    git("revert", "--no-edit", "HEAD", check_=False)
+    nvim(["+Lazy! restore", "+qa"], timeout=900)
+    res["ok"] = False
+    res["problems"] = ["falló tras aplicar; revertido: " + "; ".join(after["problems"])]
+
+
+def show(res, title):
+    print(f"{'✓' if res['ok'] else '✗'} {title}")
+    if res.get("startup_ms") is not None:
+        print(f"  arranque: {res['startup_ms']} ms (presupuesto {BUDGET_MS:g} ms)")
+    if "health_warnings" in res:
+        print(f"  checkhealth: {res['health_warnings']} avisos, {len(res.get('ignored', []))} errores ajenos ignorados")
+    for k, v in res.get("lsp", {}).items():
+        print(f"  lsp {k}: {'conectado' if v else 'NO'}")
+    for c in res.get("changes", []):
+        print(f"  {c['plugin']}: {c['from']} → {c['to']}")
+    for p in res.get("problems", []):
+        print(f"  ✗ {p}")
+
+
+def main(argv):
+    as_json = "--json" in argv
+    if not shutil.which("nvim"):
+        print("nvim no está instalado", file=sys.stderr)
+        return 2
+    t0 = time.monotonic()
+    if argv and argv[0] == "update":
+        res = update("--apply" in argv)
+        title = "actualización de plugins" + (" aplicada" if res.get("applied") else
+                                              (" sin cambios" if not res.get("changes") else " probada"))
+    elif not argv or argv[0].startswith("--"):
+        res = check()
+        title = "Neovim sano" if res["ok"] else "Neovim con problemas"
+    else:
+        print(__doc__, file=sys.stderr)
+        return 2
+    res["seconds"] = round(time.monotonic() - t0, 1)
+    if as_json:
+        print(json.dumps(res, ensure_ascii=False, indent=1))
+    else:
+        show(res, title)
+    return 0 if res["ok"] else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

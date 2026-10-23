@@ -1,0 +1,3 @@
+// Startup. OcarinaShell and its helpers are systemd --user units bound to graphical-session.target
+// (systemd/user/), so nothing is spawned from here. Use spawn-at-startup only for programs that cannot run
+// as a unit. xwayland-satellite is managed by niri itself.

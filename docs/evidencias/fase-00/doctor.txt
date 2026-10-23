@@ -1,0 +1,57 @@
+
+Versiones
+  ✓ niri 26.04-1.1
+  ✓ quickshell 0.3.2-1.1
+  ✓ qt6-base 6.12.0-2
+  ✓ ghostty 1.3.1-2.1
+  ✓ neovim 0.12.6-1.1
+  ✓ fish 4.9.3-1
+  ✓ mesa 3:26.2.4-1
+  ✓ limine 12.9.3-2
+  ✓ plymouth 26.134.222-4
+  ✓ freerdp 2:3.32.2-1.1
+  ✓ kernel 7.2.9-2-cachyos
+
+Paquetes críticos desde repos oficiales (06-ACTUALIZACIONES, capa 2)
+  ✓ niri (repo oficial)
+  ✓ quickshell (repo oficial)
+  ✓ ghostty (repo oficial)
+  ✓ neovim (repo oficial)
+  ✓ qt6-base (repo oficial)
+  ✓ qt6-declarative (repo oficial)
+  ✓ mesa (repo oficial)
+  ✓ linux-cachyos (repo oficial)
+  ✓ linux-cachyos-lts (repo oficial)
+  ✓ paru (repo oficial)
+  ✓ paru funciona
+
+Redes de seguridad
+  ✓ snapper: config root
+  ✓ snap-pac
+  ✓ limine-snapper-sync activo
+  ✓ kernel-modules-hook
+  ✓ paccache.timer
+  ✓ swaylock (bloqueo de emergencia)
+  ⚠ no puedo leer /boot/limine.conf sin root (entrada LTS sin comprobar)
+
+Sesión
+  ✓ niri validate
+  ⚠ graphical-session.target inactivo: la sesión no se lanzó con niri-session (los servicios ocarina* no arrancarán)
+  ⚠ la config de niri lanza demonios de UI ajenos (spawn-at-startup)
+  ⚠ ocarinashell.service inactivo
+
+Fuentes
+  ✓ JetBrainsMono Nerd Font
+  ✓ Noto Sans CJK JP
+  ✓ Geist
+  ✓ Zen Kaku Gothic New
+  ✓ Shippori Mincho B1
+  ✓ Yuji Syuku
+  ✓ Unbounded
+  ✓ Material Symbols Rounded
+  ✓ sans-serif:lang=ja → Noto Sans CJK JP
+
+Enlaces del repo
+  ✓ scripts/install.sh al día
+
+Sin problemas, 4 aviso(s)

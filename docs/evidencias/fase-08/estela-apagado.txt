@@ -1,0 +1,4 @@
+antes: on
+movimiento reducido: off
+1
+restaurado: on

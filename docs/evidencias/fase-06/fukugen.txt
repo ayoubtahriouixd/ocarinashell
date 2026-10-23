@@ -1,0 +1,20 @@
+antes:
+  ('com.mitchellh.ghostty', 2, 600, '/run/user/1000/fukugen-zypnjd3h/uno - fish')
+  ('com.mitchellh.ghostty', 2, 1000, '/run/user/1000/fukugen-zypnjd3h/dos - fish')
+  ('org.gnome.Nautilus', 3, 1000, 'fukugen-zypnjd3h')
+  ('com.mitchellh.ghostty', 3, 600, '/run/user/1000/fukugen-zypnjd3h/tres - fish')
+  ('org.gnome.Nautilus', 4, 600, 'uno')
+  ('com.mitchellh.ghostty', 4, 1000, '/run/user/1000/fukugen-zypnjd3h/cuatro - fish')
+guardar: ok
+otras ventanas de la sesión (también se restauran): [('com.mitchellh.ghostty', 1, 805)]
+restaurar: restaurando 7 apps · 4 espacios
+estado: {"mode":"ask","saved":7,"savedAt":"","restoring":false,"queue":0,"pending":[],"report":{"placed":7,"skipped":0,"total":7}}
+después:
+  ('org.gnome.Nautilus', 3, 1000, 'Carpeta personal')
+  ('com.mitchellh.ghostty', 1, 805, '~/ocarinashell - fish')
+  ('org.gnome.Nautilus', 4, 600, 'Carpeta personal')
+  ('com.mitchellh.ghostty', 2, 600, '/run/user/1000/fukugen-zypnjd3h/uno - fish')
+  ('com.mitchellh.ghostty', 3, 600, '/run/user/1000/fukugen-zypnjd3h/tres - fish')
+  ('com.mitchellh.ghostty', 2, 1000, '/run/user/1000/fukugen-zypnjd3h/dos - fish')
+  ('com.mitchellh.ghostty', 4, 1000, '/run/user/1000/fukugen-zypnjd3h/cuatro - fish')
+RESULTADO: OK — cada ventana en su espacio y con su ancho

@@ -1,0 +1,7 @@
+# OcarinaShell (fase 13): if the greeter never said «ready», Plymouth still goes away.
+[Unit]
+Description=Plymouth failsafe for the OcarinaShell greeter
+
+[Timer]
+OnActiveSec=25
+Unit=ocarina-plymouth-failsafe.service

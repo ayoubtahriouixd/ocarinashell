@@ -1,0 +1,34 @@
+# OcarinaShell · paquetes que instala ./install.sh (repos oficiales y CachyOS; [aur] con paru).
+# Formato: «[grupo] Título · descripción» y debajo los paquetes, separados por espacios. Los grupos con «*» van
+# siempre; el resto se eligen en el instalador. Comprobado en CachyOS con niri 26.04 y Quickshell 0.3.2.
+
+[base]* Escritorio · niri, Quickshell, portales, portapapeles, capturas, brillo y temas
+niri quickshell qt6-declarative qt6-imageformats qt6-svg qt6-shadertools xwayland-satellite
+xdg-desktop-portal-gnome xdg-desktop-portal-gtk gnome-keyring swayidle swaylock brightnessctl ddcutil
+cliphist wl-clipboard wtype grim slurp satty wl-mirror wlsunset playerctl libqalculate libvips matugen
+jq fd ripgrep curl pacman-contrib fwupd snapper adw-gtk-theme papirus-icon-theme qt6ct
+ttf-jetbrains-mono-nerd noto-fonts-cjk unicode-emoji gpu-screen-recorder wf-recorder
+
+[terminal]* Terminal y editor · Ghostty, fish, starship, Neovim con sus LSP, yazi, lazygit
+ghostty fish starship neovim lazygit yazi zoxide chafa fastfetch btop tree-sitter-cli
+lua-language-server bash-language-server pyright marksman taplo-cli yaml-language-server
+vscode-json-languageserver typescript-language-server stylua shfmt shellcheck ruff prettier
+
+[snake] 蛇 Snake · IA local (llama.cpp en la gráfica), voz con whisper.cpp y 読 Yomu (OCR)
+llama-cpp ggml-vulkan whisper-cpp tesseract tesseract-data-eng tesseract-data-spa tesseract-data-jpn
+tesseract-data-jpn_vert
+
+[juegos] 鬼 Oni · juegos con GameMode, gamescope, MangoHud y LACT
+gamemode lib32-gamemode gamescope mangohud lib32-mangohud lact
+
+[fluido] 滑 Nameraka · vídeo fluido (lsfg-vk; se compila con meson)
+lsfg-vk mpv meson ninja vulkan-headers wayland-protocols wlr-protocols
+
+[windows] 船 Fune · apps de Windows como ventanas (podman + FreeRDP)
+podman podman-compose freerdp passt crun
+
+[mamori] 守 Mamori · mantenimiento autónomo (auditoría, salud del disco)
+arch-audit nvme-cli sysstat
+
+[aur] AUR · cursor Bibata y carpetas de Papirus (con paru)
+bibata-cursor-theme-bin papirus-folders

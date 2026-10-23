@@ -1,0 +1,24 @@
+# Robustez · fase 17 · Quickshell 0.3.2 · niri 26.04 (8ed0da4) · tests/robustez.sh (cada paso lo disparó Ayoub)
+
+## Pasada 1 · 2026-10-18 00:12–00:25
+1 · Matar la shell (SIGKILL) con Engawa abierto ............ ✓ journal limpio · vuelve en 1,9 s (systemd), sin modo seguro
+2 · 20 cambios de tema ...................................... ✓ journal limpio
+3 · 20 × Shinobi ............................................ ✓ journal limpio
+4 · 10 × Oni ................................................ ✓ journal limpio · vuelve a normal, perfil balanced
+5 · Sin red (15 s) .......................................... ✓ journal limpio · reconecta
+6 · Bluetooth por rfkill .................................... ✓ journal limpio · 2 radios desbloqueadas
+7 · Reproductor que desaparece (SIGKILL a mpv) .............. ✓ journal limpio
+8 · 100 notificaciones ...................................... ⚠ 4 × «Toasts.qml[68:40]: Unable to assign [undefined] to double»
+     (un toast efímero destruido en plena ráfaga; corregido en Toasts.qml) · shell en 158 MB después
+9 · 20 × Nameraka con vídeo a pantalla completa + Alt+Tab, vista general y bloqueo de prueba ... ✓ journal limpio
+
+## Pasada 2 · 2026-10-18 00:33–00:36
+10 · Suspensiones y tapa ...................................... ✓ journal limpio · 4 suspensiones (PM: suspend exit),
+     2 con la tapa (un cierre de tapa a los 14 s de despertar no suspende: HoldoffTimeoutSec de logind, esperado)
+     · cargador: sin eventos registrados (no probado en esta pasada)
+11 · Fune (apps de Windows apagada/pausa/activa) y Snake con la VM ... saltado por decisión de Ayoub (Fune ya probado en la fase 12)
+
+No probado: monitor externo (Ayoub no tiene; D-091).
+Nota: el filtro del guion no veía los WARN de la shell (Quickshell los colorea con ANSI); se corrigió y se revisaron
+a mano los dos intervalos en el journal sin colores: el único aviso fue el del paso 8. niri, amdgpu y coredumps: 0.
+Total: 0 errores; 1 aviso (corregido).

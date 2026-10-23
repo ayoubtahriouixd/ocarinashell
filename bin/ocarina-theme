@@ -1,0 +1,421 @@
+#!/usr/bin/env python3
+"""ocarina-theme — OcarinaShell theme engine (docs/01-ARQUITECTURA §9). Python stdlib only.
+
+  ocarina-theme apply <id> [--accent HEX] [--dry-run]   resolve tokens, render templates/, reload apps
+  ocarina-theme from-wallpaper <image> [--theme ID] [--dry-run]   accent (and accent2) from the image (matugen)
+  ocarina-theme list | current [--json]
+  ocarina-theme effects on|off|status [--motion on|off] [--opacity 0.5–1]   terminal and editor effects (Ghostty ink
+                                        cursor, Neovim smear cursor / smooth scroll / animations, Ghostty's background
+                                        opacity); the shell decides from AC power, 忍 Shinobi, reduced motion and
+                                        transparency
+
+One source of truth: assets/data/themes/<id>.json. Resolved tokens → ~/.local/state/ocarinashell/theme.json
+(the shell watches it). Templates use {{token}} or {{token|filter|filter:arg}}; templates/manifest.json maps each
+template to its destination, validator and reload. All-or-nothing: every output is rendered and validated in a
+temp file next to its destination first; only if all pass are they renamed into place (atomic per file).
+"""
+import argparse
+import colorsys
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+from datetime import date
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+THEMES = REPO / "assets/data/themes"
+TEMPLATES = REPO / "templates"
+HOME = Path.home()
+STATE = Path(os.environ.get("XDG_STATE_HOME", HOME / ".local/state")) / "ocarinashell"
+DATA = Path(os.environ.get("XDG_DATA_HOME", HOME / ".local/share")) / "ocarinashell"
+MARK = "OcarinaShell"   # every rendered file carries it; files without it are backed up before the first write
+
+FONTS = {"fontUi": "Geist", "fontJp": "Zen Kaku Gothic New", "fontDisplay": "Shippori Mincho B1",
+         "fontBrush": "Yuji Syuku", "fontMono": "JetBrainsMono Nerd Font", "fontMonoCjk": "Noto Sans Mono CJK JP",
+         "fontSize": "11", "cursorSize": "24"}
+GNOME_ACCENTS = {"blue": "#3584e4", "teal": "#2190a4", "green": "#3a944a", "yellow": "#c88800",
+                 "orange": "#ed5b00", "red": "#e62d42", "pink": "#d56199", "purple": "#9141ac", "slate": "#6f8396"}
+PAPIRUS = {"red": "#e53935", "pink": "#ec407a", "violet": "#7e57c2", "indigo": "#5c6bc0", "blue": "#42a5f5",
+           "cyan": "#26c6da", "teal": "#26a69a", "green": "#66bb6a", "yellow": "#ffca28", "orange": "#ffa726",
+           "brown": "#8d6e63", "grey": "#9e9e9e"}
+
+
+class ThemeError(Exception):
+    pass
+
+
+# ── colours ──────────────────────────────────────────────────────────────────────────────────────
+def parse(c):
+    m = re.fullmatch(r"#([0-9a-fA-F]{6})([0-9a-fA-F]{2})?", str(c).strip())
+    if not m:
+        raise ThemeError(f"color no válido: {c!r}")
+    rgb = tuple(int(m.group(1)[i:i + 2], 16) for i in (0, 2, 4))
+    return rgb, (int(m.group(2), 16) / 255 if m.group(2) else 1.0)
+
+
+def hexa(rgb, a=1.0):
+    s = "#" + "".join(f"{max(0, min(255, round(v))):02x}" for v in rgb)
+    return s if a >= 0.999 else s + f"{round(a * 255):02x}"
+
+
+def shift(c, dl, ds=0.0):
+    (r, g, b), a = parse(c)
+    h, l, s = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
+    r, g, b = colorsys.hls_to_rgb(h, min(1, max(0, l + dl)), min(1, max(0, s + ds)))
+    return hexa((r * 255, g * 255, b * 255), a)
+
+
+def nearest(c, table):
+    (r, g, b), _ = parse(c)
+    h, l, s = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
+
+    def dist(v):
+        (r2, g2, b2), _ = parse(v)
+        h2, l2, s2 = colorsys.rgb_to_hls(r2 / 255, g2 / 255, b2 / 255)
+        dh = min(abs(h - h2), 1 - abs(h - h2))
+        return dh * 4 * min(s, s2) + abs(s - s2) + abs(l - l2) * 0.5
+    return min(table, key=lambda k: dist(table[k]))
+
+
+def filt(value, name, arg):
+    rgb, a = parse(value)
+    if name == "hex":                        # #RRGGBB, alpha dropped
+        return hexa(rgb)
+    r, g, b = rgb
+    if name == "nohash":
+        return hexa(rgb, a)[1:]
+    if name == "rgb":
+        return f"{r}, {g}, {b}"
+    if name == "rgba":
+        return f"rgba({r}, {g}, {b}, {float(arg) if arg else round(a, 3)})"
+    if name == "alpha":
+        return hexa(rgb, float(arg))
+    if name == "fade":                       # multiply the existing alpha
+        return hexa(rgb, a * float(arg))
+    if name == "qt":                         # #AARRGGBB
+        return f"#{round(a * 255):02x}" + hexa(rgb)[1:]
+    if name == "lighten":
+        return shift(value, float(arg))
+    if name == "darken":
+        return shift(value, -float(arg))
+    if name == "ansi":                       # 24-bit SGR fragment, e.g. for EZA_COLORS
+        return f"38;2;{r};{g};{b}"
+    raise ThemeError(f"filtro desconocido: {name}")
+
+
+# ── tokens ───────────────────────────────────────────────────────────────────────────────────────
+def load_theme(tid):
+    p = THEMES / f"{tid}.json"
+    if not p.is_file():
+        raise ThemeError(f"no existe el tema «{tid}» (ocarina-theme list)")
+    return json.loads(p.read_text(encoding="utf-8"))
+
+
+def resolve(tid, accent=None, accent2=None):
+    t = load_theme(tid)
+    dark = t["mode"] == "dark"
+    tok = dict(t["colors"])
+    if accent:
+        hexa(*parse(accent))
+        tok["accent"] = accent.lower()
+        tok["accentHover"] = shift(accent, 0.08 if dark else -0.08)
+        tok["accentSoft"] = hexa(parse(accent)[0], 0.16 if dark else 0.12)
+    if accent2:
+        tok["accent2"] = accent2.lower()
+    fr = t["focusRing"]
+    active = [tok["accent"], tok["accentHover"]] if accent else fr["active"]
+    tok.update(focusFrom=active[0], focusTo=active[-1], focusInactive=fr["inactive"], focusUrgent=fr["urgent"],
+               focusWindows=fr["windows"], shadow=t["shadow"], scrim=t["scrim"])
+    g = t["glass"]
+    tok.update(glassAlpha=str(g["alpha"]), glassOpaqueAlpha=str(g["opaqueAlpha"]), glassBorder=g["border"],
+               glassHighlight=g["highlight"])
+    term = t["terminal"]
+    tok.update(termBg=term["background"], termFg=term["foreground"], termCursor=term["cursor"],
+               termCursorText=term["cursorText"], termSelBg=term["selectionBackground"],
+               termSelFg=term["selectionForeground"])
+    tok.update({f"term{i}": c for i, c in enumerate(term["palette"])})
+    tok.update(t["system"])
+    if accent:
+        tok["papirusFolders"] = nearest(accent, PAPIRUS)
+    tok["accentGnome"] = nearest(tok["accent"], GNOME_ACCENTS)
+    tok["kvantum"] = tok.get("kvantum") or ""
+    tok.update(FONTS)
+    wp = t.get("wallpaper")
+    tok["home"] = str(HOME)
+    tok.update(id=t["id"], name=t["name"], kanji=t["kanji"], kana=t["kana"], mode=t["mode"],
+               isDark="true" if dark else "false", wallpaper=str(DATA / "wallpapers" / wp) if wp else "")
+    for k, v in tok.items():
+        if k not in ("glassAlpha", "glassOpaqueAlpha") and isinstance(v, str) and v.startswith("#"):
+            parse(v)                         # every colour must be valid before anything is written
+    return {k: str(v) for k, v in tok.items()}
+
+
+TOKEN_RE = re.compile(r"\{\{\s*([A-Za-z][A-Za-z0-9_]*)((?:\|[a-z]+(?::[0-9.]+)?)*)\s*\}\}")
+
+
+def render(text, tok, where):
+    def sub(m):
+        if m.group(1) not in tok:
+            raise ThemeError(f"{where}: token desconocido «{m.group(1)}»")
+        v = tok[m.group(1)]
+        for f in filter(None, m.group(2).split("|")):
+            name, _, arg = f.partition(":")
+            v = filt(v, name, arg)
+        return v
+    return TOKEN_RE.sub(sub, text)
+
+
+# ── outputs ──────────────────────────────────────────────────────────────────────────────────────
+def expand(p):
+    return Path(os.path.expandvars(os.path.expanduser(p)))
+
+
+def validate(kind, path):
+    """Return an error string, or None. Missing validators are skipped (capability, not version)."""
+    cmds = {"niri": ["niri", "validate", "-c", str(path)],
+            "ghostty": ["ghostty", "+validate-config", f"--config-file={path}"],
+            "fish": ["fish", "--no-execute", str(path)],
+            "lua": ["nvim", "--headless", "--clean", "-i", "NONE", "-c", f"luafile {path}", "-c", "qa!"]}
+    if kind == "json":
+        try:
+            json.loads(Path(path).read_text(encoding="utf-8"))
+            return None
+        except ValueError as e:
+            return str(e)
+    if kind == "toml":
+        import tomllib
+        try:
+            tomllib.loads(Path(path).read_text(encoding="utf-8"))
+            return None
+        except ValueError as e:
+            return str(e)
+    if kind not in cmds or not shutil.which(cmds[kind][0]):
+        return None
+    r = subprocess.run(cmds[kind], capture_output=True, text=True, timeout=20)
+    out = (r.stdout + r.stderr).strip()
+    if r.returncode != 0 or (kind == "lua" and out):
+        return out[-800:] or f"código {r.returncode}"
+    return None
+
+
+def atomic_write(path, text):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(text)
+    os.chmod(tmp, 0o644)
+    os.replace(tmp, path)
+
+
+def apply(tid, accent=None, accent2=None, dry=False, quiet=False):
+    t0 = time.monotonic()
+    tok = resolve(tid, accent, accent2)
+    manifest = json.loads((TEMPLATES / "manifest.json").read_text(encoding="utf-8"))
+    staged, errors = [], []
+    scratch = Path(tempfile.mkdtemp(prefix="ocarina-theme-")) if dry else None   # dry-run touches nothing
+    try:
+        for e in manifest["targets"]:
+            src, dst = TEMPLATES / e["template"], expand(e["dest"])
+            text = render(src.read_text(encoding="utf-8"), tok, e["template"])
+            stage = scratch or dst.parent
+            stage.mkdir(parents=True, exist_ok=True)
+            fd, tmp = tempfile.mkstemp(prefix=f".{dst.name}.", suffix=".tmp", dir=stage)
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                f.write(text)
+            os.chmod(tmp, 0o644)               # mkstemp creates 0600
+            staged.append((Path(tmp), dst, e))
+            err = validate(e.get("validate"), tmp)
+            if err:
+                errors.append(f"{e['template']} → {dst}: {err}")
+        if errors:
+            raise ThemeError("validación fallida, no se ha cambiado nada:\n  " + "\n  ".join(errors))
+        if dry:
+            for tmp, dst, e in staged:
+                same = dst.is_file() and dst.read_text(encoding="utf-8") == tmp.read_text(encoding="utf-8")
+                print(f"  {'=' if same else '~'} {dst}")
+            return tok
+        for tmp, dst, e in staged:
+            if dst.exists() and MARK not in dst.read_text(encoding="utf-8", errors="replace"):
+                bak = dst.with_name(f"{dst.name}.ocarina-bak-{date.today()}")
+                if not bak.exists():
+                    shutil.copy2(dst, bak)
+            os.replace(tmp, dst)
+        staged = []
+    finally:
+        for tmp, _, _ in staged:
+            tmp.unlink(missing_ok=True)
+        if scratch:
+            shutil.rmtree(scratch, ignore_errors=True)
+
+    state = {"id": tid, "accent": accent, "accent2": accent2, "applied": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+             "tokens": tok}
+    atomic_write(STATE / "theme.json", json.dumps(state, ensure_ascii=False, indent=1) + "\n")
+    side_effects(tok)
+    reloads = {e["reload"] for e in manifest["targets"] if e.get("reload")}
+    if "ghostty" in reloads:
+        subprocess.run(["pkill", "-USR2", "-u", str(os.getuid()), "-x", "ghostty"], capture_output=True)
+    if not quiet:
+        print(f"Tema {tok['kanji']} {tok['name']} aplicado en {time.monotonic() - t0:.2f} s "
+              f"({len(manifest['targets'])} destinos)")
+    return tok
+
+
+def side_effects(tok):
+    if shutil.which("gsettings"):
+        iface = "org.gnome.desktop.interface"
+        for key, val in (("color-scheme", tok["colorScheme"]), ("gtk-theme", tok["gtkTheme"]),
+                         ("icon-theme", tok["iconTheme"]), ("cursor-theme", tok["cursorTheme"]),
+                         ("cursor-size", tok["cursorSize"]), ("accent-color", tok["accentGnome"]),
+                         ("font-name", f"{tok['fontUi']} {tok['fontSize']}"),
+                         ("document-font-name", f"{tok['fontUi']} {tok['fontSize']}"),
+                         ("monospace-font-name", f"{tok['fontMono']} {tok['fontSize']}")):
+            subprocess.run(["gsettings", "set", iface, key, val], capture_output=True)
+    # papirus-folders rewrites /usr/share/icons: only when it changes, only with passwordless sudo, detached
+    if shutil.which("papirus-folders"):
+        theme, color = tok["iconTheme"], tok["papirusFolders"]
+        cur = subprocess.run(["papirus-folders", "-l", "--theme", theme], capture_output=True, text=True).stdout
+        if not re.search(rf"^\s*>\s*{re.escape(color)}\s*$", cur, re.M):
+            if subprocess.run(["sudo", "-n", "true"], capture_output=True).returncode == 0:
+                subprocess.Popen(["sudo", "-n", "papirus-folders", "-C", color, "--theme", theme],
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+            else:
+                print(f"  ⚠ carpetas de Papirus sin cambiar (necesita: sudo papirus-folders -C {color} --theme {theme})")
+
+
+def from_wallpaper(image, dry=False, tid=None, quiet=False):
+    if not shutil.which("matugen"):
+        raise ThemeError("matugen no está instalado: pacman -S matugen")
+    cur = {"id": tid} if tid else (current() or {"id": "kurenai"})
+    mode = load_theme(cur["id"])["mode"]
+    r = subprocess.run(["matugen", "image", str(image), "-m", mode, "--json", "hex", "--dry-run", "-q",
+                        "--source-color-index", "0"], capture_output=True, text=True, timeout=60)
+    if r.returncode != 0:
+        raise ThemeError(f"matugen falló: {r.stderr.strip()[-400:]}")
+    c = json.loads(r.stdout)["colors"]
+    pick = lambda k: c[k][mode]["color"] if isinstance(c[k], dict) and mode in c[k] else c[k]["default"]["color"]
+    # source_color is the real dominant colour; make it usable as a saturated accent in this mode
+    (rr, gg, bb), _ = parse(pick("source_color"))
+    h, l, s = colorsys.rgb_to_hls(rr / 255, gg / 255, bb / 255)
+    l = min(max(l, 0.42 if mode == "dark" else 0.34), 0.58 if mode == "dark" else 0.46)
+    accent = hexa(tuple(v * 255 for v in colorsys.hls_to_rgb(h, l, max(s, 0.6))))
+    return apply(cur["id"], accent, pick("tertiary"), dry, quiet)
+
+
+EFFECTS = STATE / "theme/ghostty-effects.conf"
+EFFECTS_JSON = STATE / "theme/effects.json"
+
+
+def effects(mode, quiet=False, motion=None, opacity=1.0):
+    """Writes the Ghostty effects include and the Neovim effects file (only owner of both); reloads Ghostty when its
+    include changes. Neovim watches theme/ itself. cursor = AC power, outside 忍 Shinobi and with motion (animation
+    loops that cost battery); motion = outside Shinobi and with motion (short UI animations, smooth scroll); opacity =
+    Ghostty's background (1 in Shinobi/Oni or without transparency; niri blurs the wallpaper behind it, rules.kdl).
+    The cells with their own background (Neovim paints its Normal bg) get the same opacity, so the editor matches."""
+    if mode == "status":
+        on = EFFECTS.is_file() and "custom-shader =" in EFFECTS.read_text(encoding="utf-8")
+        print("on" if on else "off")
+        return
+    motion_on = (mode == "on") if motion is None else (motion == "on")
+    fx = json.dumps({"cursor": mode == "on", "motion": motion_on or mode == "on"}) + "\n"
+    try:
+        same = EFFECTS_JSON.read_text(encoding="utf-8") == fx
+    except OSError:
+        same = False
+    if not same:
+        atomic_write(EFFECTS_JSON, fx)
+    shader = HOME / ".config/ghostty/shaders/ink-cursor.glsl"
+    lines = [f"# {MARK} · GENERATED by ocarina-theme effects — do not edit (the shell rewrites it).",
+             "# on: AC power, outside 忍 Shinobi and with motion enabled · off: nothing animates."]
+    if mode == "on" and shader.is_file():
+        # the animation loop only runs in the focused surface while a custom shader is loaded
+        lines += [f"custom-shader = {shader}", "custom-shader-animation = true"]
+    else:
+        lines += ["custom-shader-animation = false"]
+    opacity = max(0.5, min(1.0, float(opacity)))
+    lines += [f"background-opacity = {opacity:.2f}", f"background-opacity-cells = {'true' if opacity < 1 else 'false'}"]
+    text = "\n".join(lines) + "\n"
+    try:
+        if EFFECTS.read_text(encoding="utf-8") == text:
+            return
+    except OSError:
+        pass
+    if shutil.which("ghostty"):
+        fd, tmp = tempfile.mkstemp(prefix=".effects.", suffix=".conf", dir=STATE)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(text)
+        r = subprocess.run(["ghostty", "+validate-config", f"--config-file={tmp}"], capture_output=True, text=True)
+        os.unlink(tmp)
+        if r.returncode != 0:
+            raise ThemeError(f"efectos de Ghostty no válidos: {(r.stdout + r.stderr).strip()[-300:]}")
+    atomic_write(EFFECTS, text)
+    subprocess.run(["pkill", "-USR2", "-u", str(os.getuid()), "-x", "ghostty"], capture_output=True)
+    if not quiet:
+        print(f"efectos de terminal: {'on' if 'custom-shader =' in text else 'off'}")
+
+
+def current():
+    p = STATE / "theme.json"
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def main():
+    ap = argparse.ArgumentParser(prog="ocarina-theme", description="Motor de temas de OcarinaShell")
+    sp = ap.add_subparsers(dest="cmd", required=True)
+    a = sp.add_parser("apply", help="aplicar un tema")
+    a.add_argument("id")
+    a.add_argument("--accent", help="acento propio (#RRGGBB)")
+    a.add_argument("--accent2", help="acento secundario (#RRGGBB)")
+    a.add_argument("--dry-run", action="store_true")
+    a.add_argument("--quiet", action="store_true")
+    w = sp.add_parser("from-wallpaper", help="acento a partir de una imagen (matugen)")
+    w.add_argument("image")
+    w.add_argument("--theme", help="tema base (por defecto, el activo)")
+    w.add_argument("--dry-run", action="store_true")
+    w.add_argument("--quiet", action="store_true")
+    sp.add_parser("list", help="temas disponibles")
+    c = sp.add_parser("current", help="tema activo")
+    c.add_argument("--json", action="store_true")
+    fx = sp.add_parser("effects", help="efectos de la terminal y del editor (estelas del cursor, animaciones)")
+    fx.add_argument("mode", choices=["on", "off", "status"])
+    fx.add_argument("--motion", choices=["on", "off"], help="animaciones cortas y desplazamiento suave (Neovim)")
+    fx.add_argument("--opacity", type=float, default=1.0, help="opacidad del fondo de Ghostty (0,5–1)")
+    fx.add_argument("--quiet", action="store_true")
+    args = ap.parse_args()
+    try:
+        if args.cmd == "apply":
+            apply(args.id, args.accent, args.accent2, args.dry_run, args.quiet)
+        elif args.cmd == "from-wallpaper":
+            apply_tok = from_wallpaper(expand(args.image), args.dry_run, args.theme, args.quiet)
+            if not args.quiet:
+                print(f"  acento {apply_tok['accent']} · acento2 {apply_tok['accent2']}")
+        elif args.cmd == "effects":
+            effects(args.mode, args.quiet, args.motion, args.opacity)
+        elif args.cmd == "list":
+            idx = json.loads((THEMES / "index.json").read_text(encoding="utf-8"))
+            cur = (current() or {}).get("id")
+            for tid in idx["order"]:
+                t = load_theme(tid)
+                print(f"{'●' if tid == cur else ' '} {tid:<9} {t['kanji']:<3} {t['mode']:<5} {t['description']}")
+        elif args.cmd == "current":
+            cur = current()
+            if not cur:
+                print("ninguno aplicado todavía", file=sys.stderr)
+                return 1
+            print(json.dumps(cur, ensure_ascii=False, indent=1) if args.json else
+                  f"{cur['id']}" + (f" (acento {cur['accent']})" if cur.get("accent") else ""))
+    except ThemeError as e:
+        print(f"ocarina-theme: {e}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

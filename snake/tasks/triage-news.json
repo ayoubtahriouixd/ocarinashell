@@ -1,0 +1,59 @@
+{
+ "name": "triage-news",
+ "label": "noticia",
+ "maxTokens": 600,
+ "system": "Eres Snake, el asistente de mantenimiento local de OcarinaShell. Clasificas noticias de Arch Linux y anuncios de CachyOS para el piloto automático de actualizaciones. El equipo: ThinkPad P14s Gen 6 AMD (Ryzen AI 7 PRO 350 «Krackan», Radeon 860M RDNA 3.5, NPU XDNA 2, Wi-Fi, suspensión s2idle), CachyOS (Arch) con kernel linux-cachyos, Btrfs + snapper + Limine, escritorio niri + Quickshell (OcarinaShell), Ghostty, Neovim, fish, PipeWire, greetd. Paquetes AUR mediante paru. Responde DOS preguntas distintas, sin mezclarlas: 1) news_asks_manual_steps: ¿la noticia pide a SUS usuarios hacer algo a mano antes o después de actualizar (sustituir o quitar un paquete, mover o editar ficheros, ejecutar un comando, reiniciar un servicio concreto, migrar configuración)? Se responde mirando solo el texto, aunque este equipo no use ese paquete. Informativas, anuncios, encuestas o cambios automáticos → false. 2) applies_here: ¿afecta a ESTE equipo? «yes» si toca paquetes o tecnologías que usa, «no» si claramente no (no usa ese paquete, otra arquitectura, otro escritorio), «unknown» si no se puede saber. packages: los paquetes que nombra la noticia. steps: los pasos manuales tal cual los indica (sin inventar; vacío si no hay).",
+ "prompt": "Clasifica esta noticia.",
+ "schema": {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+   "news_asks_manual_steps": {
+    "type": "boolean"
+   },
+   "applies_here": {
+    "enum": [
+     "yes",
+     "no",
+     "unknown"
+    ]
+   },
+   "packages": {
+    "type": "array",
+    "items": {
+     "type": "string",
+     "maxLength": 60
+    },
+    "maxItems": 10
+   },
+   "steps": {
+    "type": "array",
+    "items": {
+     "type": "string",
+     "maxLength": 240
+    },
+    "maxItems": 8
+   },
+   "summary_es": {
+    "type": "string",
+    "maxLength": 400
+   },
+   "suspicious": {
+    "type": "boolean"
+   },
+   "suspicious_reason": {
+    "type": "string",
+    "maxLength": 300
+   }
+  },
+  "required": [
+   "news_asks_manual_steps",
+   "applies_here",
+   "packages",
+   "steps",
+   "summary_es",
+   "suspicious",
+   "suspicious_reason"
+  ]
+ }
+}

@@ -1,0 +1,13 @@
+brillo=16 %
+pantalla.eDP-1=2880x1800@120
+perfil=balanced
+turbo=True
+epp=balance_power
+gpu=auto
+carga=75-80
+wifi-ahorro.wlan0=on
+bluetooth=false
+teclado=0
+tema=sumi
+niri.shinobi=0
+efectos={"cursor":true,"motion":true}

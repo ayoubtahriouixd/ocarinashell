@@ -1,0 +1,19 @@
+{
+ "id": "tr-ui",
+ "category": "translate",
+ "task": "translate",
+ "input": "設定を保存しました。再起動すると変更が反映されます。",
+ "expect": {
+  "translation_es": {
+   "contains": [
+    "guard",
+    "reinici",
+    "cambio"
+   ]
+  },
+  "reading_hiragana": {
+   "similar": "せっていをほぞんしました。さいきどうするとへんこうがはんえいされます。",
+   "threshold": 0.7
+  }
+ }
+}

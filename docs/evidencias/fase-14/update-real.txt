@@ -1,0 +1,89 @@
+# Actualización real con ocarina update (fase 14, 2026-10-17 14:01)
+
+1 · Noticias
+  Arch: nada nuevo
+  CachyOS: nada nuevo
+2 · Pendiente
+  repos: 52 · AUR: 0
+    bpf 7.2.10-1 -> 7.2.11-1
+    cpupower 7.2.10-1 -> 7.2.11-1
+    electron43 43.7.11-1 -> 43.7.11-2
+    haskell-aeson 2.2.4.0-4 -> 2.2.4.0-5
+    haskell-ansi-terminal 1.1.2-12 -> 1.1.2-14
+    haskell-ansi-terminal-types 1.1-128 -> 1.1-130
+    haskell-base-orphans 0.9.4-68 -> 0.9.4-70
+    haskell-bifunctors 5.6.3-60 -> 5.6.3-61
+    haskell-colour 2.3.7-93 -> 2.3.7-95
+    haskell-comonad 5.0.10-49 -> 5.0.10-50
+    haskell-data-fix 0.3.4-276 -> 0.3.4-278
+    haskell-diff 1.0.1.1-3 -> 1.0.1.1-4
+    haskell-distributive 0.6.3-77 -> 0.6.3-79
+    haskell-dlist 1.0-487 -> 1.0-489
+    haskell-fgl 5.8.3.1-39 -> 5.8.3.1-40
+    haskell-generically 0.1.1-152 -> 0.1.1-153
+    haskell-hashable 1.4.7.0-154 -> 1.4.7.0-156
+    haskell-indexed-traversable-instances 0.1.2.1-53 -> 0.1.2.1-54
+    haskell-integer-conversion 0.1.1-118 -> 0.1.1-119
+    haskell-integer-logarithms 1.0.4-270 -> 1.0.4-272
+    haskell-network-uri 2.6.4.2-198 -> 2.6.4.2-199
+    haskell-onetuple 0.4.3-48 -> 0.4.3-50
+    haskell-optparse-applicative 0.18.1.0-495 -> 0.18.1.0-499
+    haskell-os-string 2.0.11-75 -> 2.0.11-77
+    haskell-prettyprinter 1.7.2-50 -> 1.7.2-52
+    haskell-prettyprinter-ansi-terminal 1.1.4-150 -> 1.1.4-154
+    haskell-primitive 0.9.1.0-239 -> 0.9.1.0-241
+    haskell-quickcheck 2.15.0.1-269 -> 2.15.0.1-271
+    haskell-random 1.2.1.3-356 -> 1.2.1.3-358
+    haskell-regex-tdfa 1.3.2.6-39 -> 1.3.2.6-41
+    haskell-scientific 0.3.9.0-41 -> 0.3.9.0-45
+    haskell-semialign 1.3.1.1-47 -> 1.3.1.1-48
+    haskell-semigroupoids 6.0.2-68 -> 6.0.2-69
+    haskell-splitmix 0.1.3.2-11 -> 0.1.3.2-12
+    haskell-strict 0.5.1-169 -> 0.5.1-171
+    haskell-tasty 1.5.4-85 -> 1.5.4-89
+    haskell-text-iso8601 0.1.1.2-19 -> 0.1.1.2-20
+    haskell-text-short 0.1.6.1-120 -> 0.1.6.1-122
+    haskell-th-compat 0.1.7-61 -> 0.1.7-62
+    haskell-these 1.2.1-379 -> 1.2.1-381
+    haskell-time-compat 1.9.9-153 -> 1.9.9-155
+    haskell-unordered-containers 0.2.21-64 -> 0.2.21-66
+    haskell-uuid-types 1.0.6.1-133 -> 1.0.6.1-135
+    haskell-vector 0.13.2.0-608 -> 0.13.2.0-613
+    haskell-witherable 0.5-23 -> 0.5-24
+    lib32-librsvg 2:2.63.2-1 -> 2:2.63.3-1
+    librsvg 2:2.63.2-1.1 -> 2:2.63.3-1.1
+    pacman 7.1.0.r9.g54d9411-4 -> 7.1.0.r9.g54d9411-5
+    rate-mirrors 0.31.0-2 -> 0.33.0-1
+    shellcheck 0.11.0-156 -> 0.11.0-157
+    starship 1.26.0-1 -> 1.27.0-1
+    wine 11.19-1.1 -> 11.20-1.1
+3 · Snapshot
+  snapshot #126
+4 · Repos (pacman -Syu)
+resolving dependencies...
+looking for conflicting packages...
+Package (52)                                 Old Version          New Version          Net Change  Download Size
+extra/bpf                                    7.2.10-1             7.2.11-1               0.00 MiB       1.93 MiB
+extra/cpupower                               7.2.10-1             7.2.11-1               0.00 MiB       0.21 MiB
+extra/electron43                             43.7.11-1            43.7.11-2              0.00 MiB      95.86 MiB
+extra/haskell-aeson                          2.2.4.0-4            2.2.4.0-5              0.00 MiB       1.07 MiB
+extra/haskell-ansi-terminal                  1.1.2-12             1.1.2-14               0.00 MiB       0.05 MiB
+extra/haskell-ansi-terminal-types            1.1-128              1.1-130                0.00 MiB       0.07 MiB
+extra/haskell-base-orphans                   0.9.4-68             0.9.4-70               0.00 MiB       0.07 MiB
+extra/haskell-bifunctors                     5.6.3-60             5.6.3-61              -0.01 MiB       0.38 MiB
+extra/haskell-colour                         2.3.7-93             2.3.7-95               0.00 MiB       0.15 MiB
+extra/haskell-comonad                        5.0.10-49            5.0.10-50              0.00 MiB       0.09 MiB
+extra/haskell-data-fix                       0.3.4-276            0.3.4-278              0.00 MiB       0.04 MiB
+extra/haskell-diff                           1.0.1.1-3            1.0.1.1-4              0.00 MiB       0.06 MiB
+extra/haskell-distributive                   0.6.3-77             0.6.3-79               0.00 MiB       0.04 MiB
+extra/haskell-dlist                          1.0-487              1.0-489                0.00 MiB       0.05 MiB
+extra/haskell-fgl                            5.8.3.1-39           5.8.3.1-40             0.00 MiB       0.30 MiB
+extra/haskell-generically                    0.1.1-152            0.1.1-153              0.00 MiB       0.01 MiB
+extra/haskell-hashable                       1.4.7.0-154          1.4.7.0-156            0.00 MiB       0.11 MiB
+
+## AUR (google-chrome 155.0.8059.79 → .84)
+Diff del PKGBUILD revisado antes: solo pkgver y sha512sums, mismo origen dl.google.com (trivial).
+paru -Sua --noconfirm --skipreview --nosudoloop → sha512 validado, snapper #129/#130, 44,8 s; hook → pruebas de humo pasivas: ok
+(SudoLoop de paru llama a sudo -v, que con verifypw=all pide contraseña aunque haya NOPASSWD: interactivo, Ayoub la teclea)
+
+updates.jsonl: {"at":1792245558,"took":49,"snapshot":126,"repo":52,"aur":0,"critical":[],"repoOk":true,"aurOk":true,"smokeOk":true,"reboot":false}

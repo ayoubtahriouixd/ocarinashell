@@ -1,0 +1,10 @@
+# OcarinaShell (fase 13): the greeter's dry run on vt 7, started and stopped by scripts/root/probar-greeter.sh.
+# No Conflicts with getty@tty1 (Ayoub's running session lives there): it only adds vt 7.
+[Unit]
+Description=OcarinaShell greeter test (vt 7)
+After=systemd-user-sessions.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/greetd --config /etc/greetd/ocarina-test.toml
+Restart=no

@@ -1,0 +1,45 @@
+// Input tuned for the ThinkPad P14s Gen 6 AMD (docs/SISTEMA.md). touchpad/trackpoint/touch blocks are replaced
+// whole if redefined in a later include: keep each of them only here.
+input {
+    keyboard {
+        xkb {
+            layout "es"
+            model "pc105"
+        }
+        repeat-delay 260
+        repeat-rate 40
+    }
+
+    touchpad {
+        tap
+        dwt
+        dwtp
+        natural-scroll
+        click-method "clickfinger"
+        accel-speed 0.25
+        scroll-method "two-finger"
+    }
+
+    // TrackPoint: flat profile (predictable), scroll while holding the middle button
+    trackpoint {
+        accel-profile "flat"
+        accel-speed 0.2
+        scroll-method "on-button-down"
+        scroll-button 274
+    }
+
+    // ELAN901C touchscreen → internal panel
+    touch {
+        map-to-output "eDP-1"
+    }
+
+    // The cursor follows the windows (docs/03-ATAJOS): hover focuses without scrolling the strip,
+    // keyboard focus warps the pointer.
+    // focus-follows-mouse and warp-mouse-to-focus live in state/niri/overrides.kdl (Settei → Teclado y ratón):
+    // a flag set here could not be switched off from a later include (fase 07, D-046)
+    workspace-auto-back-and-forth
+
+    // The power key goes to the XF86PowerOff bind (Dengen). logind does not power off because the user unit
+    // ocarina-powerkey.service holds its handle-power-key inhibitor (D-041; before: D-022).
+    disable-power-key-handling
+}

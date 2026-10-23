@@ -1,0 +1,15 @@
+// Miscellaneous.
+prefer-no-csd
+
+screenshot-path "~/Imágenes/Capturas/Captura %Y-%m-%d %H-%M-%S.png"
+
+hotkey-overlay {
+    skip-at-startup
+}
+
+gestures {
+    // Touchpad gestures stay on (3 fingers: workspaces/columns, 4 fingers: overview). No hot corners (D-021).
+    hot-corners {
+        off
+    }
+}

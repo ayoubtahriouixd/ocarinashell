@@ -1,0 +1,18 @@
+# Kagi · 20 ciclos reales · 2026-10-14T22:30:21+00:00
+ciclo 1: bloqueado en 233 ms · desbloqueado tras 15 s · fallos 1 · fallback False
+ciclo 2: bloqueado en 241 ms · desbloqueado tras 24 s · fallos 0 · fallback False
+ciclo 3: bloqueado en 238 ms · desbloqueado tras 4 s · fallos 0 · fallback False
+ciclo 4: bloqueado en 231 ms · desbloqueado tras 3 s · fallos 0 · fallback False
+ciclo 5: bloqueado en 227 ms · desbloqueado tras 21 s · fallos 3 · fallback False
+ciclo 6: bloqueado en 230 ms · desbloqueado tras 4 s · fallos 0 · fallback False
+ciclo 7: bloqueado en 230 ms · desbloqueado tras 5 s · fallos 0 · fallback False
+ciclo 8: bloqueado en 231 ms · desbloqueado tras 6 s · fallos 0 · fallback False
+ciclo 9: bloqueado en 229 ms · desbloqueado tras 87 s · fallos 5 · fallback False
+ciclo 10: bloqueado en 232 ms · desbloqueado tras 6 s · fallos 0 · fallback False
+ciclo 11: bloqueado en 229 ms · desbloqueado tras 4 s · fallos 0 · fallback False
+ciclo 12: bloqueado en 239 ms · desbloqueado tras 6 s · fallos 0 · fallback False
+ciclo 13: bloqueado en 231 ms · desbloqueado tras 4 s · fallos 0 · fallback False
+ciclo 14: bloqueado en 242 ms · desbloqueado tras 4 s · fallos 0 · fallback False
+ciclo 15: bloqueado en 226 ms · desbloqueado tras 5 s · fallos 0 · fallback False
+
+[exited with code 144]

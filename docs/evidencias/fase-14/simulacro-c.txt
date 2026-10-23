@@ -1,0 +1,8 @@
+# Simulacro c (fase 14): módulo con import roto en una rama de prueba (prueba/modulo-roto)
+Cambio: shell/modules/polkit/Polkit.qml → import Quickshell.Services.PolkitRenombrado (como si una actualización renombrara el módulo)
+Tras systemctl --user restart ocarinashell:
+- ocarinashell: active · ocarinashell-safe: inactive (NO entra en modo seguro)
+- shell status: {"failures":{"Polkit":"…Polkit.qml:5:1: module \"Quickshell.Services.PolkitRenombrado\" is not installed"}}
+- 39 destinos IPC registrados (el resto de la shell intacto)
+- ocarina doctor --smoke: 3 fallos, todos de Polkit (agente no cargado, Health, journal) → exit 1
+- vuelta a main + reinicio: failures {} · pruebas de humo superadas

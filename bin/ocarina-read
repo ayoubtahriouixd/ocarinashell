@@ -1,0 +1,176 @@
+#!/usr/bin/env python3
+"""ocarina-read — 読 Yomu: read (and translate) what you see (fase 15, docs/07-IDEAS.md).
+
+A screen region (slurp) → grim → local tesseract → text. Japanese horizontal or vertical (jpn_vert, --psm 5), Spanish
+and English. Nothing leaves the machine: the capture lives in $XDG_RUNTIME_DIR/ocarinashell/yomu (0700, RAM) and is
+deleted when the card closes (`ocarina-read clean`). The shell (services/Yomu.qml) runs `capture` and shows the card;
+«Traducir» calls `ocarina-snake translate`.
+
+  ocarina-read capture [--geometry G]     choose a region (or G = "x,y wxh"), OCR it, JSON on stdout
+  ocarina-read ocr <png> [--vertical|--horizontal]   OCR a file, JSON on stdout
+  ocarina-read eval                       character accuracy on tests/yomu/*.png (criterion > 90 %)
+  ocarina-read clean                      delete the captures
+
+Exit codes: 0 ok · 2 cancelled (Esc in slurp) · 3 no text found · 4 a tool is missing.
+"""
+import json
+import os
+import pathlib
+import re
+import signal
+import shutil
+import subprocess
+import sys
+import time
+
+REPO = pathlib.Path(__file__).resolve().parent.parent
+RUN = pathlib.Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")) / "ocarinashell" / "yomu"
+CJK = r"　-ヿ㐀-䶿一-鿿豈-﫿＀-￯"
+# tesseract separates every CJK character with a space: join them back (spaces between Latin words stay)
+SPACE_CJK = re.compile(rf"(?<=[{CJK}])[ \t]+|[ \t]+(?=[{CJK}])")
+HAS_JP = re.compile(r"[぀-ヿ㐀-䶿一-鿿]")
+
+
+def fail(msg: str, code: int) -> None:
+    print(json.dumps({"error": msg}, ensure_ascii=False))
+    sys.exit(code)
+
+
+def need(*tools: str) -> None:
+    missing = [t for t in tools if shutil.which(t) is None]
+    if missing:
+        fail("falta " + ", ".join(missing), 4)
+
+
+def tesseract(png: str, langs: str, psm: int) -> tuple[str, float]:
+    """Text and mean word confidence (0–100) of one tesseract pass (TSV, so the confidence comes for free)."""
+    out = subprocess.run(["tesseract", png, "-", "-l", langs, "--psm", str(psm), "tsv"],
+                         capture_output=True, text=True, timeout=60).stdout
+    lines: dict[tuple, list[str]] = {}
+    confs: list[float] = []
+    for row in out.splitlines()[1:]:
+        f = row.split("\t")
+        if len(f) < 12 or f[0] != "5" or not f[11].strip():
+            continue
+        conf = float(f[10])
+        if conf < 0:
+            continue
+        confs.append(conf)
+        lines.setdefault((int(f[2]), int(f[3]), int(f[4])), []).append(f[11])
+    text = "\n".join(SPACE_CJK.sub("", " ".join(words)) for _, words in sorted(lines.items()))
+    return text.strip(), (sum(confs) / len(confs) if confs else 0.0)
+
+
+def size_of(png: str) -> tuple[int, int]:
+    with open(png, "rb") as fh:            # PNG IHDR: width and height at bytes 16–24
+        head = fh.read(24)
+    return int.from_bytes(head[16:20], "big"), int.from_bytes(head[20:24], "big")
+
+
+def ocr(png: str, force: str = "") -> dict:
+    """Horizontal (jpn+spa+eng, automatic layout) and, when the text is Japanese and the region looks like columns,
+    vertical (jpn_vert, one block of vertical text); the pass with the better confidence wins."""
+    t0 = time.monotonic()
+    w, h = size_of(png)
+    cands = []
+    if force != "vertical":
+        cands.append((*tesseract(png, "jpn+spa+eng", 3), False))
+    hor = cands[0] if cands else ("", 0.0, False)
+    tall = h > 1.15 * w
+    if force == "vertical" or (force != "horizontal" and (tall or (HAS_JP.search(hor[0]) and hor[1] < 80))):
+        cands.append((*tesseract(png, "jpn_vert", 5), True))
+    text, conf, vertical = max(cands, key=lambda c: (c[1] if c[0] else -1))
+    return {"text": text, "vertical": vertical, "japanese": bool(HAS_JP.search(text)), "confidence": round(conf, 1),
+            "width": w, "height": h, "image": png, "ms": round((time.monotonic() - t0) * 1000)}
+
+
+def capture(geometry: str) -> None:
+    need("grim", "tesseract")
+    if not geometry:
+        need("slurp")
+        # stdin closed: a non-TTY stdin makes slurp read predefined boxes from it, and the shell's pipe never ends
+        sl = subprocess.Popen(["slurp", "-d"], stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                              stderr=subprocess.DEVNULL, text=True)
+
+        def cancel(*_):
+            # Yomu cancels a selection by SIGTERM to us: slurp must go with it, its layer would keep the pointer
+            sl.terminate()
+            fail("cancelado", 2)
+        signal.signal(signal.SIGTERM, cancel)
+        try:
+            # nobody takes a minute to drag a box: a slurp that lost its surface must not hang Yomu
+            out, _ = sl.communicate(timeout=60)
+        except subprocess.TimeoutExpired:
+            sl.terminate()
+            fail("cancelado (sin selección en 60 s)", 2)
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        if sl.returncode != 0 or not out.strip():
+            fail("cancelado", 2)
+        geometry = out.strip()
+    if not re.fullmatch(r"-?\d+,-?\d+ \d+x\d+", geometry):
+        fail("geometría no válida: " + geometry, 1)
+    RUN.mkdir(parents=True, exist_ok=True)
+    os.chmod(RUN, 0o700)
+    png = str(RUN / f"yomu-{int(time.time() * 1000)}.png")
+    subprocess.run(["grim", "-g", geometry, png], check=True, timeout=10)
+    res = ocr(png)
+    res["geometry"] = geometry
+    print(json.dumps(res, ensure_ascii=False))
+    sys.exit(0 if res["text"] else 3)
+
+
+def accuracy(truth: str, got: str) -> float:
+    """1 − Levenshtein(truth, got) / len(truth), ignoring whitespace."""
+    a = re.sub(r"\s+", "", truth)
+    b = re.sub(r"\s+", "", got)
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        for j, cb in enumerate(b, 1):
+            cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
+        prev = cur
+    return max(0.0, 1 - prev[-1] / max(1, len(a)))
+
+
+def evaluate() -> None:
+    rows, ok = [], True
+    for png in sorted((REPO / "tests" / "yomu").glob("*.png")):
+        truth = png.with_suffix(".txt").read_text(encoding="utf-8")
+        res = ocr(str(png))
+        acc = accuracy(truth, res["text"])
+        ok &= acc > 0.90
+        rows.append({"image": png.name, "vertical": res["vertical"], "accuracy": round(acc * 100, 1),
+                     "confidence": res["confidence"], "ms": res["ms"]})
+        print(f"{png.name:24s} {'vertical' if res['vertical'] else 'horizontal':10s} {acc * 100:5.1f} %  "
+              f"conf {res['confidence']:5.1f}  {res['ms']} ms")
+    print("OK" if ok else "FALLA", "(criterio > 90 % de caracteres)")
+    sys.exit(0 if ok else 1)
+
+
+def clean() -> None:
+    if RUN.is_dir():
+        for f in RUN.glob("yomu-*.png"):
+            f.unlink(missing_ok=True)
+
+
+def main(argv: list[str]) -> None:
+    cmd = argv[0] if argv else "capture"
+    if cmd == "capture":
+        geo = argv[argv.index("--geometry") + 1] if "--geometry" in argv[1:-1] else ""
+        capture(geo)
+    elif cmd == "ocr" and len(argv) >= 2:
+        need("tesseract")
+        force = "vertical" if "--vertical" in argv else "horizontal" if "--horizontal" in argv else ""
+        print(json.dumps(ocr(argv[1], force), ensure_ascii=False))
+    elif cmd == "eval":
+        need("tesseract")
+        evaluate()
+    elif cmd == "clean":
+        clean()
+    else:
+        print(__doc__.strip(), file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

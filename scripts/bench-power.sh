@@ -54,5 +54,12 @@ if [[ ! -f "$doc" ]]; then
 |---|---|---|---|---|---|---|---|
 EOF
 fi
-printf '| %s | %s | %s | %s | %s | %s | %s | %s h |\n' "$(date '+%F %H:%M')" "$label" "$mean" "$med" "$p95" "$brightness" "$refresh" "$hours" >> "$doc"
+row=$(printf '| %s | %s | %s | %s | %s | %s | %s | %s h |' "$(date '+%F %H:%M')" "$label" "$mean" "$med" "$p95" "$brightness" "$refresh" "$hours")
+# the row goes at the end of the FIRST table (the analysis and other tables may follow it in the document)
+tmp=$(mktemp "$doc.XXXXXX")
+awk -v row="$row" '
+  !done && /^\|/ { intable = 1 }
+  !done && intable && !/^\|/ { print row; done = 1 }
+  { print }
+  END { if (!done) print row }' "$doc" > "$tmp" && mv -f "$tmp" "$doc"
 echo "media ${mean} W · mediana ${med} W · p95 ${p95} W · autonomía ≈ ${hours} h (energía actual ${energy_wh} Wh de ${full_wh} Wh)"

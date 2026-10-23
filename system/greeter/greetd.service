@@ -1,0 +1,33 @@
+# OcarinaShell (fase 13) — replaces /usr/lib/systemd/system/greetd.service (installed to /etc/systemd/system/).
+# A full copy, because a drop-in cannot remove the package's After=plymouth-quit-wait.service: greetd would wait for
+# Plymouth to go away completely (back to text mode: black or console) before the greeter could draw.
+# Like gdm: we replace plymouth-quit.service and take the splash over ourselves —
+#   ExecStartPre `plymouth deactivate`  Plymouth stops drawing and drops DRM master (niri needs it)
+#   ocarina-greeter-ready.path          the greeter's first frames are up → `plymouth quit --retain-splash`
+#   ocarina-plymouth-failsafe.timer     25 s: plain `plymouth quit` whatever happened (never plymouth-quit.service:
+#                                       it Conflicts with this unit and would stop greetd)
+#   OnFailure                           greetd itself failed: the stock quit
+[Unit]
+Description=Greeter daemon (OcarinaShell)
+Documentation=man:greetd(1)
+After=systemd-user-sessions.service rc-local.service plymouth-start.service getty@tty1.service
+Conflicts=getty@tty1.service plymouth-quit.service
+After=plymouth-quit.service
+OnFailure=plymouth-quit.service
+Wants=ocarina-greeter-ready.path ocarina-plymouth-failsafe.timer
+StartLimitBurst=5
+StartLimitIntervalSec=30
+
+[Service]
+Type=simple
+ExecStartPre=-/usr/bin/plymouth deactivate
+ExecStart=/usr/bin/greetd
+IgnoreSIGPIPE=no
+SendSIGHUP=yes
+TimeoutStopSec=30s
+KeyringMode=shared
+Restart=always
+RestartSec=1
+
+[Install]
+Alias=display-manager.service

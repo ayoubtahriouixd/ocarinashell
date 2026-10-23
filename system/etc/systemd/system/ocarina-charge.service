@@ -1,0 +1,16 @@
+# OcarinaShell · re-applies at boot the charge limit chosen in Ajustes → Energía (saved by ocarina-powerctl)
+# (ThinkPads keep them in the EC; other laptops forget them on power-off). Nothing saved → does nothing.
+[Unit]
+Description=OcarinaShell · límite de carga de la batería
+After=sysinit.target
+ConditionPathExists=/var/lib/ocarinashell/charge
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/ocarina-powerctl charge restore
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

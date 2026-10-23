@@ -1,0 +1,36 @@
+# Simulacro j · pausa y reanudación
+# 2026-10-17 21:18
+
+$ ocarina-mamori pause 1   (código 0)
+守 en pausa hasta el 2026-10-18 21:18 (ocarina mamori resume para reanudar)
+
+$ ocarina-mamori run   (código 0)
+
+$ ocarina-mamori status   (código 0)
+守 Mamori · EN PAUSA hasta el 2026-10-18 21:18 · IA: snake
+  estado: En pausa
+  último ciclo: nunca (—) · próximo: nunca
+
+$ ocarina-mamori resume   (código 0)
+守 reanudado: revisará en el próximo momento tranquilo
+
+$ ocarina-mamori run   (código 0)
+
+$ ocarina-mamori status   (código 0)
+守 Mamori · activo · IA: snake
+  estado: Todo en orden
+  último ciclo: hace 0 min (nothing) · próximo: nunca
+  pendiente: 0 de repos, 0 del AUR · decisión: nothing
+
+--- historial ---
+{"at": 1792271935, "kind": "info", "title": "Mamori en pausa 1 días", "detail": "hasta el 2026-10-18 21:18", "result": "info"}
+{"at": 1792271935, "kind": "info", "title": "Mamori reanudado", "detail": "", "result": "info"}
+
+--- journal ---
+[info/info] Mamori en pausa 1 días · hasta el 2026-10-18 21:18
+en pausa hasta el 2026-10-18 21:18: no hago nada
+[info/info] Mamori reanudado
+ciclo terminado: nothing
+
+
+VEREDICTO: SUPERADO: en pausa no hace nada; tras resume, el ciclo corre

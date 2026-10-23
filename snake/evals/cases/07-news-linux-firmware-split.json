@@ -1,0 +1,18 @@
+{
+ "id": "news-linux-firmware-split",
+ "category": "news",
+ "task": "triage-news",
+ "input": "Título: linux-firmware >= 20250508.788aadc8-2 requires manual intervention\nFecha: 2025-06-21\nWith 20250508.788aadc8-2 release, the linux-firmware package has been split into multiple vendor-focused packages. linux-firmware is now an empty package depending on our default set of firmware.\nWhen updating from an older version, pacman will fail to overwrite files due to the restructured layout (nvidia firmware symlinks). To progress with the system upgrade, first remove linux-firmware, then reinstall it as part of the upgrade:\n# pacman -Rdd linux-firmware\n# pacman -Syu linux-firmware",
+ "expect": {
+  "news_asks_manual_steps": true,
+  "applies_here": [
+   "yes",
+   "unknown"
+  ],
+  "packages": {
+   "contains": [
+    "linux-firmware"
+   ]
+  }
+ }
+}

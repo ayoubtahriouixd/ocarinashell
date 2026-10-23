@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# ocarina-postupdate — smoke tests after a pacman transaction (docs/06 capa 5, fase 14). Started by
+# ocarina-postupdate.path when /var/lib/ocarinashell/needs-check changes (the pacman hook 90-ocarinashell.hook), and
+# by ocarina-bootmark.service at login for transactions made while no session was running (a TTY, a chroot).
+#   ocarina-postupdate [--at-login] [--force]
+# Waits for pacman to finish, runs `ocarina doctor --post-update` ACTIVE only when the transaction touched what the
+# shell runs on (Qt, Quickshell, Mesa, PipeWire, Wayland, niri…): restarting the shell for `pacman -S cowsay` would be
+# noise. At login, always passive (the shell has just started anyway). Each transaction is handled once
+# (~/.local/state/ocarinashell/postupdate.json). A failure → critical notification with the reason; Mamori (phase 16)
+# reads smoke.json and decides (adapt or roll back). A pass is silent.
+set -euo pipefail
+
+flag=/var/lib/ocarinashell/needs-check
+state="${XDG_STATE_HOME:-$HOME/.local/state}/ocarinashell"
+done_file="$state/postupdate.json"
+repo="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+at_login=0 force=0
+for a in "$@"; do
+  case "$a" in
+    --at-login) at_login=1 ;;
+    --force) force=1 ;;
+    *) echo "uso: ocarina-postupdate [--at-login] [--force]" >&2; exit 2 ;;
+  esac
+done
+
+[[ -r "$flag" ]] || exit 0
+# 守 Mamori (and `ocarina update`, which is a Mamori cycle) runs the smoke tests itself while this flag exists
+[[ -e "${XDG_RUNTIME_DIR:-/tmp}/ocarinashell/update-running" ]] && exit 0
+at="$(jq -r '.at // 0' "$flag" 2>/dev/null || echo 0)"
+last="$(jq -r '.at // 0' "$done_file" 2>/dev/null || echo 0)"
+((force || at > last)) || exit 0
+
+# pacman may still be running its last hooks (snap-pac's post snapshot): wait for the lock, at most 2 min
+for _ in $(seq 1 120); do
+  [[ -e /var/lib/pacman/db.lck ]] || break
+  sleep 1
+done
+
+# packages the running shell and session are built on: a change there deserves the shell restart + lock test
+pattern='^(qt6-.*|quickshell|mesa|vulkan-.*|libdrm|wayland|wayland-protocols|libxkbcommon|niri|pipewire.*|wireplumber|glib2|glibc|systemd|systemd-libs|pam|xdg-desktop-portal.*|fontconfig|freetype2|harfbuzz|icu)$'
+mode=--smoke
+if ((!at_login)) && jq -r '.packages[]?' "$flag" 2>/dev/null | grep -Eq "$pattern"; then mode=--post-update; fi
+
+mkdir -p "$state"
+rc=0
+"$repo/bin/ocarina" doctor "$mode" --quiet > "$state/postupdate.log" 2>&1 || rc=$?
+pkgs="$(jq -r '[.packages[]?] | if length > 6 then (.[0:6] | join(", ")) + " y \(length - 6) más" else join(", ") end' "$flag" 2>/dev/null)"
+jq -nc --argjson at "$at" --argjson rc "$rc" --arg mode "$mode" --arg p "$pkgs" \
+  '{at: $at, handled: (now | floor), ok: ($rc == 0), mode: $mode, packages: $p}' > "$done_file.tmp" && mv -f "$done_file.tmp" "$done_file"
+
+if ((rc != 0)); then
+  why="$(jq -r '[.checks[] | select(.level == "fail") | .msg] | .[0:2] | join(" · ")' "$state/smoke.json" 2>/dev/null)"
+  logger -t ocarina-postupdate "pruebas de humo FALLIDAS tras: $pkgs — $why"
+  if command -v notify-send >/dev/null; then
+    notify-send -a OcarinaShell -u critical -i dialog-warning -h string:x-ocarina-kanji:守 \
+      "Algo falla tras la actualización" "${why:-ver ~/.local/state/ocarinashell/smoke.json}"$'\n'"Paquetes: $pkgs" || true
+  fi
+  exit 1
+fi
+logger -t ocarina-postupdate "pruebas de humo superadas ($mode) tras: $pkgs"

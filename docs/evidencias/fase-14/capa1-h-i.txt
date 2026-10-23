@@ -1,0 +1,31 @@
+# Capa 1 + simulacros h e i (fase 14, 2026-10-17 13:43)
+
+## Capa 1: bajada y subida reales desde la caché (ocarina-maint downgrade)
+RECHAZADO: uso: rollback <pre> <post> (números de snapshot)
+RECHAZADO: uso: rollback <pre> <post> (números de snapshot)
+RECHAZADO: uso: rollback <pre> <post> (números de snapshot)
+RECHAZADO: uso: rollback <pre> <post> (números de snapshot)
+RECHAZADO: uso: rollback <pre> <post> (números de snapshot)
+RECHAZADO: uso: rollback <pre> <post> (números de snapshot)
+RECHAZADO: uso: rollback <pre> <post> (números de snapshot)
+RECHAZADO: uso: rollback <pre> <post> (números de snapshot)
+[ayoub] RECHAZADO: uso: rollback <pre> <post> (números de snapshot)
+[ayoub] RECHAZADO: uso: rollback <pre> <post> (números de snapshot)
+[ayoub] RECHAZADO: uso: rollback <pre> <post> (números de snapshot)
+[ayoub] RECHAZADO: uso: rollback <pre> <post> (números de snapshot)
+[ayoub] downgrade lazygit 0.66.2-1.1 → 0.66.1-1.1
+[ayoub] downgrade lazygit 0.66.1-1.1 → 0.66.2-1.1
+[ayoub] rollback #124..#125 (1 entradas; 0 de arranque a reinstalar)
+[ayoub] rollback #124..#125 ok
+
+## Simulacro h: hook de pacman → pruebas de humo automáticas
+2026-10-17T13:41:44+00:00 pruebas de humo superadas (--smoke) tras: lazygit
+2026-10-17T13:42:07+00:00 pruebas de humo superadas (--smoke) tras: lazygit
+2026-10-17T13:42:40+00:00 pruebas de humo FALLIDAS tras: ocarina-prueba-mala — faltan fuentes: Yuji Syuku
+
+## Simulacro i: actualización mala (ocarina-prueba-mala esconde Yuji Syuku) → ocarina rollback
+- tras instalarla: smoke.json falló con «faltan fuentes: Yuji Syuku» (3 s después, notificación crítica)
+- ocarina rollback --yes: undochange #124..#125 (create:0 modify:1 delete:5) + reinicio de la shell + pruebas: superadas, 2,3 s
+- después: pacman -Q ocarina-prueba-mala → no encontrado; /etc/fonts/conf.d/99-ocarina-prueba-mala.conf no existe; fc-list Yuji Syuku → presente
+- pacman -Dk: La base de datos no parece tener errores.
+- rollback de un par antiguo (#114/#115): «#114 no es la última transacción (la última es #122)», código 3

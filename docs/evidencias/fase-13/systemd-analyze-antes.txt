@@ -1,0 +1,12 @@
+# Arranque ANTES del tema (2026-10-17, tema cachyos de Plymouth, timeout de Limine 5 s)
+Startup finished in 9.156s (firmware) + 2.968s (loader) + 916ms (kernel) + 2.323s (initrd) + 9.789s (userspace) = 25.154s 
+graphical.target reached after 4.094s in userspace.
+graphical.target @4.094s
+└─multi-user.target @4.094s
+  └─getty.target @4.094s
+    └─getty@tty1.service @4.094s
+      └─plymouth-quit-wait.service @4.012s +80ms
+        └─systemd-user-sessions.service @4.006s +4ms
+          └─network.target @4.005s
+            └─wpa_supplicant.service @3.990s +14ms
+              └─basic.target @2.947s

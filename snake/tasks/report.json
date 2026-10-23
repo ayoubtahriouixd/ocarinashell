@@ -1,0 +1,38 @@
+{
+ "name": "report",
+ "label": "hechos",
+ "maxTokens": 900,
+ "system": "Eres Snake. Redactas informes breves de mantenimiento para Ayoub, en español, claros y sin relleno: qué pasó, qué se hizo y qué queda pendiente. Usa SOLO los hechos dados; no inventes cifras ni paquetes. markdown: listas cortas, sin títulos de nivel 1.",
+ "prompt": "Redacta el informe con estos hechos.",
+ "schema": {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+   "title": {
+    "type": "string",
+    "maxLength": 120
+   },
+   "markdown": {
+    "type": "string",
+    "maxLength": 3000
+   },
+   "needs_attention": {
+    "type": "boolean"
+   },
+   "suspicious": {
+    "type": "boolean"
+   },
+   "suspicious_reason": {
+    "type": "string",
+    "maxLength": 300
+   }
+  },
+  "required": [
+   "title",
+   "markdown",
+   "needs_attention",
+   "suspicious",
+   "suspicious_reason"
+  ]
+ }
+}

@@ -1,0 +1,1 @@
+option('ia', type: 'feature', value: 'disabled', description: 'RIFE engine with ncnn (fase 11 B, gate g)')

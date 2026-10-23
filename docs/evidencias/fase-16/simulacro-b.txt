@@ -1,0 +1,58 @@
+# Simulacro b · noticia de Arch con intervención manual
+# 2026-10-17 21:15
+
+$ ocarina-mamori run   (código 0)
+
+$ ocarina-mamori plan   (código 0)
+守 Plan del 2026-10-17 21:15 · IA: snake · decisión: hold
+  · noticia con intervención manual: linux-firmware >= 20250613.12fe085f-5 upgrade requires manual intervention
+    python-cachetools 7.2.2-1 → 7.2.3-1
+    linux-firmware 20250508.788aadc8-2 → 20250613.12fe085f-5  [critical, major]
+    noticia: linux-firmware >= 20250613.12fe085f-5 upgrade requires manual intervention — manual: True · aplica: yes · BLOQUEA
+
+--- plan.json (noticia) ---
+{
+ "id": "arch:sim-b",
+ "title": "linux-firmware >= 20250613.12fe085f-5 upgrade requires manual intervention",
+ "url": "https://archlinux.org/news/linux-firmware-2025061312fe085f-5-upgrade-requires-manual-intervention/",
+ "date": 1792268108,
+ "source": "arch",
+ "manual": true,
+ "applies": "yes",
+ "packages": [
+  "linux-firmware"
+ ],
+ "steps": [
+  "pacman -Rdd linux-firmware",
+  "pacman -Syu linux-firmware"
+ ],
+ "summary": "La noticia indica que, para actualizar a linux‑firmware 20250613.12fe085f‑5, los usuarios deben eliminar manualmente el paquete linux‑firmware y luego reinstalarlo junto con el resto del sistema. El equipo utiliza linux‑firmware, por lo que la actualización afecta a este equipo.",
+ "suspicious": false,
+ "ai": true,
+ "blocking": true
+}
+--- historial ---
+{"at": 1792271731, "kind": "hold", "title": "Retenido: linux-firmware (y su lote)", "detail": "noticia con intervención manual: linux-firmware >= 20250613.12fe085f-5 upgrade requires manual intervention", "result": "hold"}
+{"at": 1792271731, "kind": "hold", "title": "Noticia con intervención manual", "detail": "linux-firmware >= 20250613.12fe085f-5 upgrade requires manual intervention", "result": "attention", "url": "https://archlinux.org/news/linux-firmware-2025061312fe085f-5-upgrade-requires-manual-intervention/", "newsId": "arch:sim-b"}
+
+--- journal ---
+[simulación] notas en docs/mantenimiento/2026-10-17.md:
+
+## 21:15 · ciclo de 守 Mamori (IA: snake)
+
+Decisión: **hold** — noticia con intervención manual: linux-firmware >= 20250613.12fe085f-5 upgrade requires manual intervention
+
+### Noticias
+
+- [linux-firmware >= 20250613.12fe085f-5 upgrade requires manual intervention](https://archlinux.org/news/linux-firmware-2025061312fe085f-5-upgrade-requires-manual-intervention/) — intervención manual: sí; aplica: yes. La noticia indica que, para actualizar a linux‑firmware 20250613.12fe085f‑5, los usuarios deben eliminar manualmente el paquete linux‑firmware y luego reinstala
+  - pacman -Rdd linux-firmware
+  - pacman -Syu linux-firmware
+[hold/hold] Retenido: linux-firmware (y su lote) · noticia con intervención manual: linux-firmware >= 20250613.12fe085f-5 upgrade requires manual intervention
+[dry-run] notificación: Noticia con un paso a mano — linux-firmware >= 20250613.12fe085f-5 upgrade requires manual intervention
+• pacman -Rdd linux-firmware
+• pacman -Syu linux-firmware
+[hold/attention] Noticia con intervención manual · linux-firmware >= 20250613.12fe085f-5 upgrade requires manual intervention
+ciclo terminado: held
+
+
+VEREDICTO: SUPERADO: lote retenido, pasos de la noticia en el plan y notificación con «Hecho / No me afecta»

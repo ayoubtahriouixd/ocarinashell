@@ -1,0 +1,23 @@
+// Layer-shell surfaces of OcarinaShell (namespace «ocarina-<module>»). niri draws their shadows; blur is NOT set
+// here: the shell asks for it per surface (ext-background-effect) so Shinobi can turn it off.
+
+// Wallpaper lives inside the overview backdrop (it stays still while workspaces zoom out).
+layer-rule {
+    match namespace=r#"^ocarina-wallpaper$"#
+    place-within-backdrop true
+}
+
+// Panels and popups: soft shadow. Excluded: wallpaper, software dimming (ocarina-dim), screen corners and the bar
+// (its surface also hosts the island), the toasts and the panel host: their surfaces are larger than what they show,
+// so they draw their own soft shadows (SoftShadow) instead of niri. The 器 drawer (ocarina-apps) is full screen too.
+layer-rule {
+    match namespace=r#"^ocarina-"#
+    exclude namespace=r#"^ocarina-(wallpaper|dim|kakusei|nameraka.*|corner.*|obi|fumi|panel|kagi.*|dengen|polkit|apps)$"#
+    shadow {
+        on
+        softness 24
+        spread 0
+        offset x=0 y=6
+        color "#00000066"
+    }
+}

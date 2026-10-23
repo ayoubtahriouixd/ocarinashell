@@ -1,0 +1,14 @@
+{
+ "id": "news-mkinitcpio-tpm2",
+ "category": "news",
+ "task": "triage-news",
+ "input": "Título: Mkinitcpio >=42 requires manual intervention for TPM2-based unlocking of LUKS devices\nFecha: 2026-09-22\nStarting with package version 42-1, the mkinitcpio systemd hook now includes systemd-pcrosseparator.service (as intended by systemd v261).\nThis affects the measurements of PCR values 0-7, 9 and 12-14.\nIf you configured the systemd hook and unlock LUKS partitions, that depend on these values, you need to re-enroll the TPM2 in use.\nFor guidance, please refer to systemd-cryptenroll(1), or the ArchWiki article on systemd-cryptenroll, when using pinned values.",
+ "expect": {
+  "news_asks_manual_steps": true,
+  "packages": {
+   "contains": [
+    "mkinitcpio"
+   ]
+  }
+ }
+}

@@ -1,0 +1,26 @@
+# OcarinaShell · yazi keys (phase 8): yazi's defaults + «g» jumps to the usual places.
+[[mgr.prepend_keymap]]
+on = ["g", "o"]
+run = "cd ~/ocarinashell"
+desc = "Ir a OcarinaShell"
+
+[[mgr.prepend_keymap]]
+on = ["g", "i"]
+run = "cd ~/Imágenes"
+desc = "Ir a Imágenes"
+
+[[mgr.prepend_keymap]]
+on = ["g", "D"]
+run = "cd ~/Descargas"
+desc = "Ir a Descargas"
+
+[[mgr.prepend_keymap]]
+on = ["g", "s"]
+run = "cd ~/.local/state/ocarinashell"
+desc = "Ir al estado de OcarinaShell"
+
+# open a terminal (Ghostty) right here
+[[mgr.prepend_keymap]]
+on = ["!"]
+run = 'shell "$SHELL" --block'
+desc = "Abrir fish aquí"

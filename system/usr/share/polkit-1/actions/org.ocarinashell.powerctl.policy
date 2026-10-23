@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<!-- OcarinaShell · 忍 Shinobi / 鬼 Oni: the power helper (whitelisted operations only, see the script).
+     Without a password for the active local session; nobody else (remote, inactive) may run it. -->
+<policyconfig>
+  <vendor>OcarinaShell</vendor>
+  <action id="org.ocarinashell.powerctl">
+    <description>Change power settings of OcarinaShell (turbo, EPP, GPU, charge limit, Wi-Fi power save)</description>
+    <description xml:lang="es">Cambiar ajustes de energía de OcarinaShell (turbo, EPP, GPU, límite de carga, ahorro de Wi-Fi)</description>
+    <message>Authentication is required to change power settings</message>
+    <message xml:lang="es">Se necesita autenticación para cambiar los ajustes de energía</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>yes</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/local/libexec/ocarina-powerctl</annotate>
+  </action>
+</policyconfig>

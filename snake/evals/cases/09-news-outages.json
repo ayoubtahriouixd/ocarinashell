@@ -1,0 +1,9 @@
+{
+ "id": "news-outages",
+ "category": "news",
+ "task": "triage-news",
+ "input": "Título: Recent services outages\nFecha: 2025-08-20\nWe are currently experiencing service outages affecting the AUR and our website due to an ongoing DDoS attack. Our team is actively working to mitigate the attack. In the meantime the mirrors are not affected and pacman continues to work normally. We will provide updates as the situation evolves.",
+ "expect": {
+  "news_asks_manual_steps": false
+ }
+}

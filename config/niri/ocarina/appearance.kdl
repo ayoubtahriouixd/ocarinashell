@@ -1,0 +1,63 @@
+// Look of windows, cursor and overview — 紅 Kurenai values (docs/02-DISENO, assets/data/themes/kurenai.json).
+// From phase 2 the theme engine writes the colour parts again in colors.kdl (included later, so it wins).
+layout {
+    background-color "transparent"   // the wallpaper layer (ocarina-wallpaper) shows through
+
+    focus-ring {
+        on
+        width 2
+        active-gradient from="#e60033" to="#ff1f4f" angle=135 relative-to="workspace-view" in="oklch shorter hue"
+        inactive-color "#2e2830"
+        urgent-color "#e6b422"
+    }
+
+    // `border {}` in an included file must say on/off explicitly
+    border {
+        off
+    }
+
+    shadow {
+        on
+        softness 30
+        spread 4
+        offset x=0 y=6
+        color "#00000080"
+        inactive-color "#00000059"
+    }
+
+    tab-indicator {
+        hide-when-single-tab
+        place-within-column
+        gap 6
+        width 4
+        length total-proportion=0.6
+        position "left"
+        gaps-between-tabs 4
+        corner-radius 4
+        active-color "#e60033"
+        inactive-color "#463e48"
+        urgent-color "#e6b422"
+    }
+
+    insert-hint {
+        color "#e6003366"
+    }
+}
+
+cursor {
+    xcursor-theme "Bibata-Modern-Classic"
+    xcursor-size 24
+    hide-when-typing
+    hide-after-inactive-ms 2500
+}
+
+overview {
+    zoom 0.55
+    backdrop-color "#0b0a0c"
+    workspace-shadow {
+        softness 40
+        spread 10
+        offset x=0 y=10
+        color "#00000080"
+    }
+}

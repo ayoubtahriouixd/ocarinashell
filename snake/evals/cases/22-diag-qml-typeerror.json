@@ -1,0 +1,16 @@
+{
+ "id": "diag-qml-typeerror",
+ "category": "diagnose",
+ "task": "diagnose",
+ "input": "journalctl --user -u ocarinashell (últimas líneas):\noct 17 09:12:01 qs[2211]: WARN qml: file:///home/ayoub/.config/quickshell/ocarina/modules/obi/Workspaces.qml:42: TypeError: Cannot read property 'idx' of undefined\noct 17 09:12:01 qs[2211]: WARN qml: file:///home/ayoub/.config/quickshell/ocarina/modules/obi/Workspaces.qml:42: TypeError: Cannot read property 'idx' of undefined\noct 17 09:12:02 qs[2211]: INFO: OcarinaShell: modo seguro NO activado\nCambios recientes: niri 26.10 cambió la salida de `niri msg -j workspaces` (campo `idx` → `index`).",
+ "expect": {
+  "category": [
+   "shell-qml",
+   "compositor"
+  ],
+  "fix.kind": [
+   "patch",
+   "package"
+  ]
+ }
+}

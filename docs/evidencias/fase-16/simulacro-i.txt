@@ -1,0 +1,38 @@
+# Simulacro i · con batería
+# 2026-10-17 21:18
+
+$ ocarina-mamori run   (código 0)
+
+$ ocarina-mamori status   (código 0)
+守 Mamori · activo · IA: snake
+  estado: waiting — con batería (espera al cargador)
+  último ciclo: nunca (—) · próximo: nunca
+
+--- status.json ---
+{
+ "state": "waiting",
+ "cycle": {
+  "id": "1792271934",
+  "started": 1792271934,
+  "trigger": "timer",
+  "done": [
+   "boot"
+  ],
+  "step": "boot",
+  "data": {}
+ },
+ "lastStart": 1792271934,
+ "deferReason": "con batería (espera al cargador)",
+ "deferReasons": [
+  "con batería (espera al cargador)"
+ ],
+ "updated": 1792271934,
+ "due": true,
+ "nextTry": 1792273734
+}
+
+--- journal ---
+aplazado: con batería (espera al cargador)
+
+
+VEREDICTO: SUPERADO: aplaza hasta el cargador y se reprograma (ocarina-mamori-retry)

@@ -1,0 +1,14 @@
+# OcarinaShell · smoke tests after every pacman transaction (docs/06 capa 5, fase 14). The pacman hook
+# 90-ocarinashell.hook rewrites needs-check at the end of each transaction; PathChanged fires once per rewrite
+# (never PathExists: that would loop while the file exists).
+[Unit]
+Description=OcarinaShell · vigila las transacciones de pacman
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Path]
+PathChanged=/var/lib/ocarinashell/needs-check
+Unit=ocarina-postupdate.service
+
+[Install]
+WantedBy=graphical-session.target

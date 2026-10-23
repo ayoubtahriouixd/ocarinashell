@@ -1,0 +1,15 @@
+# OcarinaShell · 夜 night light (wlsunset). The shell writes the arguments to nightlight.env and restarts this unit;
+# stopping it restores neutral colour. docs/01-ARQUITECTURA §2
+[Unit]
+Description=OcarinaShell · luz nocturna (wlsunset)
+PartOf=graphical-session.target
+After=graphical-session.target
+Requisite=graphical-session.target
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.local/state/ocarinashell/nightlight.env
+ExecStart=/usr/bin/sh -c 'exec /usr/bin/wlsunset $OCARINA_NL_ARGS'
+Restart=on-failure
+RestartSec=3
+Nice=10

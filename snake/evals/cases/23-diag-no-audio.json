@@ -1,0 +1,14 @@
+{
+ "id": "diag-no-audio",
+ "category": "diagnose",
+ "task": "diagnose",
+ "input": "journalctl --user -b -p warning:\noct 17 08:01:13 wireplumber[1402]: spa.alsa: 'hw:0': snd_pcm_open failed: Device or resource busy\noct 17 08:01:13 wireplumber[1402]: pw.node: (alsa_output.pci-0000_c4_00.6.HiFi__Speaker__sink) suspended -> error (Start error: Device or resource busy)\noct 17 08:01:14 pipewire[1398]: mod.protocol-native: client 0x55d… error id:2 seq:41 res:-16 (Device or resource busy)\nps: un proceso `aplay -D hw:0 alarm.wav` lleva abierto desde las 07:59 (PID 1377).",
+ "expect": {
+  "category": "audio",
+  "evidence": {
+   "contains": [
+    "busy"
+   ]
+  }
+ }
+}

@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# OcarinaShell greeter launcher — greetd runs it as the `greeter` user on tty1 (/etc/greetd/config.toml).
+# Installed to /usr/local/lib/ocarinashell/greeter-launch by scripts/root/greeter.sh.
+#
+# Minimal niri (niri.kdl next to the QML) + Quickshell greeter. Never locks Ayoub out:
+#   - /etc/ocarinashell/greeter-disabled, a missing niri/qs/greeter, or two failed starts in a row → agreety (text
+#     login on the same tty, then niri-session)
+#   - the QML writes $RUN/launched when greetd accepted the session; if niri ends without it, that start failed
+#   - Ctrl+Alt+F2 always gives a normal text console (logind autovt)
+# --test: dry run for scripts/root/probar-greeter.sh (vt 7, real PAM, nothing is launched, no fallback counting).
+set -uo pipefail
+
+G=/usr/local/share/ocarinashell/greeter
+RUN=/run/ocarina-greeter
+STATE=/var/lib/ocarina-greeter
+test=0
+[[ ${1:-} == --test ]] && test=1
+
+fallback() {
+  printf '\e[2J\e[H\e[3J\e[?25h'                     # clean console, cursor back
+  echo "OcarinaShell · inicio de sesión en modo texto${1:+ ($1)}"
+  exec /usr/bin/agreety --cmd niri-session
+}
+
+if ((!test)); then
+  [[ -e /etc/ocarinashell/greeter-disabled ]] && fallback "greeter desactivado"
+  fails=$(cat "$RUN/fails" 2>/dev/null || echo 0)
+  [[ $fails =~ ^[0-9]+$ ]] || fails=0
+  ((fails >= 2)) && fallback "el greeter falló $fails veces"
+fi
+command -v niri >/dev/null && command -v qs >/dev/null && [[ -f $G/shell.qml && -f $G/niri.kdl ]] \
+  || fallback "falta niri, qs o el greeter"
+
+rm -f "$RUN/launched" "$RUN/ready" "$RUN/test-done"
+printf '\e[2J\e[H\e[3J\e[?25l'                       # nothing of the console may show through later
+
+export XDG_CONFIG_HOME=$STATE/config XDG_STATE_HOME=$STATE/state XDG_CACHE_HOME=$STATE/cache XDG_DATA_HOME=$STATE/data
+export OCARINA_GREETER_RUN=$RUN OCARINA_GREETER_ASSETS=$G/assets QT_QPA_PLATFORM=wayland
+((test)) && export OCARINA_GREETER_DRYRUN=1
+# niri's and Quickshell's output goes to the journal, never to the tty (journalctl -t ocarina-greeter)
+niri -c "$G/niri.kdl" > >(systemd-cat -t ocarina-greeter) 2>&1
+status=$?
+
+((test)) && exit 0
+if [[ -e $RUN/launched ]]; then
+  rm -f "$RUN/fails"
+  exit 0                                             # greetd starts the session now
+fi
+echo $((fails + 1)) > "$RUN/fails"
+logger -t ocarina-greeter "el greeter terminó sin lanzar la sesión (niri salió con $status, fallo $((fails + 1)))"
+fallback "el greeter no arrancó"

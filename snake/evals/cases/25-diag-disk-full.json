@@ -1,0 +1,9 @@
+{
+ "id": "diag-disk-full",
+ "category": "diagnose",
+ "task": "diagnose",
+ "input": "journalctl -p err -b:\noct 17 03:00:02 snapper[912]: Creating snapshot failed: No space left on device\noct 17 04:00:05 systemd[1]: ocarina-mamori.service: Failed with result 'exit-code'.\ndf -h /: /dev/nvme0n1p2 950G 948G 2.0G 100% /\nbtrfs filesystem usage /: Data 940 GiB used; Metadata 7.9 GiB / 8 GiB\ndu -sh ~/.local/share/ocarinashell/fune: 412G",
+ "expect": {
+  "category": "storage"
+ }
+}

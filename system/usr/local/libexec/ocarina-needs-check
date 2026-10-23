@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# ocarina-needs-check — run by the pacman hook 90-ocarinashell.hook (as root, PostTransaction). Reads the transaction's
+# package names on stdin (NeedsTargets) and leaves /var/lib/ocarinashell/needs-check (0644, JSON) for the session:
+# { "at": <epoch>, "packages": [...] }. Never fails the transaction: every error is swallowed and logged.
+set -uo pipefail
+export PATH=/usr/bin:/bin LC_ALL=C
+dir=/var/lib/ocarinashell
+out="$dir/needs-check"
+{
+  mkdir -p "$dir"
+  tmp="$(mktemp "$dir/.needs-check.XXXXXX")"
+  # package names only (pacman's own charset); at most 2000
+  grep -E '^[a-z0-9@_+][a-z0-9@._+-]*$' | head -n 2000 \
+    | jq -R . | jq -sc --argjson at "$(date +%s)" '{at: $at, packages: .}' > "$tmp"
+  chmod 0644 "$tmp"
+  mv -f "$tmp" "$out"
+  logger -t ocarina-maint "transacción de pacman: pruebas de humo pendientes ($(jq '.packages | length' "$out") paquetes)"
+} 2>/dev/null || logger -t ocarina-maint "ocarina-needs-check no pudo escribir $out" 2>/dev/null
+exit 0

@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Ajustes de OcarinaShell
+Name[ja]=OcarinaShell 設定
+GenericName=Ajustes del escritorio
+Comment=Tema, pantallas, energía, atajos y mantenimiento de OcarinaShell
+Icon=ocarinashell
+Exec=ocarina settings
+Terminal=false
+Categories=Settings;DesktopSettings;
+Keywords=ocarina;tema;ajustes;settei;設定;
+StartupNotify=false

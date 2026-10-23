@@ -1,9 +1,8 @@
 name: publicar versión
 
-# Publica la versión de CHANGELOG.md como release de GitHub, con el zip reproducible del kit, SHA256SUMS e install.sh.
+# Publica la versión de CHANGELOG.md como release de GitHub, con el zip reproducible de OcarinaShell y SHA256SUMS.
 # Se lanza automáticamente al subir a main un CHANGELOG.md con una sección nueva arriba, o a mano: Actions → «publicar
-# versión» → Run workflow. Si esa versión ya existe, no hace nada. Solo en el repositorio público del kit: en una copia
-# privada con tu progreso no publica nada.
+# versión» → Run workflow. Si esa versión ya existe, no hace nada. Solo en el repositorio público.
 on:
   push:
     branches: [main]
@@ -50,7 +49,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           V: ${{ steps.v.outputs.version }}
         run: |
-          gh release create "$V" "dist/ocarinashell-kit-$V.zip" dist/SHA256SUMS install.sh \
+          gh release create "$V" "dist/ocarinashell-$V.zip" dist/SHA256SUMS \
             --target "$GITHUB_SHA" --title "OcarinaShell $V" --notes-file dist/RELEASE-NOTES.md --latest
           echo "### Publicada $V" >> "$GITHUB_STEP_SUMMARY"
           cat dist/SHA256SUMS >> "$GITHUB_STEP_SUMMARY"

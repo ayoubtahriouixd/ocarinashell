@@ -1,0 +1,11 @@
+# OcarinaShell · pruebas de humo tras una transacción de pacman (ocarina-postupdate.path / ocarina-bootmark).
+[Unit]
+Description=OcarinaShell · pruebas de humo tras actualizar
+After=graphical-session.target ocarinashell.service
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/ocarina-postupdate
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=4min

@@ -1,0 +1,16 @@
+{
+ "id": "report-update",
+ "category": "report",
+ "task": "report",
+ "input": "{\"fecha\": \"2026-10-17\", \"paquetes_actualizados\": 52, \"aur\": [\"google-chrome\"], \"snapshot\": \"pre 129 / post 130\", \"pruebas_de_humo\": \"verdes (5,3 s)\", \"reinicio_necesario\": false, \"retenidos\": [], \"noticias\": \"ninguna con intervención manual\"}",
+ "expect": {
+  "markdown": {
+   "contains": [
+    "52",
+    "chrome",
+    "humo|pruebas"
+   ]
+  },
+  "needs_attention": false
+ }
+}

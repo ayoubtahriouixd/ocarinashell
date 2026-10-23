@@ -1,0 +1,167 @@
+{
+  "at": 1792245456,
+  "mode": "post-update",
+  "durationMs": 5308,
+  "ok": true,
+  "failures": 0,
+  "warnings": 0,
+  "versions": {
+    "niri": "26.04-1.1",
+    "quickshell": "0.3.2-1.1",
+    "qt6-base": "6.12.0-3",
+    "qt6-declarative": "6.12.0-1.1",
+    "ghostty": "1.3.1-2.1",
+    "neovim": "0.12.6-1.1",
+    "fish": "4.9.3-1",
+    "mesa": "3:26.2.4-1",
+    "linux-cachyos": "7.2.10-1",
+    "linux-cachyos-lts": "6.18.55-2",
+    "limine": "12.9.3-2",
+    "plymouth": "26.134.222-4",
+    "pipewire": "1:1.6.9-1",
+    "wireplumber": "0.5.18-1.1",
+    "freerdp": "2:3.32.2-1.1",
+    "systemd": "262-1",
+    "running_kernel": "7.2.10-1-cachyos"
+  },
+  "checks": [
+    {
+      "id": "boot",
+      "level": "ok",
+      "msg": "Limine con su tema y LTS; tema Plymouth en 2 initramfs",
+      "ms": 460
+    },
+    {
+      "id": "fish",
+      "level": "ok",
+      "msg": "fish -n: toda la config se analiza bien",
+      "ms": 0
+    },
+    {
+      "id": "fonts",
+      "level": "ok",
+      "msg": "las 8 fuentes de marca están",
+      "ms": 146
+    },
+    {
+      "id": "fune",
+      "level": "ok",
+      "msg": "Fune: podman, FreeRDP y la VM en orden (sin arrancarla)",
+      "ms": 334
+    },
+    {
+      "id": "ghostty",
+      "level": "ok",
+      "msg": "Ghostty: config válida",
+      "ms": 100
+    },
+    {
+      "id": "ipc-calls",
+      "level": "ok",
+      "msg": "19 funciones inocuas responden",
+      "ms": 0
+    },
+    {
+      "id": "ipc-targets",
+      "level": "ok",
+      "msg": "39 destinos IPC registrados",
+      "ms": 0
+    },
+    {
+      "id": "lock-test",
+      "level": "ok",
+      "msg": "el bloqueo en modo prueba abre y cierra",
+      "ms": 1095
+    },
+    {
+      "id": "nameraka",
+      "level": "ok",
+      "msg": "nameraka self-test",
+      "ms": 68
+    },
+    {
+      "id": "niri",
+      "level": "ok",
+      "msg": "niri validate sin errores ni deprecaciones",
+      "ms": 99
+    },
+    {
+      "id": "niri-ipc",
+      "level": "ok",
+      "msg": "el socket de niri responde",
+      "ms": 0
+    },
+    {
+      "id": "notifications",
+      "level": "ok",
+      "msg": "la shell es dueña de org.freedesktop.Notifications",
+      "ms": 120
+    },
+    {
+      "id": "nvim",
+      "level": "ok",
+      "msg": "Neovim arranca sin errores (headless)",
+      "ms": 352
+    },
+    {
+      "id": "polkit",
+      "level": "ok",
+      "msg": "agente de polkit: el de la shell",
+      "ms": 0
+    },
+    {
+      "id": "portals",
+      "level": "ok",
+      "msg": "xdg-desktop-portal responde",
+      "ms": 0
+    },
+    {
+      "id": "shell",
+      "level": "ok",
+      "msg": "reinicio de la shell: responde en 200 ms",
+      "ms": 2258
+    },
+    {
+      "id": "shell-journal",
+      "level": "ok",
+      "msg": "journal de la shell sin errores QML ni avisos de deprecación",
+      "ms": 0
+    },
+    {
+      "id": "shell-modules",
+      "level": "ok",
+      "msg": "todos los módulos y servicios cargados",
+      "ms": 0
+    },
+    {
+      "id": "starship",
+      "level": "ok",
+      "msg": "starship prompt",
+      "ms": 0
+    },
+    {
+      "id": "theme",
+      "level": "ok",
+      "msg": "ocarina-theme apply sumi --dry-run",
+      "ms": 303
+    },
+    {
+      "id": "units",
+      "level": "ok",
+      "msg": "unidades de la sesión activas (shell, PipeWire, WirePlumber, portales)",
+      "ms": 79
+    },
+    {
+      "id": "units-failed",
+      "level": "ok",
+      "msg": "ninguna unidad de usuario fallida",
+      "ms": 0
+    },
+    {
+      "id": "units-system",
+      "level": "ok",
+      "msg": "ninguna unidad del sistema fallida",
+      "ms": 0
+    }
+  ]
+}

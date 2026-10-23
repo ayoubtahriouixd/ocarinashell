@@ -1,0 +1,13 @@
+{
+ "id": "news-leader-election",
+ "category": "news",
+ "task": "triage-news",
+ "input": "Título: Arch Linux 2026 Leader Election Results\nRecently we held our leader elections and after a lively discussion period on the (internal) mailing lists and voting phase with two candidates Levente \"anthraxx\" Polyák was re-elected as Arch Linux Project Lead.\nAs per our election rules he is re-elected with the term lasting two years.\nCongratulations to Levente, thank you for stepping up to serve this community!",
+ "expect": {
+  "news_asks_manual_steps": false,
+  "applies_here": [
+   "no",
+   "unknown"
+  ]
+ }
+}

@@ -1,0 +1,13 @@
+# OcarinaShell · 滑 Nameraka daemon (activated by ocarina-nameraka.socket; never started by hand).
+# Rescue: `systemctl --user stop ocarina-nameraka.service` removes the overlay at once (docs/05-RESCATE).
+[Unit]
+Description=OcarinaShell · 滑 Nameraka (vídeo fluido)
+PartOf=graphical-session.target
+After=graphical-session.target
+Requires=ocarina-nameraka.socket
+
+[Service]
+Type=notify
+ExecStart=%h/.local/libexec/ocarinashell/nameraka daemon
+TimeoutStopSec=3
+Restart=no

@@ -1,0 +1,68 @@
+{
+ "name": "scan-issues",
+ "label": "incidencias",
+ "maxTokens": 700,
+ "system": "Eres Snake. Revisas incidencias abiertas (GitHub, GitLab, foros) buscando regresiones que afecten a ESTE equipo o a OcarinaShell. El equipo: ThinkPad P14s Gen 6 AMD (Ryzen AI 7 PRO 350 «Krackan», Radeon 860M RDNA 3.5, NPU XDNA 2, Wi-Fi, suspensión s2idle), CachyOS (Arch) con kernel linux-cachyos, Btrfs + snapper + Limine, escritorio niri + Quickshell (OcarinaShell), Ghostty, Neovim, fish, PipeWire, greetd. Paquetes AUR mediante paru. relevant: solo las que afectan a este hardware o software (no a NVIDIA, Intel u otras distribuciones, salvo que el fallo sea general). regression_risk: «high» si hay una regresión confirmada y relevante en la versión que se va a instalar, «low» si es dudosa o ya tiene solución, «none» si nada aplica.",
+ "prompt": "Analiza estas incidencias.",
+ "schema": {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+   "relevant": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "url": {
+       "type": "string",
+       "maxLength": 200
+      },
+      "reason": {
+       "type": "string",
+       "maxLength": 200
+      },
+      "severity": {
+       "enum": [
+        "low",
+        "medium",
+        "high"
+       ]
+      }
+     },
+     "required": [
+      "url",
+      "reason",
+      "severity"
+     ]
+    },
+    "maxItems": 6
+   },
+   "regression_risk": {
+    "enum": [
+     "none",
+     "low",
+     "high"
+    ]
+   },
+   "summary_es": {
+    "type": "string",
+    "maxLength": 400
+   },
+   "suspicious": {
+    "type": "boolean"
+   },
+   "suspicious_reason": {
+    "type": "string",
+    "maxLength": 300
+   }
+  },
+  "required": [
+   "relevant",
+   "regression_risk",
+   "summary_es",
+   "suspicious",
+   "suspicious_reason"
+  ]
+ }
+}

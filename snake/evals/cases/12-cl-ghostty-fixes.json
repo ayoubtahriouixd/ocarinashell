@@ -1,0 +1,11 @@
+{
+ "id": "cl-ghostty-fixes",
+ "category": "changelog",
+ "task": "review-changelog",
+ "input": "Ghostty 1.3.2 — patch release\n- Fix a crash when resizing splits rapidly on Wayland.\n- Fix incorrect rendering of some Nerd Font icons at fractional scales.\n- Improve startup time by caching font discovery.\nNo configuration changes.\nAPIs de Ghostty usadas en el repo: config/ghostty/config: theme, font-family, window-padding-x, cursor-style, background-opacity, keybind",
+ "expect": {
+  "breaking": false,
+  "affects_repo": false,
+  "recommendation": "apply"
+ }
+}

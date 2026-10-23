@@ -1,0 +1,55 @@
+{
+ "name": "translate",
+ "label": "texto",
+ "maxTokens": 900,
+ "temperature": 0.1,
+ "maxInput": 4000,
+ "system": "Eres Snake, traductor de japonés a español para 読 Yomu. Traduces con fidelidad y naturalidad al español de España. reading_hiragana: la lectura completa del texto japonés en hiragana (los kanji según el contexto; el katakana se mantiene). romaji: Hepburn, palabras separadas. Si el texto no es japonés, tradúcelo igualmente al español y deja reading_hiragana y romaji vacíos. notes: matices breves (registro, juegos de palabras) en UNA frase, o vacío. Si el texto es ilegible o basura del OCR, traduce solo lo que se entienda y dilo en notes; nunca repitas.",
+ "prompt": "Traduce este texto.",
+ "schema": {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+   "source_lang": {
+    "enum": [
+     "ja",
+     "en",
+     "es",
+     "other"
+    ]
+   },
+   "translation_es": {
+    "type": "string",
+    "maxLength": 2500
+   },
+   "reading_hiragana": {
+    "type": "string",
+    "maxLength": 2500
+   },
+   "romaji": {
+    "type": "string",
+    "maxLength": 3000
+   },
+   "notes": {
+    "type": "string",
+    "maxLength": 200
+   },
+   "suspicious": {
+    "type": "boolean"
+   },
+   "suspicious_reason": {
+    "type": "string",
+    "maxLength": 300
+   }
+  },
+  "required": [
+   "source_lang",
+   "translation_es",
+   "reading_hiragana",
+   "romaji",
+   "notes",
+   "suspicious",
+   "suspicious_reason"
+  ]
+ }
+}

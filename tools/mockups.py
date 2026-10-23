@@ -720,12 +720,212 @@ def p13():
     return f'<div class="screen" style="background:url(img/fluido-video.jpg) center/cover no-repeat #0b0912">{ctl}{osd}{panel}</div>'
 
 
+def obi_isles(ws=((1, "busy", 1), (2, "on", 2), (3, "busy", 1), (4, "", 0), (5, "", 0)), title=("terminal", "Ghostty"),
+              profile="均", bat=78, bell=True):
+    """帯 Obi «islas»: transparent bar, only two glass capsules (left: mark · workspaces · title; right: tray · status ·
+    bell) with the island floating between them."""
+    nums = "〇一二三四五六七八九十"
+    cells = []
+    for n, state, wins in ws:
+        dots = "".join("<i></i>" for _ in range(min(wins, 3)))
+        cells.append(f'<div class="c {state}">{nums[n]}{f"<span class=dots>{dots}</span>" if wins and state else ""}</div>')
+    return f"""<div class="obi isles">
+  <div class="cap l"><img class="brand" src="{LOGO}/svg/ocarinashell-mark-flat.svg" alt=""><span class="sep"></span>
+    <div class="ws">{''.join(cells)}</div><span class="sep"></span>
+    <div class="title">{ms(title[0])}<span class="ell">{title[1]}</span></div></div>
+  <div class="cap r"><div class="tray">{ms("cloud_done")}{ms("forum")}</div><span class="sep"></span>
+    <div class="clu">{ms('wifi', fill=True)}{ms('bluetooth')}{ms('volume_up', fill=True)}
+      <span class="bat">{battery_ring(bat)}{bat}</span><span class="prof">{profile}</span></div>
+    <div class="bell{' dot' if bell else ''}">{ms('notifications')}</div></div>
+</div>"""
+
+
+def spark(vals, color, maxv=100, fill=True):
+    """Sparkline for the Hiroba stat tiles (viewBox 100×36, oldest first)."""
+    n = len(vals)
+    pts = [(i * 100 / (n - 1), 34 - v / maxv * 28) for i, v in enumerate(vals)]
+    line = " ".join(f"{x:.1f},{y:.1f}" for x, y in pts)
+    area = f'<polygon points="0,36 {line} 100,36" fill="{color}" opacity=".16"/>' if fill else ""
+    return (f'<svg viewBox="0 0 100 36" preserveAspectRatio="none">{area}'
+            f'<polyline points="{line}" fill="none" stroke="{color}" stroke-width="1.6" vector-effect="non-scaling-stroke"'
+            f' stroke-linejoin="round" stroke-linecap="round"/></svg>')
+
+
+def hiroba():
+    """広場 Hiroba: the island opened (replaces Koyomi). Me · clock · sun / month · 72 kō + weather · music / machine."""
+    import math as _m
+    # sun arc: sunrise 06:34 → sunset 17:57; now 15:20 → t = 0.77
+    t = (15 + 20 / 60 - (6 + 34 / 60)) / ((17 + 57 / 60) - (6 + 34 / 60))
+    W, H, R = 300, 96, 0
+    cx, cy, rx, ry = 150, 92, 132, 80
+    sx, sy = cx - rx * _m.cos(_m.pi * t), cy - ry * _m.sin(_m.pi * t)
+    arc = f"M {cx - rx} {cy} A {rx} {ry} 0 0 1 {cx + rx} {cy}"
+    done = f"M {cx - rx} {cy} A {rx} {ry} 0 0 1 {sx:.1f} {sy:.1f}"
+    sun = f"""<svg viewBox="0 0 300 104">
+  <defs><radialGradient id="sg"><stop offset="0" stop-color="var(--accent2)" stop-opacity=".55"/><stop offset="1" stop-color="var(--accent2)" stop-opacity="0"/></radialGradient>
+  <linearGradient id="ag" x1="0" x2="1"><stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="var(--accent2)"/></linearGradient></defs>
+  <line x1="6" y1="{cy}" x2="294" y2="{cy}" stroke="rgba(255,255,255,.14)" stroke-dasharray="2 5"/>
+  <path d="{arc}" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="2" stroke-dasharray="3 6"/>
+  <path d="{done}" fill="none" stroke="url(#ag)" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="{sx:.1f}" cy="{sy:.1f}" r="26" fill="url(#sg)"/>
+  <circle cx="{sx:.1f}" cy="{sy:.1f}" r="8" fill="var(--accent2)"/>
+  <text x="{sx:.1f}" y="{sy - 16:.1f}" text-anchor="middle" font-family="Geist" font-weight="600" font-size="11" fill="#f4efe6">15:20</text>
+</svg>"""
+    me = f"""<div class="hb-card hb-me"><div class="who"><span class="av">歩<i></i></span>
+    <div><div class="hi">こんにちは · buenas tardes</div><div class="nm">Ayoub</div>
+    <div class="up">encendido 3 h 12 min</div></div></div>
+  <div class="acts"><span>{ms('lock')}</span><span>{ms('logout')}</span><span>{ms('settings')}</span>
+    <span class="red">{ms('power_settings_new')}</span></div></div>"""
+    clock = """<div class="hb-clock"><div class="t">15<em>:</em>20</div>
+  <div class="k"><b>神無月</b> · 十五日 · 木曜日</div><div class="es">jueves, 15 de octubre de 2026</div></div>"""
+    sunc = f"""<div class="hb-card hb-sun"><div class="hb-lbl"><b>日</b>sol y luna</div>{sun}
+  <div class="ends"><span><b>日の出</b>06:34</span><span style="text-align:right"><b>日の入</b>17:57</span></div>
+  <div class="moon"><b>三日月</b>Luna creciente · 19 %</div></div>"""
+    # month (October 2026 starts on Thursday; Sunday first)
+    wk = "".join(f'<div class="w{" sun" if i == 0 else ""}">{k}</div>' for i, k in enumerate("日月火水木金土"))
+    days = [(27, "o"), (28, "o"), (29, "o"), (30, "o")] + [(d, "") for d in range(1, 32)] + [(d, "o") for d in range(1, 8)]
+    cells = []
+    for i, (d, c) in enumerate(days[:42]):
+        cls = c + (" sun" if i % 7 == 0 and not c else "") + (" today" if d == 15 and not c else "") + (" ev" if d in (18, 23) and not c else "")
+        cells.append(f'<div class="d {cls}">{d}</div>')
+    cal = f"""<div class="hb-card hb-cal"><div class="hd"><span class="k">神無月</span><span class="m">octubre 2026</span>
+  <span class="nav">{ms('chevron_left')}{ms('chevron_right')}</span></div><div class="grid">{wk}{''.join(cells)}</div></div>"""
+    hours = "".join(f'<div class="{"n" if i == 0 else ""}"><span>{h}</span><i>{k}</i><b>{tp}°</b></div>'
+                    for i, (h, k, tp) in enumerate([("ahora", "晴", 24), ("16", "晴", 24), ("17", "晴", 23), ("18", "曇", 21),
+                                                     ("19", "曇", 20), ("20", "曇", 19), ("21", "霧", 18), ("22", "霧", 18)]))
+    season = f"""<div class="hb-card hb-season"><div class="hb-lbl"><b>七十二候</b>microestación · 寒露</div>
+  <div class="ko"><span class="big">菊花開</span><div><div class="rd">きくのはなひらく</div><div class="es">Florecen los crisantemos</div></div>
+    <div class="left">4<small>días</small></div></div>
+  <div class="sep"></div>
+  <div class="now"><span class="wk">晴</span><span class="tp">24°</span><div class="ds"><b>Despejado</b><span>Casablanca</span></div>
+    <div class="days"><div><b>金</b><i>曇</i>26°/18°</div><div><b>土</b><i>霧</i>26°/19°</div><div><b>日</b><i>晴</i>28°/19°</div></div></div>
+  <div class="hours">{hours}</div></div>"""
+    music = f"""<div class="hb-card hb-music"><div class="art">{cover(128, 18)}
+    <div class="eqv">{''.join(f'<i style="height:{h}px"></i>' for h in (12, 22, 16, 26, 10, 19))}</div></div>
+  <div class="tt">Tsuki no Michi</div><div class="ar">Hana to Kaze · 月の道</div>
+  <div class="pg"><span class="f" style="width:43%"></span><span class="k" style="left:43%"></span></div><div class="tm"><span>1:42</span><span>3:58</span></div>
+  <div class="ctl"><span class="dim">{ms('shuffle')}</span>{ms('skip_previous', fill=True)}<span class="play">{ms('pause', fill=True)}</span>
+    {ms('skip_next', fill=True)}<span class="dim">{ms('repeat')}</span></div>
+  <div class="dev">{ms('speaker', 's16')}Altavoces del portátil · Spotify</div></div>"""
+    stats = [("脳", "CPU", "7", "%", [8, 6, 9, 14, 7, 6, 11, 22, 9, 7, 6, 8, 7], "var(--accent)", 100),
+             ("絵", "GPU", "3", "%", [2, 3, 2, 5, 9, 4, 3, 2, 3, 2, 4, 3, 3], "var(--accent)", 100),
+             ("記", "Memoria", "4,3", "/ 23 GB", [18, 18, 19, 19, 19, 20, 19, 19, 19, 19, 19, 19, 19], "var(--info)", 100),
+             ("熱", "Temperatura", "42", "°C", [44, 43, 43, 46, 51, 47, 44, 43, 42, 42, 43, 42, 42], "var(--warning)", 100),
+             ("電", "Batería", "82", "% · 6,1 W", [60, 64, 68, 71, 74, 76, 78, 79, 80, 81, 82, 82, 82], "var(--success)", 100),
+             ("網", "Red", "1,2", "MB/s ↓", [2, 5, 3, 9, 14, 6, 3, 2, 8, 12, 5, 4, 6], "var(--info)", 20)]
+    sysrow = "".join(f'<div class="hb-card hb-stat"><div class="h"><b>{k}</b>{n}</div><div class="v">{v}<small>{u}</small></div>'
+                     f'{spark(vals, col, mx)}</div>' for k, n, v, u, vals, col, mx in stats)
+    return f"""<div class="hiroba"><span class="wm">菊</span><span class="notch"></span>
+  <div class="hb-row" style="grid-template-columns:300px 1fr 300px;height:158px">{me}{clock}{sunc}</div>
+  <div class="hb-row" style="grid-template-columns:318px 1fr 300px;height:318px">{cal}{season}{music}</div>
+  <div class="hb-row hb-sys">{sysrow}</div>
+</div>"""
+
+
+def p14():
+    """広場 Hiroba open over the desktop, with the new 帯 Obi «islas» bar."""
+    left = win(14, 60, 780, 955, f'<div class="term">{fastfetch()}\n{prompt()}</div>', "inactive")
+    right = win(808, 60, 824, 955, neovim(), "focus")
+    return (f'<div class="screen" style="background-image:url({WALL}/kurenai-yoru.jpg)">{left}{right}'
+            f'{obi_isles(title=("code", "nvim · shell/modules/hiroba/Hiroba.qml"))}<div class="hb-scrim"></div>{hiroba()}</div>')
+
+
+def p15():
+    """帯 Obi «islas» at rest: transparent bar, two glass capsules and the island between them."""
+    left = win(14, 60, 780, 955, f'<div class="term">{fastfetch()}\n{prompt()}</div>', "inactive")
+    right = win(808, 60, 824, 955, neovim(), "focus")
+    return (f'<div class="screen" style="background-image:url({WALL}/kurenai-yoru.jpg)">{left}{right}'
+            f'{obi_isles(title=("code", "nvim · shell/modules/obi/ObiBar.qml"))}{shima(CLOCK)}</div>')
+
+
+def chrysanthemum(size=44, color="var(--accent2)"):
+    """Kamon-like chrysanthemum crest (16 petals) for the season card."""
+    import math as _m
+    petals = "".join(f'<ellipse cx="0" cy="-12" rx="3.6" ry="10" transform="rotate({i * 22.5})" fill="{color}" opacity=".85"/>'
+                     for i in range(16))
+    return (f'<svg class="hb-kamon" viewBox="-24 -24 48 48" width="{size}" height="{size}">{petals}'
+            f'<circle r="6" fill="#050405"/><circle r="4.2" fill="{color}"/></svg>')
+
+
+def petal(x, y, r, s=1.0, o=.7, color="#e6b422"):
+    return (f'<svg class="hb-petal" style="left:{x}px;top:{y}px;opacity:{o}" width="{14 * s:.0f}" height="{14 * s:.0f}" viewBox="-7 -7 14 14">'
+            f'<ellipse rx="2.6" ry="6" fill="{color}" transform="rotate({r})"/></svg>')
+
+
+def hiroba_anime():
+    """広場 v2: the same layout with anime touches (sky panel, speech bubble, NOW PLAYING tag, vinyl, petals…)."""
+    import random as _r
+    rnd = _r.Random(7)
+    base = hiroba()
+    stars = "".join(f'<i style="left:{rnd.randint(4, 96)}%;top:{rnd.randint(6, 55)}%;opacity:{rnd.uniform(.35, 1):.2f}"></i>'
+                    for _ in range(26))
+    mt = ('<svg class="mt" viewBox="0 0 400 70" preserveAspectRatio="none">'
+          '<path d="M0 52 L40 30 L70 44 L120 14 L160 40 L200 22 L250 46 L300 20 L350 42 L400 28 L400 70 L0 70Z" fill="#2a1438" opacity=".9"/>'
+          '<path d="M0 62 L60 44 L110 58 L170 36 L230 60 L290 42 L350 58 L400 46 L400 70 L0 70Z" fill="#14091d"/></svg>')
+    sky = f"""<div class="hb-sky"><div class="lines"></div><div class="stars">{stars}</div><span class="moon"></span>{mt}
+  <div class="tt"><div class="t">22:35</div><div class="rib"><span>神無月 · 十五日 · 木曜日</span></div>
+    <div class="es">jueves, 15 de octubre de 2026</div></div></div>"""
+    base = base.replace("""<div class="hb-clock"><div class="t">15<em>:</em>20</div>
+  <div class="k"><b>神無月</b> · 十五日 · 木曜日</div><div class="es">jueves, 15 de octubre de 2026</div></div>""", sky)
+    base = base.replace('<div class="hb-card hb-me">', '<div class="hb-card hb-me hb-me2 hb-tone"><div class="hb-bubble">こんばんは、Ayoub！<small>encendido 2 h 26 min</small></div>'
+                        f'<div class="acts2"><span>{ms("lock")}</span><span>{ms("settings")}</span><span class="red">{ms("power_settings_new")}</span></div>')
+    base = base.replace('<div class="hi">こんにちは · buenas tardes</div><div class="nm">Ayoub</div>\n    <div class="up">encendido 3 h 12 min</div>', '<div class="nm">Ayoub</div><div class="up">ayoub@p14s</div>')
+    base = base.replace('<div class="hb-card hb-music"><div class="art">', '<div class="hb-card hb-music"><span class="hb-tag"><b>再生中</b>NOW PLAYING</span><div class="art"><span class="hb-vinyl"></span>')
+    base = base.replace('<div class="hb-card hb-season">', '<div class="hb-card hb-season hb-tone">'
+                        + chrysanthemum(26).replace('class="hb-kamon"', 'class="hb-kamon top"'))
+    base = base.replace('<div class="hb-card hb-cal">', '<div class="hb-card hb-cal hb-tone">')
+    petals = "".join(petal(rnd.randint(40, 1060), rnd.randint(10, 600), rnd.randint(0, 180), rnd.uniform(.7, 1.3), rnd.uniform(.35, .8))
+                     for _ in range(12))
+    return base.replace('<span class="notch"></span>', '<span class="notch"></span>' + petals, 1)
+
+
+def p16():
+    """広場 Hiroba v2 (anime) over the desktop at night."""
+    left = win(14, 60, 780, 955, f'<div class="term">{fastfetch()}\n{prompt()}</div>', "inactive")
+    right = win(808, 60, 824, 955, neovim(), "focus")
+    return (f'<div class="screen" style="background-image:url({WALL}/kurenai-yoru.jpg)">{left}{right}'
+            f'{obi_isles(title=("code", "nvim · shell/modules/hiroba/Hiroba.qml"))}<div class="hb-scrim"></div>{hiroba_anime()}</div>')
+
+
+def island_v2(state="idle"):
+    crest = chrysanthemum(18).replace('class="hb-kamon"', 'class="crest"')
+    if state == "hover":
+        crest = chrysanthemum(38).replace('class="hb-kamon"', 'class="crest"')
+        flies = "".join(f'<svg class="fly" style="right:{x}px;top:{y}px;opacity:{o}" width="10" height="10" viewBox="-7 -7 14 14">'
+                        f'<ellipse rx="2.6" ry="6" fill="#e6b422" transform="rotate({r})"/></svg>'
+                        for x, y, r, o in ((-14, -8, 30, .9), (-26, 10, 120, .7), (-6, 34, 70, .8), (-34, -2, 160, .5)))
+        return (f'<div class="isl hov">{crest}<div class="col"><span class="rib"><span>神無月 · 十五日 · 木曜日</span></span>'
+                f'<span class="line2"><b>菊花開</b>florecen los crisantemos · quedan 3 días</span></div>'
+                f'<div class="wx"><b>晴</b><span>20°</span></div><span class="sweep"></span>{flies}</div>')
+    if state == "music":
+        return (f'<div class="isl">{eq()}<span class="t">22<em>:</em>35</span>'
+                f'<span style="font:500 12.5px/1 var(--ui);color:#aaa39b">Tsuki no Michi</span><span class="ko">菊</span></div>')
+    return f'<div class="isl">{crest}<span class="t">22<em>:</em>35</span><span class="d">木<small>15</small></span><span class="ko">菊</span></div>'
+
+
+def p17():
+    """島 Shima v2: idle with an aura (no animation at rest), hover «ticket» with a one-shot light sweep and petals,
+    and with music. Shown at 2× on a sheet (the real island is 30 px tall)."""
+    rows = [("静", "En reposo · nada se mueve", "idle", 150),
+            ("触", "Al pasar el ratón · crece con muelle, un destello cruza una vez y saltan cuatro pétalos", "hover", 470),
+            ("音", "Con música · ecualizador real y el título", "music", 880)]
+    out = []
+    for k, cap, st, top in rows:
+        out.append(f'<div class="isl-row" style="top:{top}px"><div class="isl-cap"><b>{k}</b>{cap}</div>{island_v2(st)}</div>')
+    note = ('<div class="isl-row" style="top:1180px"><div class="isl-note">Aura: borde de 1 px que pasa de 紅 rojo a 金 oro · '
+            'los dos puntos de la hora en rojo · el día como sello · el emblema de la estación a la izquierda. '
+            'El destello y los pétalos son de un solo disparo (450 ms, hilo de render); sin movimiento reducido ni Shinobi.</div></div>')
+    return f'<div class="screen" style="height:1029px"><div class="isl-sheet"></div>{"".join(out)}</div>'
+
+
 PAGES = {1: ("escritorio", "Escritorio · Kurenai", p01, "kurenai"), 2: ("centro-de-control", "Engawa", p02, "kurenai"),
          3: ("bloqueo", "Kagi", p03, "kurenai"), 4: ("lanzador", "Torii", p04, "kurenai"), 5: ("energia", "Dengen", p05, "kurenai"),
          6: ("shinobi", "Shinobi", p06, "shinobi"), 7: ("ajustes-kohaku", "Settei · Kōhaku", p07, "kohaku"),
          8: ("oni", "Oni", p08, "kurenai"), 9: ("fune", "Fune", p09, "kurenai"), 10: ("mamori", "Mamori", p10, "kurenai"),
          11: ("snake", "Snake", p11, "kurenai"), 12: ("pantallas", "Settei · Pantalla", p12, "kurenai"),
-         13: ("fluido", "Fluido · Nameraka", p13, "kurenai")}
+         13: ("fluido", "Fluido · Nameraka", p13, "kurenai"), 14: ("isla-hiroba", "Hiroba · la isla abierta", p14, "kurenai"),
+         15: ("barra-islas", "Obi · islas", p15, "kurenai"), 16: ("isla-hiroba-anime", "Hiroba · anime", p16, "kurenai"),
+         17: ("isla-v2", "Shima v2", p17, "kurenai")}
 
 
 # ----------------------------------------------------------------------------- the Oni game frame (original art)

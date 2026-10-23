@@ -1,0 +1,6 @@
+# Simulacro e (fase 14): reinicio de PipeWire, WirePlumber y pipewire-pulse
+antes:   {"available":true,"volume":35,"sink":"Auriculares"}
+systemctl --user restart pipewire.socket pipewire.service wireplumber.service pipewire-pulse.service
+- la shell ve la caída (Audio.available=false) y se recupera sola en 642 ms: {"available":true,"volume":35,"sink":"Auriculares"}
+- control real tras el reinicio: ipc audio set 34 → wpctl «Volume: 0.34»; set 35 → «Volume: 0.35»
+- journal: solo «Pipewire error on object 0 with code -32 connection error» (×2, el instante del reinicio); ningún error QML

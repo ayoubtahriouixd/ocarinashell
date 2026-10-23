@@ -1,0 +1,13 @@
+# 守 Mamori · alias for «start the cycle now» (CLI, notifications, the 守 page): same as ocarina-mamori@manual.
+[Unit]
+Description=守 Mamori · ciclo de mantenimiento
+After=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/ocarina-mamori run --trigger manual
+Environment=PYTHONUNBUFFERED=1
+Nice=19
+CPUWeight=20
+IOSchedulingClass=idle
+TimeoutStartSec=4h

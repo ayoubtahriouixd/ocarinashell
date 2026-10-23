@@ -1,0 +1,7 @@
+# OcarinaShell (fase 13): the greeter writes /run/ocarina-greeter/ready once it is on screen.
+[Unit]
+Description=OcarinaShell greeter on screen (Plymouth hand-over)
+
+[Path]
+PathExists=/run/ocarina-greeter/ready
+Unit=ocarina-plymouth-handoff.service

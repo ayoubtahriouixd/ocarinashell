@@ -1,0 +1,10 @@
+# Fase 06 · rendimiento (2026-10-14)
+CPU de qs, 60 s sin tocar nada: 0,27 % (presupuesto < 0,3 %). Medido con Claude Code trabajando: su título gira
+(«◐/◑») y niri emite ~1 evento de ventana por segundo (comprobado con `niri msg event-stream`: 10 en 10 s), que la barra
+repinta. Bisección con OCARINA_DISABLE=Kagi,Polkit,Dengen: igual (20 ticks/60 s) → los módulos nuevos no cuestan nada
+en reposo. Medida limpia (sin Claude activo) pendiente para el perf-auditor (fase 17).
+Memoria del cgroup al arrancar: 221 MB (fase 5: 203 MB). RSS tras 14 ciclos de bloqueo de prueba: 348 → 354 MB,
+estable (caché de glifos CJK/curvas y del fondo difuminado; sin fuga por ciclo).
+Bloqueo real: confirmado por el compositor en 138–241 ms (13 bloqueos, kagi-ciclos.txt). Desbloqueo: 425 ms del acierto
+a la liberación (estallido + fantasma).
+FileView vigilando un fichero inexistente: 0 ticks/20 s (descartado como sondeo).

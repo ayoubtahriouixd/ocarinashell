@@ -1,0 +1,286 @@
+#!/usr/bin/env python3
+"""ocarina-boot-theme — OcarinaShell boot chain theme (Limine + Plymouth), dark or light. Python stdlib only.
+
+  ocarina-boot-theme status                         what is installed (Limine block, Plymouth theme and variant)
+  ocarina-boot-theme apply dark|light [--timeout N] [--dry-run]   fixed variant (turns «auto» off first if it is on)
+  ocarina-boot-theme apply auto       the boot chain follows the theme by itself (Kōhaku, Matcha → light; the rest →
+                                      dark): a root watcher switches it when the theme changes (D-068)
+  ocarina-boot-theme limine-merge IN OUT VARIANT [--timeout N] [--saved FILE] [--preview]
+  ocarina-boot-theme limine-unmerge IN OUT [--saved FILE]
+                                                    pure text transforms used by scripts/root/limine-tema.sh and by the
+                                                    QEMU preview; they read IN and write OUT, nothing else
+
+This tool NEVER writes to /boot, /etc or the initramfs (rule 10): `apply` writes a small root script to
+~/.local/state/ocarinashell/boot/ and prints the one command Ayoub runs (`sudo bash …`).
+"""
+import argparse
+import json
+import os
+import re
+import shlex
+import subprocess
+import sys
+from datetime import date
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+BOOT = REPO / "assets/boot"
+HOME = Path.home()
+STATE = Path(os.environ.get("XDG_STATE_HOME", HOME / ".local/state")) / "ocarinashell"
+PLY_THEME = Path("/usr/share/plymouth/themes/ocarinashell")
+PLY_CONF = Path("/etc/plymouth/plymouthd.conf")
+LIMINE_CONF = Path("/boot/limine.conf")
+
+BEGIN = "# ── OcarinaShell · tema de Limine"
+END = "# ── fin del tema OcarinaShell"
+# Global keys that belong to a Limine *look*: they are replaced by our block (and saved for --uninstall).
+LOOK = re.compile(r"^\s*(term_[a-z_]+|wallpaper(_style)?|backdrop|interface_[a-z_]+)\s*:", re.I)
+# The comment lines CachyOS ships above its own theme (they would describe keys that are gone).
+FOREIGN_THEME_COMMENT = re.compile(r"^\s*#\s*(CachyOS Limine theme|Author:.*limine-theme)", re.I)
+KEY = re.compile(r"^\s*([A-Za-z_]+)\s*:")
+VARIANTS = ("dark", "light")
+
+
+def die(msg):
+    print(f"ocarina-boot-theme: {msg}", file=sys.stderr)
+    sys.exit(1)
+
+
+# ----------------------------------------------------------------------------- variant
+def current_variant():
+    """dark | light from the resolved OcarinaShell theme; dark when unknown (the brand's default)."""
+    try:
+        t = json.loads((STATE / "theme.json").read_text())
+        return "light" if t.get("tokens", {}).get("mode") == "light" else "dark"
+    except (OSError, ValueError):
+        return "dark"
+
+
+def resolve(arg):
+    if arg == "auto":
+        return current_variant()
+    if arg not in VARIANTS:
+        die(f"variante desconocida: {arg} (dark | light | auto)")
+    return arg
+
+
+# ----------------------------------------------------------------------------- limine.conf transforms
+def split_header(lines):
+    """Global options are everything before the first entry line (`/Name`, `//Sub`, …)."""
+    for i, ln in enumerate(lines):
+        if ln.lstrip().startswith("/"):
+            return lines[:i], lines[i:]
+    return lines, []
+
+
+def strip_block(header):
+    out, inside = [], False
+    for ln in header:
+        if ln.startswith(BEGIN):
+            inside = True
+            continue
+        if inside:
+            if ln.startswith(END):
+                inside = False
+            continue
+        out.append(ln)
+    return out
+
+
+def dedupe(header):
+    """Keep the FIRST occurrence of each global key: Limine's config_get_value returns the first one (v12 config.c).
+    `comment:` lines are not options and are all kept."""
+    seen, out = set(), []
+    for ln in header:
+        m = KEY.match(ln)
+        if m and m.group(1).lower() != "comment":
+            k = m.group(1).lower()
+            if k in seen:
+                continue
+            seen.add(k)
+        out.append(ln)
+    return out
+
+
+def set_key(header, key, value):
+    for i, ln in enumerate(header):
+        m = KEY.match(ln)
+        if m and m.group(1).lower() == key:
+            header[i] = f"{key}: {value}"
+            return header
+    return [f"{key}: {value}"] + header
+
+
+def squeeze(header):
+    """No leading blank lines and never two in a row (removed keys leave holes)."""
+    out = []
+    for ln in header:
+        if not ln.strip() and (not out or not out[-1].strip()):
+            continue
+        out.append(ln)
+    return out
+
+
+def limine_merge(text, variant, timeout=None, saved=None, preview=False):
+    """Return (new_text, removed_look_lines). Entries are left byte for byte; only the global header changes."""
+    lines = text.splitlines()
+    header, entries = split_header(lines)
+    header = strip_block(header)
+    removed = [ln for ln in header if LOOK.match(ln) or FOREIGN_THEME_COMMENT.match(ln)]
+    header = [ln for ln in header if not (LOOK.match(ln) or FOREIGN_THEME_COMMENT.match(ln))]
+    if timeout is not None:
+        removed += [ln for ln in header if KEY.match(ln) and KEY.match(ln).group(1).lower() == "timeout"][-1:]
+        header = set_key(header, "timeout", timeout)
+    if preview:                                     # QEMU has no kernel to boot: stay on the menu
+        header = set_key(header, "timeout", "no")
+    header = squeeze(dedupe(header))
+    block =(BOOT / "limine" / f"limine-tema-{variant}.conf").read_text().rstrip("\n").splitlines()
+    if not block or not block[0].startswith(BEGIN) or not block[-1].startswith(END):
+        die(f"bloque de tema mal formado: limine-tema-{variant}.conf")
+    out = block + [""] + header + entries
+    if saved is not None and removed:
+        prev = Path(saved).read_text().splitlines() if Path(saved).exists() else []
+        if not prev:                                # only the FIRST install's foreign look is worth restoring
+            Path(saved).write_text("\n".join(removed) + "\n")
+    return "\n".join(out) + "\n", removed
+
+
+def limine_unmerge(text, saved=None):
+    lines = text.splitlines()
+    header, entries = split_header(lines)
+    header = squeeze(strip_block(header))
+    restore = []
+    if saved and Path(saved).exists():
+        restore = [ln for ln in Path(saved).read_text().splitlines() if ln.strip()]
+    # the previous look (and timeout) go first: they win over anything left with the same key
+    out = squeeze(dedupe(restore + [""] + header)) if restore else header
+    return "\n".join(out + entries) + "\n"
+
+
+# ----------------------------------------------------------------------------- status
+def sudo_read(path):
+    """Read a root-only file through `sudo -n` when the temporary drop-in exists; None otherwise (never prompts)."""
+    try:
+        return path.read_text()
+    except PermissionError:
+        r = subprocess.run(["sudo", "-n", "cat", str(path)], capture_output=True, text=True)
+        return r.stdout if r.returncode == 0 else None
+    except OSError:
+        return None
+
+
+def status():
+    want = current_variant()
+    print(f"Tema de OcarinaShell → variante de arranque recomendada: {want}")
+    conf = sudo_read(LIMINE_CONF)
+    if conf is None:
+        print("Limine     ? (sin permiso para leer /boot/limine.conf; ejecútalo con sudo para verlo)")
+    else:
+        header, _ = split_header(conf.splitlines())
+        blk = next((ln for ln in header if ln.startswith(BEGIN)), None)
+        if blk:
+            v = "light" if "(claro)" in blk else "dark"
+            to = next((ln.split(":", 1)[1].strip() for ln in header if KEY.match(ln) and ln.lower().startswith("timeout")), "?")
+            print(f"Limine     ✓ tema {v} · timeout {to} s")
+        else:
+            print("Limine     ✗ sin tema de OcarinaShell")
+    try:
+        ply = re.search(r"^\s*Theme\s*=\s*(\S+)", PLY_CONF.read_text(), re.M)
+        ply = ply.group(1) if ply else "(por defecto)"
+    except OSError:
+        ply = "?"
+    variant = "—"
+    if (PLY_THEME / "ocarinashell.script").exists():
+        m = re.search(r'^variant = "(\w+)"', (PLY_THEME / "ocarinashell.script").read_text(), re.M)
+        variant = m.group(1) if m else "?"
+    mark = "✓" if ply == "ocarinashell" else "✗"
+    print(f"Plymouth   {mark} tema activo: {ply} · ocarinashell instalado: {'sí, ' + variant if variant != '—' else 'no'}")
+    try:
+        scale = re.search(r"^\s*DeviceScale\s*=\s*(\d+)", PLY_CONF.read_text(), re.M)
+        print(f"           DeviceScale={scale.group(1) if scale else 'auto (borroso a 240 ppi)'}")
+    except OSError:
+        pass
+    cmd = Path("/proc/cmdline").read_text().split()
+    print(f"Kernel     splash {'✓' if 'splash' in cmd else '✗'} · quiet {'✓' if 'quiet' in cmd else '✗'}"
+          f" · loglevel={next((c.split('=')[1] for c in cmd if c.startswith('loglevel=')), '—')}")
+    greeter = Path("/etc/greetd/config.toml")
+    print(f"Greeter    {'greetd configurado' if greeter.exists() else 'sin greetd (entrada por tty1)'}")
+    auto = subprocess.run(["systemctl", "is-enabled", "ocarina-boot-sync.path"], capture_output=True, text=True)
+    print(f"Modo       {'automático (sigue al tema)' if auto.stdout.strip() == 'enabled' else 'manual'}")
+
+
+# ----------------------------------------------------------------------------- apply
+def apply(variant, timeout, dry):
+    out_dir = STATE / "boot"
+    script = out_dir / f"aplicar-{variant}.sh"
+    root = REPO / "scripts/root"
+    args = [str(root / "limine-tema.sh"), variant] + (["--timeout", str(timeout)] if timeout is not None else [])
+    auto = subprocess.run(["systemctl", "is-enabled", "ocarina-boot-sync.path"], capture_output=True, text=True)
+    off = ["bash " + shlex.quote(str(root / "arranque-auto.sh")) + " quitar   # a fixed variant: «auto» off"] \
+        if auto.stdout.strip() == "enabled" else []
+    body = "\n".join([
+        "#!/usr/bin/env bash",
+        f"# Generado por ocarina-boot-theme el {date.today().isoformat()}: tema de arranque «{variant}».",
+        "# Ejecútalo tú (Ayoub) con: sudo bash " + shlex.quote(str(script)),
+        "set -euo pipefail",
+        *off,
+        "bash " + " ".join(shlex.quote(a) for a in args),
+        "bash " + " ".join(shlex.quote(a) for a in [str(root / "plymouth-tema.sh"), variant]),
+        *(["bash " + shlex.quote(str(root / "greeter.sh")) + " actualizar " + variant]
+          if Path("/etc/ocarinashell/greeter.json").exists() else []),
+        "",
+    ])
+    if dry:
+        print(body)
+        return
+    out_dir.mkdir(parents=True, exist_ok=True)
+    script.write_text(body)
+    script.chmod(0o644)
+    print(f"Variante: {variant}. Para aplicarla (Limine + Plymouth + initramfs), en otra terminal:\n")
+    print(f"  sudo bash {shlex.quote(str(script))}\n")
+    print("Hace un snapshot antes, guarda copia de lo que cambia y se puede deshacer con --uninstall.")
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("status")
+    p = sub.add_parser("apply")
+    p.add_argument("variant", choices=("dark", "light", "auto"))
+    p.add_argument("--timeout", type=int, choices=range(0, 11), metavar="0-10")
+    p.add_argument("--dry-run", action="store_true")
+    p = sub.add_parser("limine-merge")
+    p.add_argument("src")
+    p.add_argument("dst")
+    p.add_argument("variant", choices=VARIANTS)
+    p.add_argument("--timeout", type=int)
+    p.add_argument("--saved")
+    p.add_argument("--preview", action="store_true")
+    p = sub.add_parser("limine-unmerge")
+    p.add_argument("src")
+    p.add_argument("dst")
+    p.add_argument("--saved")
+    a = ap.parse_args()
+    if a.cmd == "status":
+        status()
+    elif a.cmd == "apply":
+        if a.variant == "auto":
+            cmd = f"sudo bash {shlex.quote(str(REPO / 'scripts/root/arranque-auto.sh'))} instalar"
+            if a.dry_run:
+                print(cmd)
+                return
+            print("Automático: el arranque (Limine, Plymouth, greeter) seguirá a tu tema oscuro o claro. Una vez, en otra")
+            print(f"terminal:\n\n  {cmd}\n\nPara volver a manual: … arranque-auto.sh quitar")
+            return
+        apply(resolve(a.variant), a.timeout, a.dry_run)
+    elif a.cmd == "limine-merge":
+        text, removed = limine_merge(Path(a.src).read_text(), a.variant, a.timeout, a.saved, a.preview)
+        Path(a.dst).write_text(text)
+        if removed:
+            print(f"{len(removed)} líneas de aspecto previas sustituidas", file=sys.stderr)
+    elif a.cmd == "limine-unmerge":
+        Path(a.dst).write_text(limine_unmerge(Path(a.src).read_text(), a.saved))
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,10 @@
+{
+ "id": "pkg-bump-trivial",
+ "category": "pkgbuild",
+ "task": "review-pkgbuild",
+ "input": "--- a/PKGBUILD\n+++ b/PKGBUILD\n@@ -1,11 +1,11 @@\n pkgname=wl-gammarelay-rs\n-pkgver=1.0.1\n+pkgver=1.0.2\n pkgrel=1\n arch=('x86_64')\n url=\"https://github.com/MaxVerevkin/wl-gammarelay-rs\"\n license=('GPL-3.0-only')\n makedepends=('cargo')\n source=(\"$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz\")\n-sha256sums=('4f1b9e2a0c6d3e8f7a5b2c1d9e0f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f')\n+sha256sums=('9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b')",
+ "expect": {
+  "verdict": "benign",
+  "trivial": true
+ }
+}

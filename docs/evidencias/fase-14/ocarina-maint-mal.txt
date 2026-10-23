@@ -1,0 +1,21 @@
+ok   rc=2  operación inexistente                           ocarina-maint: operación no permitida: «rm»
+ok   rc=2  inyección con ; en la operación                ocarina-maint: operación no permitida: «health; id»
+ok   rc=2  ruta como paquete                                ocarina-maint: uso: downgrade <paquete> [<versión>]
+ok   rc=2  paquete con ;                                    ocarina-maint: uso: downgrade <paquete> [<versión>]
+ok   rc=2  paquete inexistente                              ocarina-maint: «paquete-que-no-existe-xyz» no está instalado
+ok   rc=2  versión con $()                                 ocarina-maint: versión no válida: «$(id)»
+ok   rc=2  rollback con texto                               ocarina-maint: uso: rollback <pre> <post> (números de snapshot)
+ok   rc=2  rollback con 0                                   ocarina-maint: uso: rollback <pre> <post> (números de snapshot)
+ok   rc=2  rollback post < pre                              ocarina-maint: el post (#40) debe ser posterior al pre (#50)
+ok   rc=2  rollback de un par que no es pre/post            ocarina-maint: #116/#117 no son un par pre/post (tipos single/single, pre del post = ningu
+ok   rc=2  rollback con números negativos                  ocarina-maint: uso: rollback <pre> <post> (números de snapshot)
+ok   rc=2  rollback con 3 argumentos                        ocarina-maint: uso: rollback <pre> <post> (números de snapshot)
+ok   rc=2  retener un paquete que no es kernel              ocarina-maint: solo se pueden retener kernels y linux-firmware*: «glibc»
+ok   rc=2  upgrade con opción de pacman                    ocarina-maint: argumento no permitido: «--overwrite»
+ok   rc=2  snapshot con salto de línea                     ocarina-maint: argumento no permitido
+ok   rc=2  snapshot con comillas y $                        ocarina-maint: uso: snapshot <descripción> (1–64 caracteres: letras, números, espacios, .,
+ok   rc=2  fw-stage de un id con ruta                       ocarina-maint: uso: fw-stage <id de dispositivo de fwupd (40 hex)>
+ok   rc=2  scrub de otro dispositivo                        ocarina-maint: uso: scrub start|status
+ok   rc=2  paccache con argumentos                          ocarina-maint: uso: paccache
+ok   rc=2  argumento gigante                                ocarina-maint: argumento no permitido
+rechazadas: 20 · aceptadas por error: 0

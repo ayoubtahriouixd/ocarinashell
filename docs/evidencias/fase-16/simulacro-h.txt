@@ -1,0 +1,20 @@
+# Simulacro h · juego (GameMode) o llamada (micrófono)
+# 2026-10-17 21:08
+
+$ ocarina-mamori conditions   (código 1)
+守 ahora no: GameMode activo (un juego)
+
+$ ocarina-mamori run   (código 0)
+
+$ ocarina-mamori conditions   (código 1)
+守 ahora no: micrófono en uso (¿una llamada?)
+
+$ ocarina-mamori run   (código 0)
+
+--- journal ---
+aplazado: sin conexión a internet
+aplazado: GameMode activo (un juego)
+aplazado: micrófono en uso (¿una llamada?)
+
+
+VEREDICTO: SUPERADO: aplaza con GameMode y con el micrófono abierto

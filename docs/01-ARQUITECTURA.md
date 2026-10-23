@@ -1,6 +1,6 @@
 # 01 · Arquitectura
 
-## 1. Pila (verifica versiones reales en la fase 0 y anótalas en docs/SISTEMA.md)
+## 1. Pila (versiones comprobadas: docs/SISTEMA.md y docs/COMPAT.md)
 | Capa | Elección | Notas |
 |---|---|---|
 | Compositor | **niri ≥ 26.04** | blur (`ext-background-effect`, «xray» barato), `include optional=true`, recent-windows (Alt+Tab), shaders de animación, IPC JSON por socket |
@@ -15,18 +15,18 @@
 | Portapapeles | `wl-clipboard` + `cliphist` | |
 | Portales | xdg-desktop-portal-gnome (+gtk), gnome-keyring | lo que recomienda niri |
 | Paquetes | pacman + **paru** (optimizado: `reference/paru.conf`, `reference/makepkg.conf`) | nada de yay; PKGBUILD revisado |
-| Apps de Windows | **WinApps** + `dockur/windows` (KVM) + **FreeRDP 3** RemoteApp; Wine/Proton (`umu-run`) para lo compatible | fase 12 (船 Fune); WinBoat como alternativa con interfaz propia |
-| IA local | **蛇 Snake**: `llama-server` (llama.cpp con Vulkan en la Radeon 860M) o FastFlowLM en la NPU XDNA 2, bajo demanda | fase 15; modelo y backend elegidos por evaluación |
-| Mantenimiento | **守 Mamori**: `bin/ocarina-mamori` (Python stdlib) + ayudante root `ocarina-maint` + Snake (Claude Code opcional) | fase 16; también funciona sin IA |
-| Vídeo fluido | **滑 Nameraka**: ayudante nativo `native/nameraka` (C++20, Vulkan, PipeWire) + **lsfg-vk ≥ 2.0** (Lossless Scaling de Steam, rama `lsfg-vk`); alternativa IA libre RIFE + ncnn | fase 11, parte B (§19); captura de la ventana con la API ScreenCast de niri |
+| Apps de Windows | **Podman sin root** + `dockur/windows` (KVM) + **FreeRDP 3** RemoteApp (lanzador propio sobre los datos de WinApps); Wine/Proton (`umu-run`) para lo compatible | 船 Fune (§16, D-062); medidas en docs/WINDOWS.md |
+| IA local | **蛇 Snake**: `llama-server` (llama.cpp con Vulkan en la Radeon 860M) bajo demanda + **whisper.cpp** para la voz | §18; modelo elegido por evaluación (gpt-oss-20b, docs/SNAKE.md); la NPU con FastFlowLM solo para evaluar |
+| Mantenimiento | **守 Mamori**: `bin/ocarina-mamori` (Python stdlib) + ayudante root `ocarina-maint` + Snake (Claude Code opcional) | §17; también funciona sin IA |
+| Vídeo fluido | **滑 Nameraka**: ayudante nativo `native/nameraka` (C++20, Vulkan, PipeWire) + **lsfg-vk ≥ 2.0** (Lossless Scaling de Steam, rama `lsfg-vk`) | §19; captura de la ventana con la API ScreenCast de niri; medidas en docs/FLUIDO.md |
 
 No hay más demonios de UI: ni waybar, ni mako/dunst/swaync, ni fuzzel/rofi, ni agentes polkit externos
-(OcarinaShell ES el servidor de notificaciones y el agente polkit). La fase 0 detecta y retira conflictos.
+(OcarinaShell ES el servidor de notificaciones y el agente polkit). `ocarina doctor` avisa si hay otro en marcha.
 
 ## 2. Procesos (systemd --user, ligados a `graphical-session.target`)
 | Unidad | Qué hace |
 |---|---|
-| `ocarinashell.service` | `qs -c ocarina` · `Restart=on-failure` · `RestartSec=1` · logs al journal |
+| `ocarinashell.service` | `qs -c ocarina` · `Restart=always` · `RestartSec=1` · `RestartMode=direct` · logs al journal (06, capa 4) |
 | `ocarina-cliphist.service` | `wl-paste --watch cliphist store` (texto) |
 | `ocarina-cliphist-img.service` | `wl-paste --type image --watch cliphist store` |
 | `ocarina-sleep.service` | `swayidle -w before-sleep 'ocarina lock --wait' lock 'ocarina lock'` |
@@ -35,52 +35,68 @@ No hay más demonios de UI: ni waybar, ni mako/dunst/swaync, ni fuzzel/rofi, ni 
 | `ocarina-postupdate.path` + `.service` | pruebas de humo en la sesión tras un hook de pacman (06-ACTUALIZACIONES) |
 | `ocarina-mamori.timer` + `.service` | 守 Mamori: ciclo diario de salud, actualización y mantenimiento (`Nice=19`, IO idle, `Persistent=true`) |
 | `ocarina-bootmark.service` | marca de arranque correcto (la usa Mamori para detectar kernels que no arrancan) |
-| `ocarina-snake.service` | servidor de la IA local en `127.0.0.1`, arrancado bajo demanda y parado tras N min sin uso |
-| `ocarina-hikae.timer` + `.service` · `ocarina-hikae-usb.service` | 控 Hikae: `ocarina backup now --if-due` a diario con CA y al montar el disco de copias (ligado a su `.mount`); `Nice=19`, IO idle |
+| `ocarina-snake.service` | servidor de la IA local en un socket Unix (sin red), arrancado bajo demanda y parado tras N min sin uso |
+| `ocarina-mamori-heal.service` | lo lanza el modo seguro: 守 Mamori intenta arreglar la shell sola |
+| `ocarina-powerkey.service` | retiene el inhibidor `handle-power-key` de logind: el botón de encendido abre Dengen (D-041) |
 | `ocarina-nameraka.socket` + `.service` · `ocarina-nameraka-selftest.service` | 滑 Nameraka (§19): activado por socket al usarlo, se cierra tras 60 s apagado (0 procesos en reposo); `self-test` oneshot al iniciar sesión (`Nice=19`) |
 Arranque: niri lanza la sesión (`niri-session`/`niri.service`) → `graphical-session.target` → unidades.
 `spawn-at-startup` solo para lo que no admita systemd. `xwayland-satellite` lo gestiona niri.
-El motor de contenedores de Fune (Docker) arranca **bajo demanda** por `docker.socket`: sin Windows, nada corre.
+Fune usa Podman sin root, sin demonio: con Windows apagado no corre nada. 控 Hikae no tiene unidades propias: son los
+timers de snapper de la config `home` (`scripts/root/snapper-home.sh`).
 
-## 3. Repo → sistema (`scripts/install.sh`, idempotente)
-Enlaces simbólicos con copia de seguridad previa (`*.ocarina-bak-<fecha>`):
+## 3. Repo → sistema
+`./install.sh` (el instalador animado; `--demo` no cambia nada) hace snapshot, instala los paquetes de los grupos
+elegidos (`scripts/paquetes.txt`), las fuentes (`scripts/fonts.sh`), enlaza (`scripts/install.sh`), copia los ficheros
+de root (`scripts/install-system.sh`), aplica el tema, activa los servicios y pasa `ocarina doctor`.
+`scripts/install.sh` (idempotente; `--dry-run`, `--uninstall`) crea los enlaces simbólicos con copia de seguridad previa (`*.ocarina-bak-<fecha>`):
 `shell/ → ~/.config/quickshell/ocarina` · `config/niri/ → ~/.config/niri` · `config/ghostty/ → ~/.config/ghostty` ·
-`config/nvim/ → ~/.config/nvim` · `config/fish/conf.d/ocarina.fish` · `config/starship.toml` · `config/<app>/…` ·
-`bin/* → ~/.local/bin/` · `systemd/user/*` (servicios, timers y paths) `→ ~/.config/systemd/user/`.
-Ficheros de root (`system/`) se instalan con `scripts/install-system.sh` (sudo), nunca por enlace.
+`config/nvim/ → ~/.config/nvim` · `config/fish/conf.d/*.fish` (tu `config.fish` sigue siendo tuyo) · `config/<app>/…` (fichero
+a fichero) · `bin/* → ~/.local/bin/` · `systemd/user/*` (servicios, timers y paths) `→ ~/.config/systemd/user/` · el
+ayudante nativo de Nameraka se compila con meson en `~/.local/libexec/ocarinashell/`. Lo tematizado (starship, GTK,
+qt6ct…) no se enlaza: lo escribe `bin/ocarina-theme`.
+Ficheros de root (`system/`: polkit, ayudantes `ocarina-powerctl` y `ocarina-maint`, hook de pacman) se copian con
+`scripts/install-system.sh` (sudo), nunca por enlace. Lo del arranque (Limine, Plymouth, greeter) va aparte, en
+`scripts/root/`, y lo ejecuta el usuario.
 ⚠ Quickshell 0.3 no canonicaliza rutas: lanza SIEMPRE con `qs -c ocarina` (misma ruta = mismo id de shell).
 
 ## 4. Estructura QML (`shell/`)
 ```
 shell.qml                 ShellRoot: crea módulos por pantalla (Variants sobre Quickshell.screens) y carga perezosa
 config/                   Theme.qml, Motion.qml, Settings.qml, Paths.qml, Glossary.qml   (singletons)
-services/                 Niri.qml, Time.qml, Audio.qml, Brightness.qml, Power.qml, Network.qml, Bt.qml,
-                          Media.qml, Notifs.qml, Kisetsu.qml, Weather.qml, SysInfo.qml, Idle.qml, Modes.qml
-                          (Shinobi/Oni), Fune.qml, Snake.qml, Mamori.qml, Clipboard.qml, Wallpapers.qml, Sounds.qml,
-                          Recorder.qml, Displays.qml, Session.qml, Focus.qml, Backup.qml, Nameraka.qml   (singletons)
-components/               primitivas: Surface, GlassPanel, OText, OIcon (Material Symbols), Kanji, Hanko,
-                          OButton, OToggle, OSlider, OSwitch, Segmented, Chip, Tile, ListRow, ScrollArea,
-                          Tooltip, PopupPanel, Anim (NumberAnimation con Motion), Ripple, OcarinaLogo
-modules/obi/              barra: Obi.qml, Workspaces.qml, FocusedTitle.qml, StatusCluster.qml, Tray.qml
-modules/shima/            isla: Shima.qml (+ estados: Clock, Media, Osd, Peek, Recording, Rename, Shinobi, Oni, Focus, Fluido)
+services/                 un singleton por fuente de datos (§5): Niri, Time, Audio, Brightness, Power, Net, Bt, Media,
+                          Notifs, Kisetsu, Weather, Usage, Sensors, Idle, Modes, Apps, Launcher, Panels, Fune, Snake,
+                          Mamori, Updates, Clipboard, Wallpapers, Sounds, Recorder, Displays, Session, Focus, Hogo,
+                          Honban, Iro, Yomu, Nameraka, ThemeCtl, NiriConf, PowerCtl, Health, Tools… ; backends/ aísla
+                          los módulos sensibles de Quickshell (06-ACTUALIZACIONES, capa 3)
+components/               primitivas: OText, OIcon (Material Symbols), Kanji, Kamon, OButton, IconButton, Switch_,
+                          OSlider, HSlider, Segmented, Chip, Tile, Dropdown, TextInput_, PanelSurface, PullDown,
+                          ModuleLoader, Anim/CAnim (con Motion), BatteryRing, Sparkline, OcarinaLogo, BootOcarina
+modules/obi/              barra: ObiBar, Workspaces, FocusedTitle, StatusCluster (+ UsageBar: 墨 CPU·RAM·GPU), Tray,
+                          indicadores 船 蛇 新, campana y AppDrawer (器 cajón de apps, capa propia `ocarina-apps`)
+modules/shima/            isla: Shima.qml (reloj, música con Equalizer, OSD, avisos, grabación, renombrar, Shinobi,
+                          Oni, foco, Fluido)
+modules/hiroba/           広場 Hiroba, la isla abierta: calendario, tiempo, estación, música, el equipo y el gato ネコ
+modules/panels/           PanelHost: un solo panel a la vez (Engawa, Fumi, Hiroba, Kura, Mihari, Mado, Snake…)
 modules/engawa/           centro de control + páginas Wi-Fi/Bluetooth/Audio/Fluido (FlowCard.qml: tarjeta 滑)
 modules/fumi/             toasts + centro de notificaciones
-modules/koyomi/           calendario + tiempo + 72 kō
-modules/torii/            lanzador (+ providers/: Apps, Calc, Run, Web, Files, Windows, Kanji (+ kaomoji), Ssh, Settings, Actions)
+modules/koyomi/           calendario (hoy dentro de Hiroba; `ocarina koyomi` abre Hiroba)
+modules/torii/            lanzador (apps, calculadora, órdenes, web, archivos, ventanas, kanji y kaomoji, SSH, ajustes)
 modules/kura/  modules/techo/  modules/mihari/  modules/mado/  modules/cheatsheet/
-modules/kagi/             bloqueo (LockContext.qml con PAM, LockSurface.qml, TestLock.qml)
+modules/kagi/             bloqueo (Kagi, KagiView, campo con pétalos, proverbio vertical 縦書き; PAM en
+                          services/backends/PamBackend.qml; modo prueba con `ocarina lock test`)
 modules/dengen/           menú de energía + Farewell.qml (despedida enlazada con Plymouth)
 modules/polkit/           diálogo de autenticación
-modules/settei/           app de ajustes (FloatingWindow) con una página por sección
-modules/kabegami/         renderizador de fondo + explorador
+modules/settei/           app de ajustes (FloatingWindow) con una página por sección en pages/ (Apariencia, Barra,
+                          Fondos, Pantalla, Energía, Shinobi, Oni, Nameraka, Fune, Snake, Mamori, Atajos…)
+modules/kabegami/         renderizador del fondo con la transición de tinta (el explorador vive en Ajustes › Fondos)
 modules/fune/             panel de apps de Windows (estado de la VM, recursos, apps, acciones)
-modules/snake/            asistente de la IA local (panel, conversación, contexto, acciones con confirmación)
+modules/snake/            asistente de la IA local (conversación, contexto, voz, acciones con confirmación)
+modules/nameraka/  modules/oni/  modules/haichi/  modules/corners/   OSD de Fluido · 覚醒 de Oni · etiquetas de pantalla · esquinas
 modules/iro/  modules/yomu/  modules/dim/   cuentagotas · leer y traducir · atenuación por software (07-IDEAS, D-009)
 ipc/Ipc.qml               todos los IpcHandler
 safe/shell.qml            modo seguro: solo tipos básicos (06-ACTUALIZACIONES, capa 4)
-shaders/                  *.frag (fuente) + *.frag.qsb (compilado con `qsb`, se versiona)
+shaders/                  *.frag (fuente) + *.frag.qsb (compilado con `qsb`, se versiona): tinta del fondo, tinte del gato
 pam/                      password.conf, fingerprint.conf  (PamContext.configDirectory)
-assets/                   enlaces a ../assets (logo, datos, sonidos)
 ```
 Reglas: módulos no se conocen entre sí; hablan por servicios y señales. Popups siempre con `LazyLoader`
 (el lanzador se precarga «caliente» tras el arranque para abrir en < 1 frame).
@@ -93,26 +109,28 @@ Reglas: módulos no se conocen entre sí; hablan por servicios y señales. Popup
 | `Audio` | `Quickshell.Services.Pipewire` (`Pipewire.defaultAudioSink/Source`, `PwObjectTracker`) | set volumen/mute directo; `PwNodePeakMonitor` solo con la isla en modo música visible y fuera de Shinobi |
 | `Brightness` | **una entrada por pantalla**, con conexión en caliente por eventos (`Quickshell.screens` + salidas de `Niri`; nada de sondeo). Interna: `/sys/class/backlight/<dev>` (FileView `watchChanges` en `actual_brightness`). Externas: **DDC/CI** con `ddcutil` (VCP `0x10`, paquete oficial: trae `i2c-dev` y la regla udev `uaccess`, sin root). Sin DDC/CI (TV, proyector, DDC apagado): **atenuación por software** (capa negra translúcida `ocarina-dim` en `Overlay` de esa pantalla, sin entrada; no ahorra energía) | interna con `brightnessctl` (logind, sin root). Externas: `ddcutil detect` SOLO cuando cambian las pantallas (2 s después, en segundo plano; mapa bus I²C ↔ `DRM connector` `card1-DP-1` ↔ salida de niri `DP-1`; identidad = fabricante+modelo+serie del EDID, como en `niri msg -j outputs`; el panel interno sale como «Invalid display · laptop display», es normal) → `~/.local/state/ocarinashell/brightness.json` (lo usa el respaldo del CLI). Lectura `ddcutil --bus N getvcp 10` solo al abrir Engawa/Settei si la caché tiene > 30 s (el usuario pudo usar los botones del monitor). Escritura coalescida en segundo plano: gana el último valor, ≥ 200 ms entre escrituras, `--bus N --noverify` (`--bus` se salta la detección), una cola por bus, `timeout 5`; 3 fallos seguidos → esa pantalla pasa a software con aviso. Etiqueta: alias de Ajustes o «Monitor NN″» (diagonal con `physical_size`); la interna, «Portátil». Teclado: `tpacpi::kbd_backlight` |
 | `Power` | `Quickshell.Services.UPower` (displayDevice) + `PowerProfiles` | potencia instantánea: `power_now` (sondeo 5 s SOLO con Engawa/Mihari visibles) |
-| `Network` | `Quickshell.Networking` (NetworkManager) | escaneo Wi-Fi solo con la página abierta |
+| `Net` | `Quickshell.Networking` (NetworkManager), en `backends/` | escaneo Wi-Fi solo con la página abierta |
 | `Bt` | `Quickshell.Bluetooth` | descubrimiento solo con la página abierta |
 | `Media` | `Quickshell.Services.Mpris` | jugador activo = el que reproduce, si no el último usado |
 | `Notifs` | `NotificationServer` (acciones, imágenes, respuesta inline, persistencia) | historial en `~/.local/state/ocarinashell/notifications.json` (100 máx.) |
 | `Kisetsu` | `assets/data/kisetsu-72.json` | 二十四節気 + 七十二候 + mes tradicional + fase lunar (cálculo local) |
 | `Weather` | Open-Meteo (sin clave), cada 30 min, caché en disco | apagado en Shinobi; ubicación desde Ajustes |
-| `SysInfo` | `/proc`, `/sys/class/hwmon`, `gpu_busy_percent`, `ps` | SOLO mientras Mihari está abierto |
+| `Usage` | `/proc/stat`, `/proc/meminfo` y `gpu_busy_percent` con `FileView` cada 2 s (sin procesos) | 墨 medidores CPU·RAM·GPU de la barra; redondeado al 2 % para no repintar por nada; parado en Shinobi, con la pantalla bloqueada o apagada y con `bar.showUsage` apagado |
+| `Sensors` | hwmon: `k10temp` (Tctl), `amdgpu` (temperatura y PPT) cada 2 s | SOLO con 鬼 Oni encendido (isla y guardia térmica). Mihari lo muestrea `bin/ocarina-mihari`, vivo solo mientras el panel existe |
 | `Idle` | `IdleMonitor` ×N (atenuar/bloquear/apagar pantalla/suspender), `IdleInhibitor` (cafeína) | perfiles CA/batería |
 | `Modes` (Shinobi · Oni) | orquestador único de modos de energía (ver §10) | excluyentes; snapshot del estado previo |
-| `Fune` | `docker events --filter container=WinApps` con `SplitParser` (eventos, sin sondeo) + ventanas RemoteApp del servicio `Niri` | `docker stats` SOLO con el panel abierto; pausa automática; `available=false` si no hay Docker/FreeRDP |
-| `Snake` | estado del servicio + API local (`/health`, OpenAI-compatible) solo cuando se usa | sin sondeo; el indicador 蛇 sale de `systemctl --user` vía `Process` al cambiar |
+| `Fune` | `ocarina-fune status --json` al arrancar y `podman events` (con `SplitParser`) SOLO con la VM encendida o en pausa + ventanas RemoteApp del servicio `Niri` | `podman stats` SOLO con el panel abierto; pausa automática; `available=false` si no hay Podman/FreeRDP |
+| `Snake` | `ocarina-snake status --json` al arrancar y cuando el CLI avisa por IPC (`loaded`/`unloaded`) | sin sondeo; voz con `ocarina-snake listen` solo mientras se escucha |
+| `Apps` (器) | el índice de apps de `Launcher` (el mismo que Torii) + categorías, frecuentes y fijadas | funciones puras: sin timers ni procesos; el cajón solo existe abierto |
+| `Panels` | qué panel está abierto (uno a la vez) y en qué pantalla | — |
 | `Mamori` | `FileView` con `watchChanges` sobre `~/.local/state/ocarinashell/mamori/status.json` y `history.jsonl` | solo lectura para la UI (indicador 新, página 守, notificaciones); disparo oportunista al estar inactivo 15 min |
 | `Clipboard` | `cliphist list` bajo demanda | miniaturas en caché |
-| `Wallpapers` | directorios de fondos + caché de miniaturas/difuminados (vips/magick) | |
+| `Wallpapers` | fondos incluidos + `~/Imágenes/Fondos`, miniaturas de `bin/ocarina-thumbs` | nada corre hasta abrir el explorador; rotación solo con CA; 季 rotación por estación colgada del tic diario de `Kisetsu` (sin timer) |
 | `Sounds` | `pw-play` con `Process` (sin QtMultimedia) | respeta DND, Shinobi y volumen de UI |
 | `Recorder` | `gpu-screen-recorder` o `wf-recorder` | indicador en la isla |
 | `Displays` (配置 Haichi) | salidas de `Niri` + `Quickshell.screens` | perfiles por huella de monitores → include `outputs.kdl` validado; `wl-mirror` solo al duplicar |
 | `Session` (復元 Fukugen) | eventos de ventanas de `Niri` | guarda `session.json` agrupando 30 s; restaura al entrar si se pide |
 | `Focus` (集中 Shūchū) | tic de minutos de `Time` | solo vive mientras hay un bloque activo |
-| `Backup` (控 Hikae) | `FileView` de `~/.local/state/ocarinashell/hikae/status.json` (lo escribe `ocarina backup`) | la UI nunca lanza `restic` salvo «Copiar ahora»/«Recuperar» |
 | `Nameraka` (滑, §19) | `FileView` de `~/.local/state/ocarinashell/nameraka/selftest.json` (disponibilidad y motivo, sin arrancar nada) + `Socket` a `$XDG_RUNTIME_DIR/ocarinashell/nameraka.sock` solo con Fluido encendido (eventos JSON; systemd arranca el ayudante al conectar) | estadísticas solo con Engawa u OSD visibles (`stats on/off`); `pause`/`resume` desde la shell al bloquear, apagar pantalla o abrir popups si hiciera falta; 0 procesos con el modo apagado |
 
 ## 6. Contrato IPC (`qs -c ocarina ipc call <destino> <función> [args]`)
@@ -123,11 +141,11 @@ Reglas: módulos no se conocen entre sí; hablan por servicios y señales. Popup
 | `media` | `playPause()` · `next()` · `previous()` · `stop()` · `increment(step: string)` · `decrement(step: string)` |
 | `brightness` | `increment(step: string, output: string)` · `decrement(step: string, output: string)` · `set(pct: int, output: string)` · `list(): string` (JSON: `name`, `label`, `kind` internal\|ddc\|soft\|none, `pct`) — `output` vacío = según `display.brightness.keysTarget`, `"all"` = todas (cada una en su escala) |
 | `kbdlight` | `cycle()` · `set(level: int)` |
-| `lock` | `lock()` · `isLocked(): bool` · `test()` (bloqueo falso de desarrollo) — **sin** `unlock()` |
+| `lock` | `lock()` · `isLocked(): bool` · `state(): string` · `test()` (modo prueba: Esc sale) — **sin** `unlock()` |
 | `launcher` | `toggle()` · `open(mode: string, query: string)` |
 | `engawa` | `toggle()` · `open(page: string)` |
 | `notifications` | `toggle()` · `dnd(state: string)` (`on/off/toggle`) · `clear()` |
-| `power` | `toggle()` (menú Dengen) |
+| `power` | `toggle()` (menú Dengen) · `close()` · `isOpen(): bool` · `farewell(kind: string)` (solo la despedida, para probarla) |
 | `settings` | `toggle()` · `open(page: string)` (también `focusOrToggle()` por compatibilidad) |
 | `techo` · `kura` · `mihari` · `mado` · `cheatsheet` | `toggle()` |
 | `kabegami` | `browse()` · `set(path: string)` · `next()` |
@@ -135,12 +153,17 @@ Reglas: módulos no se conocen entre sí; hablan por servicios y señales. Popup
 | `shinobi` | `on()` · `off()` · `toggle()` · `status(): string` |
 | `oni` | `on()` · `off()` · `toggle()` · `status(): string` · `autoOn()` · `autoOff()` (GameMode) |
 | `fune` | `toggle()` (panel) · `start()` · `pause()` · `resume()` · `stop()` · `status(): string` |
-| `snake` | `toggle()` (asistente) · `ask(text: string)` · `status(): string` |
-| `mamori` | `status(): string` · `notify(json: string)` (lo llama el orquestador para avisos y el indicador 新) |
+| `snake` | `toggle()` · `open()` (asistente) · `ask(text: string)` · `listen()` (声 voz) · `status(): string` · `loaded(name)` / `unloaded()` (los llama el CLI) |
+| `apps` | `toggle()` (器 cajón de apps) |
+| `hiroba` | `toggle()` · `open()` · `close()` · `isOpen(): bool` (`koyomi.toggle()` también abre Hiroba) |
+| `mamori` | `status(): string` · `conditions(): string` · `refresh()` (lo llama el orquestador al cambiar el estado) · `run()` · `open()` (su página) |
+| `updates` | `status(): string` · `refresh()` (indicador 新) |
 | `theme` | `set(id: string)` · `get(): string` · `accent(hex: string)` |
 | `record` | `toggle()` · `region()` |
-| `osd` | `show(kind: string, value: string)` (interno) |
-| `displays` | `arrange()` (Settei → Pantalla) · `identify()` · `mirror(on: bool)` · `profile(name: string)` · `list(): string` |
+| `osd` | `show(kind: string, value: string)` · `info(text: string, icon: string)` (internos) |
+| `nightlight` | `set(mode: string)` · `toggle()` |
+| `idle` | `inhibit()` (cafeína) · `status(): string` |
+| `displays` | `arrange()` (Settei → Pantalla) · `identify()` · `mirror(on: bool)` · `profile(name: string)` · `list(): string` · `keep()` / `revert()` (aviso de prueba de 15 s) |
 | `focus` | `start(minutes: int)` · `stop()` · `status(): string` |
 | `session` | `save()` · `restore()` · `status(): string` |
 | `backup` | `now()` · `status(): string` · `restore(path: string)` (abre Recuperar en la página 守; vacío = sin preselección) |
@@ -155,40 +178,53 @@ Reglas: módulos no se conocen entre sí; hablan por servicios y señales. Popup
   `playerctl` si existe; `lock` → `swaylock -f`
   (tematizado); `launcher` → mensaje en `notify-send`. Bloquear SIEMPRE debe funcionar.
 - Subcomandos: `audio up|down|mute|mic` · `brightness up|down [<paso>] [--output <salida>|--all]` · `brightness set <N> [--output <salida>|--all]` · `brightness list` · `media toggle|next|prev|up|down` · `launcher [modo] [texto]` ·
-  `lock [--wait|test]` · `power` · `settings [página]` · `engawa` · `notifications [dnd on|off|toggle]` · `notes` · `clipboard` ·
+  `lock [--wait|test]` · `power` · `settings [página]` · `engawa [página]` · `apps` · `koyomi` · `notifications [dnd on|off|toggle|clear]` ·
+  `notes ["texto"]` · `clipboard` · `nightlight [modo]` · `caffeine` ·
   `tasks` · `rules` · `rename-workspace` · `wallpaper [browse|next|<ruta>]` · `shinobi [on|off|toggle|status]` ·
   `oni [on|off|toggle|status|auto-on|auto-off]` · `play <cmd…>` (gamescope + GameMode) · `quickterm` ·
-  `fune [panel|start|pause|resume|stop|desktop|app <nombre>|webapp <nombre> <url>|status|update|maintenance|backup]` ·
-  `snake [panel|ask "<texto>"|status|start|stop|eval|model <id>]` ·
-  `mamori [status|run|pause <días>|resume|hold <pkg> <días>|unhold <pkg>|rollback|report]` ·
+  `fune [status|start|pause|resume|stop|desktop|app <id> [archivo]|scan|apps|webapp <nombre> <url>|wine …|update|maintenance|backup|smoke]` ·
+  `snake [ask "<texto>"|listen|status|start|stop|eval|models|fetch|actions|help]` ·
+  `mamori [status|run|plan|pause <días>|resume|hold <pkg> <días>|unhold <pkg>|rollback|report|…]` · `rollback [--yes]` ·
   `displays [arrange|identify|mirror on|off|profile <nombre>|list]` · `focus [<min>|stop]` · `session [save|restore]` ·
-  `backup [now [--if-due]|status|restore <ruta>|check]` · `pick-color` · `read [--translate]` · `ssh <host>` ·
-  `nameraka [on|off|toggle|status|x2|x4|x6|custom|next|fps <N>|engine <auto|lsfg|ia>|calibrate]` (alias `fluido`; si la
+  `backup [status|now|list [ruta]|restore <ruta> [n]|check]` · `pick-color` · `read [--translate]` · `ssh <host>` ·
+  `nameraka [on|off|toggle|status|x2|x4|x6|custom|next|fps <N>|calibrate|self-test]` (alias `fluido`; si la
   shell no responde, habla con el socket del ayudante y `off` cae en `systemctl --user stop ocarina-nameraka.service`) ·
-  `theme <id>` · `record [region]` · `cheatsheet` · `update` · `doctor [--post-update|--quiet]` · `restart` ·
-  `logs [-f]` · `version`.
+  `record [region]` · `cheatsheet` · `update [--check]` · `doctor [--quiet|--smoke|--post-update]` ·
+  `restart` · `logs [-f]` · `version`.
+- Herramientas aparte en `bin/`: `ocarina-theme` (§9), `ocarina-binds` (技 atajos editables, 03-ATAJOS),
+  `ocarina-snake`, `ocarina-mamori`, `ocarina-fune`, `ocarina-backup`, `ocarina-niri-gen` (valida e instala los includes
+  generados de niri), `ocarina-boot-theme`…
 - `lock --wait`: pide el bloqueo y espera (máx. 2 s) a `isLocked()==true` para que `swayidle -w` no suspenda antes.
 
 ## 8. Ajustes (`~/.config/ocarinashell/settings.json`, `FileView` + `JsonAdapter`, cambios en vivo)
-Esquema con `"version": 1` y migraciones. Secciones (claves orientativas; defínelas en `config/Settings.qml`):
+Esquema versionado con migraciones; las claves reales y sus valores por defecto están en `shell/config/Settings.qml`
+(`defaults()`), y `bin/ocarina-snake`, `bin/ocarina-mamori` y el CLI leen las mismas. Mapa por secciones:
 `appearance {theme, accent, autoTheme{enabled, day, night}, blur, transparency, animSpeed, radius, kanjiDecor, screenCorners, uiFont, jpFont, displayFont, fontScale, reducedMotion}` ·
-`bar {position, style, modules[], clock24, showSeconds, showWeather, showKisetsu}` ·
-`island {media, osd, notifPeek, recording}` ·
-`display {nightLight{mode, temp, from, to}, brightness{keysTarget (focused|internal|all; por defecto focused), ddc, softFallback, timeCurve, perOutput{"<fabricante>|<modelo>|<serie>": {alias, min, last, day, night}}}, profiles{"<huella>": {name, kanji, outputs{"<fabricante>|<modelo>|<serie>": {mode, scale, transform, vrr, position, enabled, primary}}}}, autoProfile, notifyOnConnect, mirrorDnd, lidCloseToExternal}` (escala, Hz y VRR de cada pantalla viven SOLO en su perfil: Haichi es el único dueño) ·
+`bar {position, style (isles|floating|attached|minimal), clock24, showSeconds, showWeather, showUsage (墨 CPU·RAM·GPU), showKisetsu, modules[]}` ·
+`island {media, osd, notifPeek, recording, hover, wheelVolume, swipeTracks, aura, hoverFx}` ·
+`hiroba {anime, speedLines, petals, vinyl, screentone, sections{me, clock, neko, month, season, music, system}}` · `profile {kanji}` ·
+`display {nightLight{mode, temp, from, to}, brightness{keysTarget (focused|internal|all), ddc, softFallback, timeCurve, perOutput{"<fabricante>|<modelo>|<serie>": {alias, min, last, day, night}}}, profiles{"<huella>": {name, kanji, outputs{…: {mode, scale, transform, vrr, position, enabled, primary}}}}, autoProfile, notifyOnConnect, mirrorDnd, lidCloseToExternal}` (escala, Hz y VRR de cada pantalla viven SOLO en su perfil: Haichi es el único dueño) ·
 `oled {pixelShift, dimStatic, lockDrift}` · `focus {minutes, breakMinutes, dnd}` · `session {restore (ask|auto|off), exclude[]}` ·
-`ssh {enabled, configPath, prodHosts[]}` · `backup {enabled, repos[], keep{daily, weekly, monthly}, exclude[], includeFune}` ·
-`extras {touchGestures, iro, yomu, kaomoji, wifiQr, vpnTile, worldClocks[]}` (interruptores de 07-IDEAS) ·
-`audio {uiSounds, uiVolume}` · `power {chargeLimit, lowBattery, autoShinobiAt, exitShinobiOnAC}` ·
-`shinobi {refresh60, boostOff, bluetoothOff, brightnessCap, brightnessCapExternal, kbdLightOff, wifiPowersave, pauseServices[], gpuLow, funeStop}` ·
-`oni {auto, onBattery, gpuLevel, fanMax, kishin, vrrGames, dnd, gamescopePreset, funePause}` ·
-`nameraka {mode (x2|x4|x6|custom; por defecto custom), customFps (0 = Hz de la pantalla; por defecto 0), engine (auto|lsfg|ia; por defecto auto), flowScale (null = calibrado), performance (null = calibrado | true | false), avSync, autoOnFullscreenVideo, battery (eco|normal|off), vrrWhileActive, exclude[]}` ·
-`fune {enabled, autopauseMin, autostopMin, startOnLoginAC, cpus, ramGB, scale, rdpFlags, pinnedApps[], maintenanceWindow}` ·
-`snake {enabled, backend (vulkan|npu|lemonade), model, keepAliveMin, minFreeRamGB, onBattery, assistant, contextSources[]}` ·
-`mamori {enabled, requireAC, minBattery, allowMetered, soakDays, soakDaysNoAI, ai (snake|claude|both|off), claudeBudget, firmware (approve|auto|off), autoReboot, autoImprove, quietHours}` ·
-`lock {fingerprint, showNotifications, showMedia, blurWallpaper}` · `idle {ac{dim,lock,screenOff,suspend}, battery{…}}` ·
-`input {layouts[], repeatDelay, repeatRate, ffm, warpMouse, naturalScroll, tap, trackpointSpeed}` ·
-`notifications {dnd, dndSchedule, timeout, position, privacyOnLock, perApp{}}` · `weather {lat, lon, place, units}` ·
-`launcher {frecency, webEngine}` · `wallpaper {path, perTheme, rotate}`.
+`idle {ac{dim, lock, screenOff, suspend}, battery{…}}` · `audio {uiSounds, uiVolume}` · `bluetooth {enabled}` ·
+`power {chargeLimit{enabled, start, end}, lowBattery, autoShinobiAt, autoShinobiAsk, exitShinobiOnAC}` ·
+`notifications {dnd, dndSchedule, timeout, position, privacyOnLock, perApp{}}` ·
+`terminal {inkCursor, greeting, fastfetchDaily, opacity (Ghostty y Neovim translúcidos; 0,8 por defecto)}` ·
+`shinobi {refresh60, vrr, boostOff, bluetoothOff, bluetoothKeepAudio, brightnessCap, brightnessCapExternal, kbdLightOff, wifiPowersave, pauseServices[], gpuLow, funeStop}` ·
+`oni {auto, batteryAuto (ask|never|allow), exitBatteryAt, gpuLevel, scx, gpuFirst, fanMax, kishin, vrrGames, dnd, wifiNoPs, nightLightPause, pauseServices[], gamescopePreset, funePause}` ·
+`nameraka {mode (x2|x4|x6|custom; por defecto custom), fps (objetivo de «A medida»; 0 = Hz de la pantalla), engine (auto|lsfg|ia), flow (0 = calibrado), perf (auto|on|off), battery (eco|normal|off), avSync (apagado por defecto), auto, exclude[]}` ·
+`fune {autoPause, pauseMinutes, stopMinutes, startOnAC, microphone}` ·
+`snake {enabled, backend (vulkan|npu), model, fastModel, keepAliveMin, ctx, batteryAssistant, voiceLang}` ·
+`mamori {enabled, ai (snake|claude|both|off), batteryMin, maturationDays, maturationDaysNoAi, aur, firmware (approve|off), nightlyReboot, autoImprove, notify, claudeBudget{turns, minutes}}` ·
+`lock {fingerprint, showMedia, blurWallpaper}` ·
+`input {layouts[] ("es", "us(intl)"…), switchKeys, repeatDelay, repeatRate, touchpad{tap, naturalScroll, dwt, speed, scrollFactor}, trackpointSpeed, mouseSpeed, ffm, ffmScroll, warpMouse, touch}` ·
+`windows {gaps, focusRing, focusRingWidth, defaultWidth, niriAnimations}` (input/windows/animSpeed → `overrides.kdl`, D-046) ·
+`weather {enabled, lat, lon, place, units}` · `launcher {frecency, webEngine, pinned[] (器 apps fijadas en el cajón)}` ·
+`ssh {enabled, configPath, prodHosts[]}` · `clipboard {dbPath, maskSecrets, pasteOnEnter}` · `techo {mincho}` ·
+`wallpaper {path ("" = el del tema), perTheme, rotate (minutos, solo con CA; −1 = 季 uno por microestación), favorites[], seasons{"<ruta>": [0–3 = 春夏秋冬]}}` ·
+`wallhaven {enabled, query, purity}` · `extras {touchGestures, iro, yomu, kaomoji, wifiQr, vpnTile, worldClocks[]}` (interruptores de 07-IDEAS).
+Los atajos cambiados en Ajustes › 技 Atajos van aparte, en `~/.config/ocarinashell/binds.json` (03-ATAJOS).
+`appearance.animSpeed` es una velocidad (0 = sin animaciones, 0,5–2×) y `appearance.accent` vale `null` (el del tema),
+`"#rrggbb"` o `"wallpaper"` (se recalcula al cambiar de fondo; `services/ThemeCtl.qml`).
 Lo que afecta a niri se escribe en includes generados (`~/.local/state/ocarinashell/niri/*.kdl`) y niri recarga solo.
 
 ## 9. Motor de temas (`bin/ocarina-theme`, Python stdlib)
@@ -199,9 +235,14 @@ gsettings (`color-scheme`, `gtk-theme`, `icon-theme`, `cursor-theme`, `accent-co
 Recargas: niri (auto), Ghostty (señal/acción de recarga de la versión instalada), Neovim (vigila el fichero con
 `vim.uv.new_fs_event`), la shell (FileView con `watchChanges` → todos los colores con `ColorAnimation`).
 Modo «Desde el fondo»: `matugen` → se mapean sus colores a nuestros tokens.
+Efectos de terminal (`services/TermFx.qml` → `ocarina-theme effects on|off --motion … --opacity …`): estela de tinta
+del cursor de Ghostty, animaciones de Neovim y la opacidad del fondo (`background-opacity` + `background-opacity-cells`:
+Ghostty y el Neovim que corre dentro, translúcidos sobre el fondo desenfocado que pone la regla `background-effect` de
+niri; 0,8 por defecto, 1 en Shinobi, en Oni o sin transparencias). Escribe `theme/ghostty-effects.conf` y
+`theme/effects.json` (Neovim lo vigila); Ghostty recarga solo si cambia su include.
 
 ## 10. Modos de energía: 忍 Shinobi y 鬼 Oni (orquestación)
-Un único estado `normal | shinobi | oni`. Oni (fase 11) aplica el camino inverso a Shinobi: PPD `performance`
+Un único estado `normal | shinobi | oni`. Oni aplica el camino inverso a Shinobi: PPD `performance`
 (+ modo gaming de scx_loader en CachyOS), turbo, perfil 3D de la GPU, 120 Hz + VRR en juegos, Wi-Fi sin ahorro,
 No molestar, shell sin blur/animaciones/sondeos, VM de Fune en pausa si no hay apps de Windows abiertas, ventilador al
 máximo opcional y Kishin experimental vigilado. Se activa a mano o con GameMode y vuelve al snapshot exacto al salir.
@@ -227,70 +268,84 @@ manual, % de batería, al desenchufar (opcional); salida automática al enchufar
 - Notificaciones: opción de ocultar contenido en el bloqueo; toasts con `block-out-from "screencast"` opcional.
 - Portapapeles: respeta `CLIPBOARD_STATE=sensitive`; límite de elementos; borrado con un clic.
 - Fune: RDP y visor web solo en `127.0.0.1`; contraseña de la VM en gnome-keyring (`secret-tool`), nunca en claro.
-- Snake: servidor solo en `127.0.0.1`; sin ejecución libre de comandos; lo descargado de internet se trata como dato.
+- Snake: `llama-server` escucha en un socket Unix de un directorio 0700 y la unidad no tiene red (`PrivateNetwork=yes`);
+  sin ejecución libre de comandos; lo descargado de internet se trata como dato. La voz solo existe en
+  `$XDG_RUNTIME_DIR` mientras se transcribe.
 - Ideas (07-IDEAS): Yomu hace el OCR y la traducción en local y borra la captura; Hikae cifra con `restic` y guarda la
   contraseña en gnome-keyring; Honban solo lee los nombres `Host` de `~/.ssh/config` (nunca claves ni `known_hosts`).
 - 滑 Nameraka captura SOLO la ventana objetivo, en memoria de la GPU y mientras está activo: nada se graba, nada sale
   del equipo y la captura termina al apagarlo (se ve en `niri msg casts`). La DLL de Lossless Scaling sale de la
-  instalación de Steam de Ayoub; el kit nunca la copia ni la redistribuye.
+  instalación de Steam del usuario; OcarinaShell nunca la copia ni la redistribuye.
 - Ninguna telemetría. Peticiones de red solo: Open-Meteo (tiempo), Wallhaven si se activa y el destino de Hikae.
 
 ## 12. Verificación y herramientas
-- `scripts/shot.sh <nombre> [región]` → `grim` (salida eDP-1) en `docs/evidencias/…`; `scripts/compare.sh <shot> <mockup>`
-  → montaje con la diferencia para revisarlo con Read.
+- `tests/qml-check.sh [ficheros]`: compila todo el QML en una instancia aislada (< 1 s). `tests/render-page.sh <Página>`:
+  PNG de una página de Ajustes dibujada fuera de pantalla. `tests/contraste.py`: WCAG AA de cada tema.
+- `scripts/shot.sh <nombre> [región]` → `grim` (en un espacio vacío: nunca la pantalla con tus ventanas);
+  `scripts/compare.sh <shot> <mockup>` → montaje con la diferencia frente al mockup.
 - Logs: `journalctl --user -u ocarinashell -f`. Arranque de depuración con `QSG_VISUALIZE=changes` o
   `QSG_RENDER_TIMING=1` en una instancia de prueba (`qs -p shell/shell.qml` con otro id).
 - `scripts/doctor.sh` / `ocarina doctor`: versiones, servicios, conflictos (otro demonio de notificaciones o polkit),
-  fuentes, enlaces, sudoers temporal pendiente, permisos del helper, estado de snapper, estado de Fune, brillo
+  fuentes, enlaces, permisos de los ayudantes (y si quedara el sudo temporal de la construcción), estado de snapper, estado de Fune, brillo
   (`i2c-dev` cargado, `ddcutil detect` sin root, pantallas y su tipo internal/ddc/soft).
-- Hooks de Claude Code: validación tras cada edición (`scripts/hooks/validate.sh`) y guardia de comandos peligrosos.
+- `ocarina doctor --smoke`: las pruebas de humo pasivas (~2 s, no tocan la pantalla).
+- Hooks de Claude Code (si usas un agente en el repo; ver `AGENTS.md`): validación tras cada edición
+  (`scripts/hooks/validate.sh`) y guardia de comandos peligrosos (`scripts/hooks/guard.sh`).
 
 ## 13. Degradación elegante
 Sin blur (niri < 26.04 o Shinobi) → superficies opacas al 94 %. Sin huella → solo contraseña. Sin batería (CA) →
-oculta batería. Sin Bluetooth → oculta mosaico. Sin red → tiempo desde caché con aviso. Sin Docker/FreeRDP → Fune
+oculta batería. Sin Bluetooth → oculta mosaico. Sin red → tiempo desde caché con aviso. Sin Podman/FreeRDP → Fune
 oculto. Pantalla externa → barra en cada salida, isla solo en la principal (configurable), bloqueo en todas.
-Sin `ddcutil`/acceso I²C → brillo externo por software. Sin `restic`, `tesseract`, `wl-mirror` o `qrencode` → esa
+Sin `ddcutil`/acceso I²C → brillo externo por software. Sin amdgpu → el medidor 墨 de GPU se oculta. Sin `restic`, `tesseract`, `wl-mirror` o `qrencode` → esa
 función se oculta con la pista del paquete que falta. Sin `niri msg pick-color` (niri < 25.05) → cuentagotas oculto.
 Nameraka: sin lsfg-vk o sin la DLL de Lossless Scaling → motor `ia` si pasó su puerta; si no, la tarjeta 滑 dice qué
 falta y enlaza a Ajustes. Sin la API ScreenCast de niri, sin layer-shell o sin importación DMA-BUF en Vulkan → tarjeta
 oculta y el motivo en Ajustes › Acerca de › Diagnóstico.
 
 ## 14. Resiliencia, actualizaciones y mantenimiento autónomo
-Obligatoria desde la fase 3: ver `docs/06-ACTUALIZACIONES.md` (6 capas: snapshots/LTS, paquetes oficiales, código que no
+Ver `docs/06-ACTUALIZACIONES.md` (6 capas: snapshots/LTS, paquetes oficiales, código que no
 se cae, modo seguro, pruebas de humo con reversión automática y 守 Mamori, el piloto automático).
 
 ## 15. Cadena de arranque y apagado
 Limine (tema en `assets/boot/limine/`, probado en QEMU) → Plymouth (`assets/boot/plymouth/ocarinashell/`, script con capas)
-→ greeter (fase 6) → sesión; y Dengen → `Farewell` → Plymouth de apagado. Misma variante (oscura/clara) en toda la
-cadena; el icono ocupa la misma posición (centro al 42 % del alto) en Plymouth, greeter y despedida. Fase 13.
+→ greeter (greetd + niri + Quickshell, opcional) → sesión; y Dengen → `Farewell` → Plymouth de apagado. Misma variante
+(oscura/clara) en toda la cadena; el icono ocupa la misma posición (centro al 42 % del alto) en Plymouth, greeter y
+despedida. Nada de esto lo instala `./install.sh`: lo pone el usuario con `scripts/root/fase-13.sh` (Limine y Plymouth),
+`scripts/root/greeter.sh` y `scripts/root/arranque-auto.sh`, cada uno con su snapshot y su vuelta atrás (`--uninstall`,
+`desactivar`, `quitar`; 05-RESCATE).
 
-## 16. 船 Fune — apps de Windows (fase 12)
+## 16. 船 Fune — apps de Windows
 Tres niveles, del más barato al más compatible: **web/PWA** (si la app tiene versión web, ventana de Chrome `--app`) →
 **Wine/Proton** (`umu-run` + `proton-cachyos`, NTSYNC; cero sobrecoste de VM) → **Windows en KVM** (`dockur/windows`
-gestionado por WinApps, disco en subvolumen Btrfs NOCOW fuera de snapper, apps como ventanas nativas vía FreeRDP 3
+con **Podman sin root**, lanzador propio `bin/ocarina-fune` sobre los datos de WinApps, disco en subvolumen Btrfs NOCOW
+fuera de snapper, apps como ventanas nativas vía FreeRDP 3
 RemoteApp bajo xwayland-satellite, accesos `.desktop` con iconos y tipos MIME → aparecen en Torii y en Nautilus).
 La shell aporta la interfaz (panel 船, indicador en Obi, reglas de ventana) y el ahorro (pausa automática, Shinobi/Oni).
 
-## 17. 守 Mamori — mantenimiento autónomo (fase 16)
-Orquestador determinista `bin/ocarina-mamori` (Python stdlib) lanzado por `ocarina-mamori.timer` y por la shell al
-estar inactiva: comprueba condiciones (cargador, red sin límite, sin Oni/llamada/grabación, usuario inactivo) → salud
+## 17. 守 Mamori — mantenimiento autónomo
+Orquestador determinista `bin/ocarina-mamori` + paquete `lib/mamori/` (Python stdlib, un módulo por paso) lanzado por
+`ocarina-mamori.timer` (→ `ocarina-mamori@timer.service`), por la shell al llevar 15 min inactiva (`@shell`), tras el
+arranque (`@boot`, desde `ocarina-bootmark`) y por el modo seguro (`ocarina-mamori-heal.service`): comprueba condiciones (cargador, red sin límite, sin Oni/llamada/grabación, usuario inactivo) → salud
 y autorreparación → inventario (pacman/AUR/noticias/CVE/firmware) → política (maduración, seguridad, AUR, retenciones
 sin actualizaciones parciales) → snapshot → actualización vía ayudante root `ocarina-maint` (lista blanca + sudoers
-mínimo) → pruebas de humo → adaptación (IA) o reversión → informe. La IA es **Snake** (local, fase 15): investiga,
+mínimo) → pruebas de humo → adaptación (IA) o reversión → informe. La IA es **Snake** (local, §18): investiga,
 revisa y propone arreglos con salidas JSON validadas; Claude Code (`claude -p "/mantener"` desde el espacio aislado
 `~/.local/share/ocarinashell/mamori-claude/`, cuyo perfil es `.claude/mamori-settings.json`) es un extra opcional.
 Sin IA, modo determinista.
 Estado en `~/.local/state/ocarinashell/mamori/` (`status.json`, `plan.json`, `holds.json`, `history.jsonl`).
 
-## 18. 蛇 Snake — IA local (fase 15)
-Servidor OpenAI-compatible en `127.0.0.1` (llama.cpp Vulkan en la iGPU por defecto; NPU XDNA 2 con FastFlowLM si es
-estable y gana en la evaluación), arrancado bajo demanda y parado tras N min sin uso. Cliente `bin/ocarina-snake`
-(Python stdlib) con tareas de esquema fijo (`triage-news`, `review-changelog`, `scan-issues`, `review-pkgbuild`,
-`diagnose`, `propose-patch`, `report`, `assist`, `translate`) y recuperación de información de una lista blanca de fuentes.
-Snake nunca ejecuta nada: propone; Mamori (o el usuario, con confirmación en el asistente) dispone. Modelo elegido y
-reevaluado cada mes con `snake/evals/`. 0 MB de RAM en reposo; bloqueado en Shinobi y Oni.
+## 18. 蛇 Snake — IA local
+`ocarina-snake.service` → `llama-server` (llama.cpp con Vulkan en la iGPU) en un socket Unix, arrancado bajo demanda y
+parado tras `snake.keepAliveMin` minutos sin uso. Cliente `bin/ocarina-snake` (Python stdlib) con tareas de esquema fijo
+(`triage-news`, `review-changelog`, `scan-issues`, `review-pkgbuild`, `diagnose`, `propose-patch`, `report`, `assist`,
+`translate`) y recuperación de información de una lista blanca de fuentes. Modelo principal **gpt-oss-20b**, elegido y
+reevaluado cada mes con `snake/evals/`. Si no cabe en la memoria libre de la GPU (un navegador ocupándola), el asistente
+usa solo el mejor modelo ligero descargado que sí quepa (qwen3.5-9b, luego qwen3.5-4b) y lo dice; las tareas de fondo de
+Mamori nunca bajan de modelo: esperan. 声 Voz: `ocarina-snake listen` graba hasta una pausa, transcribe con whisper.cpp
+(large-v3-turbo) y pregunta. Snake nunca ejecuta nada: propone; Mamori (o el usuario, con confirmación en el asistente)
+dispone. 0 MB de RAM en reposo; bloqueado en Shinobi y Oni. Detalle y medidas: docs/SNAKE.md.
 
-## 19. 滑 Nameraka — vídeo fluido: generación de fotogramas en todo el sistema (fase 11, parte B)
+## 19. 滑 Nameraka — vídeo fluido: generación de fotogramas en todo el sistema
 El «Lossless Scaling» de OcarinaShell. La tarjeta 滑 de Engawa (o `Mod+Alt+F`) multiplica los fps de lo que estés
 viendo a pantalla completa —cualquier app: Chrome, Firefox, mpv, Electron…— con **×2 · ×4 · ×6** o **A medida** (los
 fps que quieras; por defecto, los Hz de la pantalla). Apagarlo deja todo exactamente como estaba: Nameraka nunca toca
@@ -306,25 +361,24 @@ generar → presentar encima**, aquí sin copias en CPU y con el ritmo atado a l
    D-Bus que vive lo que dura la sesión. Se captura solo esa ventana —nada de lo que tenga encima— y sin cursor: el cursor
    real lo sigue dibujando niri por encima, así que ni se retrasa ni se deforma. Al no pasar por el portal no sale el
    selector de ventanas; la sesión aparece en `niri msg casts` y muere al apagar. Desde 25.08 niri entrega cada
-   fotograma ya renderizado; si el búfer trae un fence implícito, espéralo (`DMA_BUF_IOCTL_EXPORT_SYNC_FILE`) antes de leer.
+   fotograma ya renderizado; si el búfer trae un fence implícito, se espera (`DMA_BUF_IOCTL_EXPORT_SYNC_FILE`) antes de leer.
 2. **Presentación encima.** `nameraka view` crea una superficie layer-shell con espacio de nombres `ocarina-nameraka` en
    la capa `overlay` de la salida de la ventana: anclada a los cuatro bordes, `exclusive_zone -1`,
    `keyboard_interactivity none` y **región de entrada vacía** (ratón, teclado y táctil siguen yendo a la app de debajo,
-   como en Lossless Scaling). Debe cubrir el panel 1:1 sin reescalar: comprueba el tamaño lógico que le da niri y elige
-   búfer (fractional-scale-v1) + viewporter para que cada píxel del búfer caiga en un píxel físico (a escala 1,75,
-   1646 × 1,75 = 2880,5: si sobra medio píxel, recorta en la copia; nunca reescales). Se verifica con la captura de un
-   patrón. Importa cada DMA-BUF en Vulkan (`VK_EXT_external_memory_dma_buf` + `VK_EXT_image_drm_format_modifier`, ambas
+   como en Lossless Scaling). Cubre el panel 1:1 sin reescalar: búfer (fractional-scale-v1) + viewporter para que cada
+   píxel del búfer caiga en un píxel físico (a escala 1,75, 1646 × 1,75 = 2880,5: el medio píxel sobrante se recorta en
+   la copia, nunca se reescala). Verificado con un patrón de 1 px (docs/FLUIDO.md). Importa cada DMA-BUF en Vulkan (`VK_EXT_external_memory_dma_buf` + `VK_EXT_image_drm_format_modifier`, ambas
    en RADV) y lo copia a la swapchain FIFO con una pasada de cómputo (~0,3 ms a 2880×1800) que también aplica el
    atenuado por software de esa pantalla si lo hay (la capa `ocarina-dim` queda debajo de Nameraka).
 3. **Generación** (`engine`; `auto`, el valor por defecto, usa `lsfg` si está disponible):
    - **`lsfg`**: **Lossless Scaling Frame Generation 3.1** a través de **lsfg-vk ≥ 2.0**, una capa Vulkan que se engancha
      al `vkQueuePresentKHR` del presentador e inserta los fotogramas generados entre cada dos que presenta. Necesita
-     Lossless Scaling comprado en Steam y su rama `lsfg-vk` (Ayoub lo tiene). La 2.0 usa FP16: de 2 a 3,5 veces más
+     Lossless Scaling comprado en Steam y su rama `lsfg-vk`. La 2.0 usa FP16: de 2 a 3,5 veces más
      rápida en iGPU AMD que la 1.x según sus notas.
    - **`ia`** (alternativa libre, experimental): **RIFE** (red neuronal de interpolación; código y modelos MIT) con
      `ncnn` sobre Vulkan dentro del presentador: flujo óptico a resolución reducida, mezcla a resolución completa y pasos
-     de tiempo arbitrarios; aquí el presentador marca su propio ritmo. Solo se ofrece hasta donde lo sostenga la 860M
-     (puerta de la fase 11); lo que no, sale deshabilitado con la cifra medida.
+     de tiempo arbitrarios; aquí el presentador marca su propio ritmo. **No pasó la puerta de rendimiento** (D-061,
+     docs/FLUIDO.md): el RIFE empaquetado no compila con el ncnn actual, así que la interfaz lo muestra deshabilitado.
 4. **Ritmo.** El presentador entrega cada fotograma **nuevo** una sola vez (deduplicado) y nunca más deprisa de lo que
    permite la pantalla. lsfg-vk solo tiene ritmo `vsync`: presenta los generados en cuanto los tiene y FIFO los reparte
    uno por refresco, así que va perfecto **solo cuando base × multiplicador = Hz** (cada fotograma, un refresco). Si
@@ -364,8 +418,8 @@ pantalla apagada por inactividad, popups de la shell) se lo manda la shell con `
 - **Objetivo**: la ventana con el foco al encender (la última ventana enfocada; el foco de las superficies de la shell
   —Engawa, Torii…— no cuenta, así que abrir Engawa no lo cambia).
 - **active** solo si el objetivo existe, está a pantalla completa (niri 26.04 no tiene ese campo: `layout.window_size`
-  = tamaño lógico de su salida ±1 px y, si viene, `tile_pos_in_workspace_view` = (0, 0); usa un campo explícito si tu
-  versión lo trae), ninguna otra **ventana** ha tomado el foco, su espacio está visible y no hay vista general, bloqueo
+  = tamaño lógico de su salida ±1 px y, si viene, `tile_pos_in_workspace_view` = (0, 0); si una versión futura trae un
+  campo explícito, se usará ese), ninguna otra **ventana** ha tomado el foco, su espacio está visible y no hay vista general, bloqueo
   ni pantalla apagada.
 - **paused**: se destruye la superficie (se ve la ventana real) pero se mantienen captura y presentador: volver tarda
   < 150 ms. Si el objetivo deja la pantalla completa estando activo → **arming** (60 s); si se cierra → **off**.
@@ -384,20 +438,19 @@ pantalla apagada por inactividad, popups de la shell) se lo manda la shell con `
   `systemctl --user stop ocarina-nameraka.service` si el socket no responde en 300 ms (05-RESCATE).
 - **Capas**: sobre una ventana a pantalla completa niri oculta la capa `top`, así que todo lo de la shell que deba verse
   encima de un vídeo (Engawa, Fumi, OSD, Dengen) vive en `overlay`; dentro de una capa, la superficie mapeada después
-  queda encima (compruébalo). Al pasar a `active`, la shell vuelve a mapear sus popups abiertos y muestra el OSD en una
+  queda encima. Al pasar a `active`, la shell vuelve a mapear sus popups abiertos y muestra el OSD en una
   superficie propia de vida corta (se mapea después del presentador). Si niri no lo respetara, Nameraka pasa a
   `paused` mientras se vean.
 
 ### Audio sincronizado
 Generar retrasa la imagen ≈ 1 fotograma base + cálculo (30 fps → unos 45 ms; se nota en los labios). Con `avSync`
-(activado si la prueba de la fase sale bien) el ayudante retrasa igual el audio de esa app: crea un nodo de retardo de
-PipeWire hacia la salida actual (`pw-loopback` con retardo o `libpipewire-module-loopback`; comprueba las opciones de tu
-versión) y mueve allí los flujos de la app objetivo (por PID y sus hijos, o `application.process.binary`; también los que
-nazcan mientras dura), sin que WirePlumber recuerde ese destino para la app (compruébalo y, si lo guarda, bórralo al
-apagar). En `paused` más de 2 s el audio vuelve a su salida y se retrasa de nuevo al reanudar. Retardo
-`D = 1000/base + t_gen + 1,5 × 1000/Hz` ms (`t_gen` de la calibración); solo se reajusta si cambia > 10 ms. Ojo: si el
-nodo de retardo declara su latencia, los reproductores la compensan retrasando también la imagen y no se gana nada; la
-prueba del destello + pitido lo decide.
+(apagado por defecto; Ajustes › 滑 Nameraka) el ayudante retrasa igual el audio de esa app: crea un sumidero de retardo
+(`pw-loopback --delay`) hacia la salida actual y mueve allí los flujos de la app objetivo (por PID y sus hijos; también
+los que nazcan mientras dura) con el metadato `target.object`; al apagar borra el metadato y WirePlumber los devuelve a
+la salida por defecto sin guardar destino. En `paused` más de 2 s el audio vuelve a su salida y se retrasa de nuevo al reanudar. Retardo
+`D = 1000/base + t_gen + 1,5 × 1000/Hz` ms (`t_gen` de la calibración); solo se reajusta si cambia > 10 ms. El sumidero
+declara latencia 0: si la declarase, los reproductores la compensarían retrasando también la imagen y no se ganaría nada.
+`scripts/fluido-av-test.sh` (destello + pitido) comprueba la sincronía.
 
 ### Energía, calidad y calibración
 - 忍 Shinobi lo apaga y lo bloquea (la tarjeta lo dice). En batería, `battery`: `eco` (por defecto: modo rendimiento +
@@ -417,10 +470,8 @@ prueba del destello + pitido lo decide.
   presentador con `LSFGVK_CONFIG=<ese fichero>` y `LSFGVK_PROFILE=nameraka`, así el `~/.config/lsfg-vk/conf.toml` de los
   juegos queda intacto. `version = 2`, `[global]` (`allow_fp16 = true`; `dll` solo si no la encuentra en la biblioteca de
   Steam) y un `[[profile]]` `nameraka` con `multiplier`, `flow_scale` y `performance_mode` (las tres se recargan en
-  caliente: pasar de ×2 a ×4 no corta nada) y el ritmo (`pacing` en la página de opciones, `pacing_mode` en el ejemplo:
-  decide con `lsfg-vk-cli validate`). Comprueba si la recarga sobrevive a un `rename` atómico o exige escribir en el sitio.
-  Si lsfg-vk se carga como capa implícita en todas las apps Vulkan, las unidades propias que usan la GPU
-  (`ocarina-snake.service`…) llevan `Environment=DISABLE_LSFGVK=1`.
+  caliente con renombrado atómico: pasar de ×2 a ×4 no corta nada) y `pacing_mode = "vsync"`. La calibración y el
+  `self-test` corren con `DISABLE_LSFGVK=1`.
 - **Exclusiones**: nunca sobre superficies de OcarinaShell, ventanas de gamescope ni juegos que ya usen lsfg-vk (se
   generaría dos veces); lista por app-id en Ajustes. Para juegos es mejor lsfg-vk directo, por juego (menos latencia que
   capturar): perfiles en Settei → 鬼 Oni.
@@ -428,7 +479,7 @@ prueba del destello + pitido lo decide.
   `ocarina-dim`.
 
 ### Procesos y ficheros
-- `native/nameraka/` (C++20 + meson; dependencias oficiales, verifícalas con `pacman -Si`: `vulkan-headers`,
+- `native/nameraka/` (C++20 + meson; dependencias de los repos oficiales: `vulkan-headers`,
   `vulkan-icd-loader`, `wayland`, `wayland-protocols`, `libpipewire`, `libdrm`, `systemd-libs` (sd-bus), `glslang`;
   `wlr-layer-shell-unstable-v1.xml` de `wlr-protocols` o copiado con su licencia MIT; `ncnn` solo con `-Dia=enabled`).
   Un binario, `~/.local/libexec/ocarinashell/nameraka`, con tres modos:
@@ -462,5 +513,5 @@ propia capa (bucle) y niri tapa en negro lo bloqueado con `block-out-from`.
 Solo pantalla completa (como Lossless Scaling). Latencia de ≈ 1 fotograma base (el audio se compensa; para juegos,
 lsfg-vk directo). Texto que se mueve rápido o desplazamientos bruscos pueden mostrar artefactos (como en Lossless
 Scaling; menos cuantos más fps base). Contenido de 25/50 fps: algo irregular con `lsfg`. Sin HDR. Vídeo con DRM: en
-Linux los navegadores lo componen como cualquier otro, así que debería capturarse; compruébalo con un servicio de
-streaming y anótalo, sin prometerlo.
+Linux los navegadores lo componen como cualquier otro, así que debería capturarse, pero no se ha probado con servicios
+de streaming: no se promete.

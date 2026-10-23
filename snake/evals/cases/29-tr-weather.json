@@ -1,0 +1,19 @@
+{
+ "id": "tr-weather",
+ "category": "translate",
+ "task": "translate",
+ "input": "明日は雨が降るでしょう。傘を忘れないでください。",
+ "expect": {
+  "translation_es": {
+   "contains": [
+    "mañana",
+    "lluv|llov",
+    "paraguas"
+   ]
+  },
+  "reading_hiragana": {
+   "similar": "あしたはあめがふるでしょう。かさをわすれないでください。",
+   "threshold": 0.7
+  }
+ }
+}

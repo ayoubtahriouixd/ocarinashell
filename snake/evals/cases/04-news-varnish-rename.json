@@ -1,0 +1,13 @@
+{
+ "id": "news-varnish-rename",
+ "category": "news",
+ "task": "triage-news",
+ "input": "Título: Breaking changes for all users of `varnish`, which is renamed to `vinyl-cache`\nThe Varnish project has renamed itself to Vinyl Cache. We followed this rename with a new vinyl-cache package.\nThis upgrade results in breaking changes and users are advised to study these changes and how it affects them before following the replacement.\nAt minimum, users will have to: rename /etc/varnish to /etc/vinyl-cache; rename /var/lib/varnish to /var/lib/vinyl-cache; disable the old varnish.service and varnishncsa.service systemd units; enable the new vinyl-cache.service and vinylncsa.service systemd units.\nMeanwhile, the varnish package has been dropped from [extra].\n(Contexto: varnish no está instalado en este equipo.)",
+ "expect": {
+  "news_asks_manual_steps": true,
+  "applies_here": [
+   "no",
+   "unknown"
+  ]
+ }
+}

@@ -1,0 +1,210 @@
+#!/usr/bin/env python3
+"""ocarina-binds — 技 your own keys for niri's binds, edited from Ajustes › Atajos. Python stdlib only.
+
+The kit's binds stay in ~/.config/niri/ocarina/binds.kdl (untouched, updates keep working). Your changes live in
+~/.config/ocarinashell/binds.json ({"remap": {"<original keys>": "<new keys>" | ""}}) and are rendered into the
+generated include ~/.local/state/ocarinashell/niri/user-binds.kdl, which niri reads after binds.kdl (the last
+definition of a key wins). A moved bind keeps its action and options under the new keys; its old keys are switched
+off (`spawn "true"`, hidden from niri's overlay). Only actions that already exist in binds.kdl can be bound, and
+`ocarina-niri-gen` validates the file (contents + `niri validate`) before installing it; then the whole config is
+validated again and the previous file comes back if it fails.
+
+  ocarina-binds list [--json]            every bind: original keys, effective keys, action
+  ocarina-binds set <keys> <new keys> [--force]   move a bind (exit 3 + JSON if the new keys are taken; --force
+                                         takes them: the other bind is left without keys)
+  ocarina-binds disable <keys>           leave a bind without keys
+  ocarina-binds reset <keys> · reset-all back to the kit's keys
+  ocarina-binds render                   the include that would be installed (stdout)
+"""
+import json
+import os
+import re
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+HOME = Path.home()
+NIRI = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config")) / "niri"
+SOURCE = NIRI / "ocarina/binds.kdl"
+STORE = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config")) / "ocarinashell/binds.json"
+GEN = Path(__file__).resolve().parent / "ocarina-niri-gen"
+OFF = 'spawn "true";'
+MODS = ("Mod", "Super", "Ctrl", "Control", "Alt", "Shift", "ISO_Level3_Shift", "ISO_Level5_Shift", "Mod5")
+LINE = re.compile(r"^(\s*)(\S+)(\s.*?)?\{\s*(.*?)\s*\}\s*(//.*)?$")
+KEY = re.compile(r"^[A-Za-z0-9_]+$")
+
+
+def die(msg, code=1):
+    print(f"ocarina-binds: {msg}", file=sys.stderr)
+    sys.exit(code)
+
+
+def canon(keys):
+    """«super+shift+t» → «Mod+Shift+T»-style, modifiers in niri's usual order; None if it is not a valid combo."""
+    parts = [p for p in keys.strip().split("+") if p]
+    if not parts:
+        return None
+    *mods, key = parts
+    order = {"Mod": 0, "Ctrl": 2, "Alt": 3, "Shift": 4}
+    fixed = []
+    for m in mods:
+        hit = next((x for x in MODS if x.lower() == m.lower()), None)
+        if hit is None:
+            return None
+        hit = {"Control": "Ctrl", "Super": "Mod"}.get(hit, hit)      # Mod is Super in a niri session
+        if hit not in fixed:
+            fixed.append(hit)
+    if not KEY.match(key):
+        return None
+    key = key.upper() if len(key) == 1 and key.isalpha() else key
+    fixed.sort(key=lambda m: order.get(m, 9))
+    return "+".join(fixed + [key])
+
+
+def binds():
+    """[(keys, props, action)] of the kit's binds.kdl, in file order (one bind per line)."""
+    out = []
+    try:
+        text = SOURCE.read_text(encoding="utf-8")
+    except OSError as e:
+        die(f"no se puede leer {SOURCE}: {e}")
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("//") or line.startswith("binds") or line == "}":
+            continue
+        m = LINE.match(raw)
+        if m:
+            action = m.group(4).strip()
+            out.append((m.group(2), (m.group(3) or "").strip(), action if action.endswith(";") else action + ";"))
+    return out
+
+
+def load():
+    try:
+        d = json.loads(STORE.read_text(encoding="utf-8"))
+        r = d.get("remap", {}) if isinstance(d, dict) else {}
+        return {k: v for k, v in r.items() if isinstance(k, str) and isinstance(v, str)}
+    except (OSError, ValueError):
+        return {}
+
+
+def save(remap):
+    STORE.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix=".binds.", suffix=".json", dir=STORE.parent)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        json.dump({"remap": dict(sorted(remap.items()))}, f, ensure_ascii=False, indent=1)
+        f.write("\n")
+    os.replace(tmp, STORE)
+
+
+def effective(remap, table):
+    """{original keys: effective keys or ""} for every bind."""
+    return {k: remap.get(k, k) for k, _, _ in table}
+
+
+def owner(keys, remap, table, skip=None):
+    """Original keys of the bind that answers to `keys` now (None if free)."""
+    eff = effective(remap, table)
+    want = (canon(keys) or keys).lower()
+    for orig, now in eff.items():
+        if orig != skip and now and (canon(now) or now).lower() == want:
+            return orig
+    return None
+
+
+def render(remap, table):
+    by_key = {k: (p, a) for k, p, a in table}
+    lines = {}                      # effective keys → line; a moved bind beats a switched-off key
+    for orig, new in remap.items():
+        if orig not in by_key or new == orig:
+            continue
+        if new:
+            props, action = by_key[orig]
+            lines[new.lower()] = f"    {new}{' ' + props if props else ''} {{ {action} }}"
+    for orig, new in remap.items():
+        if orig in by_key and new != orig and orig.lower() not in lines:
+            lines[orig.lower()] = f"    {orig} hotkey-overlay-title=null {{ {OFF} }}"
+    head = ["// GENERATED — owner: Ajustes › Atajos (bin/ocarina-binds, ~/.config/ocarinashell/binds.json).",
+            "// After ocarina/binds.kdl: the last definition of a key wins. Do not edit by hand."]
+    if not lines:
+        return "\n".join(head) + "\n"
+    return "\n".join(head + ["binds {"] + [lines[k] for k in sorted(lines)] + ["}"]) + "\n"
+
+
+def install(remap, table):
+    text = render(remap, table)
+    r = subprocess.run([str(GEN), "apply", "user-binds"], input=text, capture_output=True, text=True)
+    if r.returncode != 0:
+        die(f"niri no acepta los atajos: {r.stderr.strip()[-400:]}")
+    # the include is valid alone; the whole config must be too (a key taken twice in one file, a bad keysym…)
+    full = subprocess.run(["niri", "validate"], capture_output=True, text=True)
+    if full.returncode != 0:
+        subprocess.run([str(GEN), "revert", "user-binds"], capture_output=True, text=True)
+        err = re.sub(r"\x1b\[[0-9;]*m", "", full.stdout + full.stderr)
+        die("la configuración de niri no valida con ese cambio; se deja como estaba: "
+            + " ".join(l for l in err.splitlines() if "ERROR" in l or "error" in l)[-300:])
+
+
+def main(argv):
+    cmd = argv[0] if argv else "list"
+    table = binds()
+    known = {k for k, _, _ in table}
+    remap = {k: v for k, v in load().items() if k in known}
+    if cmd == "list":
+        eff = effective(remap, table)
+        rows = [{"keys": k, "effective": eff[k], "changed": k in remap and remap[k] != k, "action": a}
+                for k, _, a in table]
+        if "--json" in argv:
+            print(json.dumps(rows, ensure_ascii=False))
+        else:
+            for r in rows:
+                mark = "*" if r["changed"] else " "
+                print(f"{mark} {r['keys']:28s} → {r['effective'] or '(sin tecla)':28s} {r['action']}")
+        return
+    if cmd == "render":
+        sys.stdout.write(render(remap, table))
+        return
+    if cmd == "reset-all":
+        save({})
+        install({}, table)
+        print("ok")
+        return
+    if len(argv) < 2 or argv[1] not in known:
+        die("atajo desconocido (usa las teclas originales de `ocarina-binds list`)", 2)
+    orig = argv[1]
+    if cmd == "reset":
+        taker = owner(orig, remap, table, skip=orig)
+        if taker and remap.get(taker, taker).lower() == orig.lower() and taker != orig:
+            print(json.dumps({"conflict": taker}, ensure_ascii=False))
+            sys.exit(3)
+        remap.pop(orig, None)
+    elif cmd == "disable":
+        remap[orig] = ""
+    elif cmd == "set" and len(argv) >= 3:
+        new = canon(argv[2])
+        if not new:
+            die(f"combinación no válida: {argv[2]}", 2)
+        taker = owner(new, remap, table, skip=orig)
+        if taker:
+            if "--force" not in argv:
+                print(json.dumps({"conflict": taker, "keys": new}, ensure_ascii=False))
+                sys.exit(3)
+            remap[taker] = ""
+        remap[orig] = new
+        if new == orig:
+            remap.pop(orig)
+    else:
+        die("uso: ocarina-binds list|set|disable|reset|reset-all|render", 2)
+    previous = load()
+    save(remap)
+    try:
+        install(remap, table)
+    except SystemExit:
+        save(previous)
+        raise
+    print("ok")
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

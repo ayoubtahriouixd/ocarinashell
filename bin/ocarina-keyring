@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+"""ocarina-keyring — keep every secret in the «login» keyring, the one PAM opens at login (D-067).
+
+  ocarina-keyring status        keyrings, which is the default, how many items, locked or not (never a secret)
+  ocarina-keyring merge         move every item of the other keyrings into «login» and make «login» the default
+
+Apps (Chrome…) that stored their secrets in a keyring with its own password («Default keyring») asked for it after each
+boot. `merge` copies each item (label, attributes, secret, content type) into «login», checks the copy reads back
+identical and only then deletes the original. The source keyring must be unlocked (the desktop prompts for it once if
+not). Nothing is ever printed but labels and counts. Before moving anything the encrypted keyring files are copied to
+~/.local/share/keyrings/ocarina-backup-<date>/.
+"""
+import shutil
+import sys
+from datetime import datetime
+from pathlib import Path
+
+import gi
+
+gi.require_version("Secret", "1")
+from gi.repository import Secret  # noqa: E402
+
+TARGET = "login"
+
+
+def service():
+    return Secret.Service.get_sync(Secret.ServiceFlags.LOAD_COLLECTIONS, None)
+
+
+def name_of(col):
+    return col.get_object_path().rsplit("/", 1)[-1]
+
+
+def status():
+    svc = service()
+    default = Secret.Collection.for_alias_sync(svc, "default", Secret.CollectionFlags.NONE, None)
+    dpath = default.get_object_path() if default else ""
+    for col in svc.get_collections():
+        if name_of(col) == "session":
+            continue
+        col.load_items_sync(None)
+        mark = "★" if col.get_object_path() == dpath else " "
+        lock = "bloqueado" if col.get_locked() else "abierto"
+        print(f"{mark} {col.get_label() or name_of(col):24s} {len(col.get_items() or []):3d} entradas · {lock}")
+
+
+def merge():
+    svc = service()
+    cols = {name_of(c): c for c in svc.get_collections()}
+    login = cols.get(TARGET)
+    if not login:
+        sys.exit("no existe el llavero «login»: entra una vez con el greeter para que PAM lo cree")
+    if login.get_locked():
+        sys.exit("el llavero «login» está bloqueado: no debería pasar tras entrar con el greeter")
+    sources = [c for n, c in cols.items() if n not in (TARGET, "session")]
+    if not sources:
+        print("no hay otros llaveros")
+    keyrings = Path.home() / ".local/share/keyrings"
+    backup = keyrings / f"ocarina-backup-{datetime.now():%Y%m%d-%H%M%S}"
+    backup.mkdir(mode=0o700)
+    for f in keyrings.glob("*.keyring"):
+        shutil.copy2(f, backup / f.name)
+    print(f"copia cifrada en {backup}")
+    moved = 0
+    for col in sources:
+        if col.get_locked():
+            svc.unlock_sync([col], None)
+            if col.get_locked():
+                sys.exit(f"«{col.get_label()}» sigue bloqueado: ábrelo cuando lo pida y vuelve a ejecutar")
+        col.load_items_sync(None)
+        for item in list(col.get_items() or []):
+            item.load_secret_sync(None)
+            value = item.get_secret()
+            if value is None:
+                print(f"  ! «{item.get_label()}»: sin secreto legible, se queda donde está")
+                continue
+            attrs = dict(item.get_attributes())
+            schema = attrs.get("xdg:schema", "org.freedesktop.Secret.Generic")
+            copy = Secret.Item.create_sync(login, None, attrs, item.get_label(), value,
+                                           Secret.ItemCreateFlags.NONE, None)
+            copy.load_secret_sync(None)
+            back = copy.get_secret()
+            if back is None or back.get() != value.get() or dict(copy.get_attributes()) != attrs:
+                sys.exit(f"la copia de «{item.get_label()}» no coincide: paro sin borrar nada más ({schema})")
+            item.delete_sync(None)
+            moved += 1
+            print(f"  ✓ {item.get_label()}")
+    Secret.Collection.for_alias_sync(svc, "default", Secret.CollectionFlags.NONE, None)
+    svc.set_alias_sync("default", login, None)
+    print(f"{moved} entradas movidas a «login»; «login» es el llavero por defecto")
+
+
+def main():
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "status"
+    if cmd == "status":
+        status()
+    elif cmd == "merge":
+        merge()
+    else:
+        sys.exit(__doc__)
+
+
+if __name__ == "__main__":
+    main()

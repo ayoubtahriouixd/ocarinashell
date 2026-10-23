@@ -1,0 +1,15 @@
+# OcarinaShell · after any pacman transaction, ask the session for smoke tests (docs/06 capa 5, fase 14).
+# Writes /var/lib/ocarinashell/needs-check (time + packages); ocarina-postupdate.path in the user session sees it and
+# runs `ocarina doctor --post-update`. Sorted after 90-mkinitcpio-install (initramfs ready) and before snap-pac's post.
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Operation = Remove
+Type = Package
+Target = *
+
+[Action]
+Description = OcarinaShell: pruebas de humo pendientes…
+When = PostTransaction
+Exec = /usr/local/libexec/ocarina-needs-check
+NeedsTargets

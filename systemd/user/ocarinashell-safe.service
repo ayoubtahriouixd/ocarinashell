@@ -1,0 +1,20 @@
+# OcarinaShell · safe mode (docs/06-ACTUALIZACIONES capa 4). Started by OnFailure= of ocarinashell.service.
+# Mutually exclusive with the normal shell: starting either one stops the other.
+[Unit]
+Description=OcarinaShell · modo seguro
+Conflicts=ocarinashell.service
+PartOf=graphical-session.target
+After=graphical-session.target
+Requisite=graphical-session.target
+
+[Service]
+Type=exec
+# systemd supervises every crash (D-072): Quickshell's own handler relaunched the shell inside the same PID, left
+# zombies and the dead instance's Process children behind, and hid crash loops from the start limit (safe mode)
+Environment=QS_DISABLE_CRASH_HANDLER=1
+ExecStart=/usr/bin/qs -p %h/.config/quickshell/ocarina/safe/shell.qml
+Restart=on-failure
+RestartSec=2
+Slice=app-graphical.slice
+# 守 Mamori tries to bring the normal shell back by itself (docs/06 capa 4)
+ExecStartPost=-/usr/bin/systemctl --user start --no-block ocarina-mamori-heal.service

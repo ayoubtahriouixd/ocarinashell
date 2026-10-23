@@ -1,0 +1,1521 @@
+#!/usr/bin/env python3
+"""ocarina-fune — 船 Fune: Windows apps as native niri windows (docs/01-ARQUITECTURA §16, fase 12, D-062).
+Python stdlib only. `ocarina fune <cmd>` calls this; the shell's Fune service shows the state and owns the policy
+(automatic pause/stop by niri window events, Shinobi, Oni).
+
+  ocarina-fune status [--json]          state · uptime · apps · RDP
+  ocarina-fune create                   first install: WinApps data, /oem, container (Windows installs unattended)
+  ocarina-fune start|pause|resume|stop  the VM (stop = ACPI shutdown, up to 2 min)
+  ocarina-fune up [--quiet]             whatever it takes to have Windows answering RDP (resume or boot)
+  ocarina-fune app <id> [file…]         a detected app as a RemoteApp window (resumes/boots the VM by itself)
+  ocarina-fune run <C:\\path\\app.exe> [file…]   any Windows program as a RemoteApp window
+  ocarina-fune desktop                  the full Windows desktop in a window
+  ocarina-fune scan                     detect installed apps → .desktop files (Torii, Nautilus «Abrir con»)
+  ocarina-fune apps [--json]            the detected apps
+  ocarina-fune webapp <name> <url> [icon]   level 0: a Chrome --app window with its own class (+ niri rule)
+  ocarina-fune wine <cmd> …             level 1: Wine/Proton prefixes per app (ocarina-fune wine help)
+  ocarina-fune rules                    regenerate the niri rules (asagi focus ring, floating dialogs)
+  ocarina-fune update | maintenance | backup [dir] | smoke     Mamori (fase 16)
+
+Windows' password is in gnome-keyring (service ocarinashell-fune, account fune); FreeRDP reads it through
+FREERDP_ASKPASS, so it is never on a command line or in a file of ours.
+"""
+import base64
+import fcntl
+import json
+import os
+import re
+import shutil
+import socket
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+HOME = Path.home()
+BIN = Path(__file__).resolve().parent
+REPO = BIN.parent
+CONFIG = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config"))
+DATA = Path(os.environ.get("XDG_DATA_HOME", HOME / ".local/share"))
+STATE = Path(os.environ.get("XDG_STATE_HOME", HOME / ".local/state")) / "ocarinashell"
+RUNTIME = Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")) / "ocarinashell"
+
+FUNE = DATA / "ocarinashell/fune"                 # Btrfs subvolume, NOCOW, outside snapper
+STORAGE = FUNE / "storage"                        # dockur's /storage: the Windows disk
+OEM = FUNE / "oem"                                # dockur's /oem: run once at the first logon
+APPS = FUNE / "apps"                              # detected apps: <id>/app.json + icon
+WINAPPS = DATA / "ocarinashell/winapps-src"       # WinApps checkout (data only: oem/, apps/, ExtractPrograms.ps1)
+WINAPPS_URL = "https://github.com/winapps-org/winapps.git"
+WINAPPS_REF = "f5c9ee3951046c28f2aaf3a0b3b16c9a1c0a09e9"   # 2026-10-16; `update` moves it
+COMPOSE = CONFIG / "winapps/compose.yaml"
+APPLICATIONS = DATA / "applications"
+NIRI_RULES = STATE / "niri/fune-rules.kdl"
+LOG = STATE / "fune/fune.log"
+
+CONTAINER = "WinApps"
+RDP_HOST, RDP_PORT = "127.0.0.1", 3389
+USER = "ayoub"
+SECRET = ["secret-tool", "lookup", "service", "ocarinashell-fune", "account", "fune"]
+BOOT_TIMEOUT = 240
+# ONE RemoteApp connection for every app: a second RDP connection steals the session from the first (its windows stop
+# repainting and cannot be closed). Further apps are started inside the session by the Fune agent (assets/fune/
+# agent.ps1, port 7148 on the host's 127.0.0.1, token in the keyring) and appear through that same connection.
+APP_CLASS = "fune-windows"
+AGENT_PORT = 7148
+AGENT_SECRET = ["secret-tool", "lookup", "service", "ocarinashell-fune", "account", "fune-agent"]
+ASAGI = "#00a3af"
+ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+
+
+# ── small helpers ────────────────────────────────────────────────────────────────────────────
+def log(msg):
+    LOG.parent.mkdir(parents=True, exist_ok=True)
+    with LOG.open("a", encoding="utf-8") as f:
+        f.write(f"{datetime.now().isoformat(timespec='seconds')} {msg}\n")
+
+
+def die(msg, code=1):
+    print(f"船 {msg}", file=sys.stderr)
+    log(f"error: {msg}")
+    # launched from Torii/Nautilus/the panel there is no terminal to read it: say it in a notification
+    if not sys.stderr.isatty() and os.environ.get("FUNE_QUIET_ERRORS") != "1":
+        notify("Windows: " + msg, icon="dialog-warning", urgency="normal", replace=False)
+    sys.exit(code)
+
+
+def have(cmd):
+    return shutil.which(cmd) is not None
+
+
+def run(cmd, timeout=None, env=None, check=False):
+    """subprocess.run that never raises on a hung or missing tool: an empty failed result instead."""
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, errors="replace", timeout=timeout, env=env,
+                              check=check)
+    except (subprocess.TimeoutExpired, OSError) as e:
+        log(f"{cmd[0]}: {e.__class__.__name__}")
+        return subprocess.CompletedProcess(cmd, 124, "", str(e))
+
+
+def notify(title, body="", icon="computer", urgency="low", replace=True):
+    """A notification as «船 Fune» (Fumi). One replaceable bubble for the boot progress."""
+    if not have("notify-send"):
+        return
+    cmd = ["notify-send", "-a", "船 Fune", "-u", urgency, "-i", icon, "-t", "4000"]
+    if replace:
+        cmd += ["-h", "string:x-canonical-private-synchronous:ocarina-fune"]
+    try:
+        subprocess.run(cmd + [title, body], timeout=2, capture_output=True)
+    except (OSError, subprocess.SubprocessError):
+        pass
+
+
+def shell_ipc(*args):
+    """Tell the shell (the island shows «Windows despertando…»). Best effort: Fune works without the shell."""
+    if not have("qs"):
+        return False
+    try:
+        return subprocess.run(["qs", "-c", "ocarina", "ipc", "call", "fune", *args], timeout=1.5,
+                              capture_output=True).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def settings():
+    try:
+        s = json.loads((CONFIG / "ocarinashell/settings.json").read_text(encoding="utf-8")).get("fune", {})
+        return s if isinstance(s, dict) else {}
+    except (OSError, ValueError, AttributeError):
+        return {}
+
+
+# ── the container ────────────────────────────────────────────────────────────────────────────
+def inspect():
+    """{} when the container does not exist; else State (Status: created|running|paused|exited|stopping…)."""
+    if not have("podman"):
+        return {}
+    r = run(["podman", "inspect", "--type", "container", "--format", "{{json .State}}", CONTAINER], timeout=10)
+    if r.returncode != 0:
+        return {}
+    try:
+        return json.loads(r.stdout)
+    except ValueError:
+        return {}
+
+
+def state():
+    st = inspect()
+    return (st.get("Status") or "unknown") if st else "missing"
+
+
+def started_at(st):
+    s = st.get("StartedAt") or ""
+    m = re.match(r"(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)", s)
+    if not m:
+        return None
+    try:
+        return datetime.fromisoformat(m.group(1)).replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
+def rdp_ready(timeout=0.6):
+    """True when an RDP server answers an X.224 connection request (pasta accepts TCP long before Windows does)."""
+    # TPKT (19 bytes) + X.224 Connection Request + RDP_NEG_REQ (TLS | CredSSP); the answer is a Connection Confirm
+    req = bytes.fromhex("03000013" "0ee00000000000" "0100080003000000")
+    try:
+        with socket.create_connection((RDP_HOST, RDP_PORT), timeout=timeout) as s:
+            s.settimeout(timeout)
+            s.sendall(req)
+            data = s.recv(19)
+            return len(data) >= 6 and data[0] == 3 and data[5] == 0xD0
+    except OSError:
+        return False
+
+
+def windows_apps_open():
+    """Windows windows niri has (RemoteApp fune-*, the desktop; not the web apps), or -1 when niri does not answer."""
+    try:
+        r = run(["niri", "msg", "--json", "windows"], timeout=2)
+        return sum(1 for w in json.loads(r.stdout) if str(w.get("app_id") or "").startswith("fune-")
+                   and not str(w.get("app_id")).startswith("fune-web-")
+                   and w.get("title") not in ("", None, "RemoteApp Marker Window"))
+    except (ValueError, TypeError, AttributeError):
+        return -1
+
+
+def rdp_connecting():
+    """A FreeRDP of ours is alive (connecting, or in the 20 s RemoteApp logoff): never pause under it."""
+    return run(["pgrep", "-u", str(os.getuid()), "-f", "[x]freerdp3 .*/wm-class:fune-"], timeout=3).returncode == 0
+
+
+def podman(*args, timeout=150):
+    r = run(["podman", *args], timeout=timeout)
+    if r.returncode != 0:
+        log(f"podman {' '.join(args)} → {r.returncode}: {r.stderr.strip()[:300]}")
+    return r.returncode == 0
+
+
+def lock():
+    """One `up` at a time: two apps opened together must not boot Windows twice."""
+    RUNTIME.mkdir(parents=True, exist_ok=True)
+    f = open(RUNTIME / "fune.lock", "w")
+    fcntl.flock(f, fcntl.LOCK_EX)
+    return f
+
+
+def up(quiet=False):
+    """Have Windows answering RDP. Returns «hot» (it was running), «warm» (resumed) or «cold» (booted).
+    Whatever happens, the shell hears «ready» at the end (it clears the island hint and rechecks the state)."""
+    try:
+        return _up(quiet)
+    finally:
+        shell_ipc("ready")
+
+
+def _up(quiet):
+    with lock():
+        st = state()
+        if st == "missing":
+            die("Windows no está instalado todavía: ocarina fune create")
+        if st == "running" and rdp_ready():
+            return "hot"
+        kind = "hot"
+        if st == "paused":
+            kind = "warm"
+            t0 = time.monotonic()
+            if not podman("unpause", CONTAINER, timeout=30):
+                die("no se pudo reanudar Windows (ocarina fune status)")
+            log(f"resumed in {int((time.monotonic() - t0) * 1000)} ms")
+            shell_ipc("refresh")
+            # the guest clock stood still while frozen: Linux's time, through the agent (no network needed)
+            if agent_call({"time": int(time.time() * 1000)}, timeout=1.0) is None:
+                log("time sync after resume: agent not reachable")
+        elif st in ("exited", "created", "stopped", "configured"):
+            kind = "cold"
+            if not quiet:
+                shell_ipc("waking") or notify("Windows despertando…", "Arrancando la máquina virtual", "computer")
+            if not podman("start", CONTAINER, timeout=60):
+                die("no se pudo arrancar Windows (ocarina fune status)")
+            log("started")
+        elif st == "stopping":
+            die("Windows se está apagando: vuelve a intentarlo en un momento")
+        deadline = time.monotonic() + (BOOT_TIMEOUT if kind == "cold" else 30)
+        while not rdp_ready():
+            if time.monotonic() > deadline:
+                die("Windows no responde por RDP (ocarina fune status · http://127.0.0.1:8006)")
+            if state() not in ("running",):
+                die(f"Windows se ha parado ({state()})")
+            time.sleep(0.25 if kind != "cold" else 1)
+        if kind == "cold":
+            time.sleep(4)                         # TermService answers a little before the first logon can be served
+        return kind
+
+
+# ── FreeRDP ──────────────────────────────────────────────────────────────────────────────────
+def output_scale():
+    """The scale of the output niri has focused (1,75 on the panel): Windows renders at it, no double scaling."""
+    try:
+        r = run(["niri", "msg", "--json", "focused-output"], timeout=2)
+        sc = float((json.loads(r.stdout) or {}).get("logical", {}).get("scale") or 1.0)
+        return max(100, min(500, round(sc * 100)))
+    except (OSError, ValueError, TypeError, subprocess.SubprocessError):
+        return 175
+
+
+def cmd_toggle(args):
+    """Win+F on a Windows window (bin/ocarina maximize): Windows itself maximizes or restores it, through the agent.
+    niri cannot resize a RemoteApp window (FreeRDP passes the size on, Windows answers with its own and they bounce),
+    so Windows decides: maximized = exactly a maximized niri column; restored = half of it."""
+    try:
+        w = json.loads(run(["niri", "msg", "--json", "focused-window"], timeout=2).stdout) or {}
+    except ValueError:
+        w = {}
+    col = column_size()
+    if w.get("app_id") != APP_CLASS or not w.get("title") or not col:
+        sys.exit(1)
+    half = half_column_width()
+    answer = agent_call({"toggle": {"title": w["title"], "w": half or col[0] // 2, "h": col[1]}}) or ""
+    if not answer.startswith("ok") or answer.endswith("none"):
+        sys.exit(1)
+    print(answer.split()[-1])                     # max | restored: bin/ocarina sets niri's column to match
+
+
+def half_column_width():
+    """A column at proportion 0.5 in niri's own arithmetic ((width − gap) × 0.5 − gap), in physical pixels."""
+    try:
+        lg = (json.loads(run(["niri", "msg", "--json", "focused-output"], timeout=2).stdout) or {})["logical"]
+        gaps = float(json.loads((CONFIG / "ocarinashell/settings.json").read_text())["windows"]["gaps"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    sc = float(lg.get("scale") or 1.0)
+    return round(((float(lg["width"]) - gaps) * 0.5 - gaps) * sc)
+
+
+def column_size():
+    """The physical size of a maximized niri column on the focused output (bar and gaps out): the Windows desktop is
+    given exactly that, and apps open maximized inside it, so a Windows window matches its niri tile pixel for pixel
+    (FreeRDP never tells Windows about a size the compositor imposes). Example: 1645×1028 at 1,75, gaps 12, bar 48 →
+    1622×957 logical → 2839×1675."""
+    try:
+        o = json.loads(run(["niri", "msg", "--json", "focused-output"], timeout=2).stdout) or {}
+        lg = o.get("logical") or {}
+        w, h, sc = float(lg["width"]), float(lg["height"]), float(lg.get("scale") or 1.0)
+    except (ValueError, KeyError, TypeError):
+        return None
+    try:
+        gaps = float(json.loads((CONFIG / "ocarinashell/settings.json").read_text())["windows"]["gaps"])
+    except (OSError, ValueError, KeyError, TypeError):
+        gaps = 12.0
+    bar = 48.0                                    # Obi: 8 px margin + 40 px (docs/02-DISENO §5), its exclusive zone
+    cw, ch = w - 2 * gaps + 1, h - bar - 2 * gaps + 1
+    return round(cw * sc), round(ch * sc)
+
+
+def rdp_command(extra):
+    """The FreeRDP command line (docs/WINDOWS.md: the winning flags, chosen by measuring)."""
+    pct = output_scale()
+    device = 100 if pct < 120 else 140 if pct < 160 else 180
+    cfg = settings()
+    cmd = [
+        "xfreerdp3", f"/v:{RDP_HOST}:{RDP_PORT}", f"/u:{USER}", "/d:", "/cert:tofu",
+        f"/scale-desktop:{pct}", f"/scale-device:{device}",
+        *([f"/size:{d[0]}x{d[1]}"] if (d := column_size()) else []),
+        "/network:lan", "-wallpaper", "-menu-anims", "-window-drag", "+fonts",
+        "/gfx", "+auto-reconnect", "/sound:sys:pulse", "+home-drive",
+        "/log-level:WARN",
+    ]
+    if cfg.get("microphone", True):
+        cmd.append("/microphone:sys:pulse")
+    media = Path("/run/media") / os.environ.get("USER", USER)
+    if media.is_dir():
+        cmd.append(f"/drive:media,{media}")
+    return cmd + extra
+
+
+def rdp_env():
+    # FreeRDP appends the prompt to the askpass command line: our own subcommand ignores it and prints the password
+    env = dict(os.environ)
+    env["FREERDP_ASKPASS"] = f"{BIN / 'ocarina-fune'} askpass"
+    return env
+
+
+def cmd_askpass(_):
+    """For FreeRDP only (FREERDP_ASKPASS): the password from the keyring on stdout, nothing else."""
+    r = run(SECRET, timeout=10)
+    if r.returncode != 0:
+        sys.exit(1)
+    sys.stdout.write(r.stdout)
+
+
+def sub(key, value):
+    """One /app sub-option. WinPR 3.32 rejects a quoted value (cmd:"…") but takes the whole option quoted, with
+    inner quotes escaped — "cmd:\\"<path with spaces>\\"" (commas and spaces inside are then safe)."""
+    return '"' + key + ":" + value.replace('"', '\\"') + '"'
+
+
+def win_path(p):
+    """/home/ayoub/x/y.docx → \\\\tsclient\\home\\x\\y.docx (only home and removable media are visible to Windows)."""
+    p = Path(p).expanduser().resolve()
+    media = Path("/run/media") / os.environ.get("USER", USER)
+    for root, share in ((HOME, "home"), (media, "media")):
+        try:
+            rel = p.relative_to(root)
+        except ValueError:
+            continue
+        return "\\\\tsclient\\" + share + ("\\" + str(rel).replace("/", "\\") if str(rel) != "." else "")
+    return None
+
+
+def agent_call(payload, timeout=2.0):
+    """One request to the agent inside Windows; its answer («ok», «error: …») or None when it does not answer."""
+    tok = run(AGENT_SECRET, timeout=10).stdout.strip()
+    if not tok:
+        return None
+    try:
+        with socket.create_connection((RDP_HOST, AGENT_PORT), timeout=timeout) as s:
+            s.settimeout(timeout)
+            s.sendall((json.dumps(dict(payload, token=tok)) + "\n").encode("utf-8"))
+            data = b""
+            while not data.endswith(b"\n"):
+                chunk = s.recv(4096)
+                if not chunk:
+                    break
+                data += chunk
+            return data.decode("utf-8", "replace").strip() or None
+    except OSError:
+        return None
+
+
+def rdp_connected():
+    """Our app connection (wm-class fune-windows) is alive."""
+    return run(["pgrep", "-u", str(os.getuid()), "-f", f"[x]freerdp3 .*/wm-class:{APP_CLASS}"], timeout=3).returncode == 0
+
+
+def open_in_windows(program, name, cmdline=""):
+    """Through the open connection when there is one (the agent starts it in the session), else a new connection —
+    never a second one beside a live one."""
+    if rdp_connected():
+        answer = agent_call({"program": program, "args": cmdline})
+        if answer == "ok":
+            log(f"launch {name} (agent)")
+            return
+        log(f"agent: {answer}; reconnecting")
+        run(["pkill", "-u", str(os.getuid()), "-f", f"[x]freerdp3 .*/wm-class:{APP_CLASS}"], timeout=5)
+        time.sleep(1)
+    if (STATE / "fune/agent").exists():
+        # the connection's program is Fune's launcher: it starts the agent inside this session, then the app
+        payload = base64.b64encode(json.dumps({"program": program, "args": cmdline,
+                                               "time": int(time.time() * 1000)}).encode("utf-8")).decode()
+        rail_app(r"C:\Windows\System32\wscript.exe", name, APP_CLASS,
+                 cmdline=rf"//B //Nologo C:\ProgramData\Fune\launch.vbs {payload}")
+    if program.startswith("shell:"):             # no launcher in Windows yet: explorer.exe activates it
+        program, cmdline = "C:\\Windows\\explorer.exe", program
+    rail_app(program, name, APP_CLASS, cmdline=cmdline)
+
+
+def rail_app(program, name, wm_class, icon=None, files=(), cmdline=""):
+    """One RemoteApp window. The program and its arguments travel in a small .rdp file, not in /app: FreeRDP 3.32's
+    /app parser cannot carry a quote (`cmd:\\"…\\"` reaches Windows with the backslashes), and a path with spaces
+    needs them. The .rdp parser keeps the value verbatim. A file outside home/media cannot be seen by Windows: say so."""
+    if files:
+        w = win_path(files[0])
+        if w is None:
+            notify("Ese archivo no lo ve Windows", "Solo se abren archivos de tu carpeta personal o de un USB.",
+                   "dialog-warning", "normal", replace=False)
+            sys.exit(2)
+        cmdline = f'"{w}"'
+    rdp = rdp_file(program, name, cmdline)
+    cmd = rdp_command([f"/wm-class:{wm_class}"])
+    cmd = [cmd[0], str(rdp)] + cmd[1:]
+    log(f"launch {wm_class}")
+    # FreeRDP's own messages (WARN and up) for `ocarina doctor` and for us: a connection that stops showing windows
+    # says why there
+    rlog = STATE / "fune/rdp.log"
+    rlog.parent.mkdir(parents=True, exist_ok=True)
+    if rlog.exists() and rlog.stat().st_size > 2_000_000:
+        rlog.replace(rlog.with_suffix(".log.1"))
+    fd = os.open(rlog, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+    os.write(fd, f"\n── {datetime.now().isoformat(timespec='seconds')} {name}\n".encode())
+    os.dup2(fd, 1)
+    os.dup2(fd, 2)
+    os.execvpe(cmd[0], cmd, rdp_env())
+
+
+def rdp_file(program, name, cmdline=""):
+    """A RemoteApp .rdp in $XDG_RUNTIME_DIR (tmpfs, 0600); the ones older than 10 min are swept on the next launch."""
+    d = RUNTIME / "fune-rdp"
+    d.mkdir(parents=True, exist_ok=True, mode=0o700)
+    now = time.time()
+    for old in d.glob("*.rdp"):
+        try:
+            if now - old.stat().st_mtime > 600:
+                old.unlink()
+        except OSError:
+            pass
+    clean = lambda v: v.replace("\r", " ").replace("\n", " ")
+    f = d / f"{os.getpid()}-{int(now * 1000)}.rdp"
+    fd = os.open(f, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as h:
+        h.write("remoteapplicationmode:i:1\n"
+                f"remoteapplicationprogram:s:{clean(program)}\n"
+                f"remoteapplicationname:s:{clean(name)}\n"
+                + (f"remoteapplicationcmdline:s:{clean(cmdline)}\n" if cmdline else ""))
+    return f
+
+
+def cmd_app(args):
+    if not args:
+        die("uso: ocarina fune app <id> [archivo…]")
+    aid = args[0]
+    if not ID_RE.match(aid):
+        die(f"id no válido: {aid}")
+    meta = load_app(aid)
+    if not meta:
+        die(f"no conozco la app «{aid}» (ocarina fune apps · ocarina fune scan)")
+    aumid = meta.get("aumid") or uwp_aumid(meta.get("exe", ""))
+    # a second file opens a second window of the same app (one RDP connection per window, like double-clicking twice)
+    for extra in args[2:]:
+        subprocess.Popen([sys.argv[0], "app", aid, extra], start_new_session=True)
+    cmdline = ""
+    if len(args) > 1:
+        w = win_path(args[1])
+        if w is None:
+            notify("Ese archivo no lo ve Windows", "Solo se abren archivos de tu carpeta personal o de un USB.",
+                   "dialog-warning", "normal", replace=False)
+            sys.exit(2)
+        cmdline = f'"{w}"'
+    shell_ipc("opening")                          # Torii/Nautilus too: the shell holds its automatic pause
+    up()
+    if aumid and not cmdline:
+        # a Store (UWP) app cannot be started by its .exe: it has to be activated, which explorer.exe does
+        open_in_windows(f"shell:AppsFolder\\{aumid}", meta["name"])
+    else:
+        open_in_windows(meta["exe"], meta["name"], cmdline)
+
+
+def uwp_aumid(exe):
+    """C:\\Program Files\\WindowsApps\\Microsoft.WindowsCalculator_11.2502.2.0_x64__8wekyb3d8bbwe\\… →
+    Microsoft.WindowsCalculator_8wekyb3d8bbwe!App (Name_Version_Arch_Resource_PublisherId; the entry point of
+    Microsoft's inbox apps is «App»). Anything else → ""."""
+    m = re.search(r"\\WindowsApps\\([^\\_]+)_[\d.]+_[^_\\]*_[^_\\]*_([a-z0-9]{13})\\", exe, re.I)
+    return f"{m.group(1)}_{m.group(2)}!App" if m else ""
+
+
+def cmd_run(args):
+    if not args:
+        die("uso: ocarina fune run <C:\\ruta\\programa.exe> [archivo]")
+    up()
+    shell_ipc("opening")
+    cmdline = ""
+    if len(args) > 1:
+        w = win_path(args[1])
+        if w is None:
+            die("ese archivo no lo ve Windows (solo tu carpeta personal o un USB)")
+        cmdline = f'"{w}"'
+    open_in_windows(args[0], Path(args[0].replace("\\", "/")).stem, cmdline)
+
+
+def cmd_desktop(_):
+    shell_ipc("opening")
+    up()
+    log("desktop")
+    cmd = rdp_command(["+dynamic-resolution", "/wm-class:fune-desktop", "/t:Windows · Fune"])
+    os.execvpe(cmd[0], cmd, rdp_env())
+
+
+# ── lifecycle ───────────────────────────────────────────────────────────────────────────────
+def cmd_start(_):
+    shell_ipc("refresh")
+    print({"hot": "Windows ya estaba activa", "warm": "Windows reanudada", "cold": "Windows arrancada"}[up()])
+
+
+HOLD = RUNTIME / "fune.hold"                      # maintenance running: no automatic pause/stop
+
+
+def auto_allowed(what):
+    """The shell's timers say «pause/stop now»; the last word is here (it sees what the shell may not).
+    Exit 3 = «not now» (the shell waits for something to change before asking again)."""
+    why = ("maintenance" if HOLD.exists()
+           else "first install not finished" if not installed_marker()
+           else "windows open or niri silent" if windows_apps_open() != 0
+           else "an app is connecting" if rdp_connecting() or lock_busy()
+           else "")
+    if why:
+        log(f"auto {what} skipped: {why}")
+        sys.exit(3)
+
+
+def installed_marker():
+    return (STATE / "fune/installed").exists() or any(APPS.glob("*/app.json"))
+
+
+def lock_busy():
+    RUNTIME.mkdir(parents=True, exist_ok=True)
+    with open(RUNTIME / "fune.lock", "w") as f:
+        try:
+            fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return False
+        except OSError:
+            return True
+
+
+def cmd_pause(args):
+    st = state()
+    if st != "running":
+        die(f"Windows no está activa ({label(st)})")
+    if "--auto" in args:
+        auto_allowed("pause")
+    if not podman("pause", CONTAINER, timeout=30):
+        die("no se pudo pausar")
+    log("paused" + (" (auto)" if "--auto" in args else ""))
+    RUNTIME.mkdir(parents=True, exist_ok=True)
+    (RUNTIME / "fune.paused-at").write_text(str(int(time.time())))
+    shell_ipc("refresh")
+    print("Windows en pausa · 0 % CPU, la RAM se conserva")
+
+
+def cmd_resume(_):
+    if state() != "paused":
+        die(f"Windows no está en pausa ({label(state())})")
+    up(quiet=True)
+    print("Windows reanudada")
+
+
+def cmd_stop(args):
+    st = state()
+    if st in ("missing", "exited", "created", "stopped"):
+        print("Windows ya está apagada")
+        return
+    if "--auto" in args:
+        auto_allowed("stop")
+    if st == "paused":
+        podman("unpause", CONTAINER, timeout=30)     # a frozen guest can shut nothing down
+    # 1) Windows shuts itself down (shutdown.exe over a windowless RemoteApp): it does not depend on how the guest
+    #    treats the ACPI button, and it closes the disconnected sessions cleanly
+    if rdp_ready() and agent_call({"program": "C:\\Windows\\System32\\shutdown.exe",
+                                   "args": "/s /t 0 /f /d p:0:0"}) != "ok":
+        cmd = rdp_command(["/app:program:C:\\Windows\\System32\\shutdown.exe," + sub("cmd", "/s /t 0 /f /d p:0:0"),
+                           "/wm-class:fune-scan"])
+        subprocess.Popen(cmd, env=rdp_env(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         start_new_session=True)
+    # 2) the net under it, in a transient unit so it survives us and a shell reload: SIGTERM (dockur → ACPI) and,
+    #    after 120 s, SIGKILL
+    unit = f"ocarina-fune-stop-{int(time.time())}"
+    r = run(["systemd-run", "--user", "--quiet", "--collect", f"--unit={unit}", "--",
+             "podman", "stop", "--time", "120", CONTAINER], timeout=10)
+    if r.returncode != 0:                         # no user manager (a TTY): do it here
+        podman("stop", "--time", "120", CONTAINER, timeout=150)
+    deadline = time.monotonic() + 150
+    while state() not in ("exited", "stopped", "created", "missing"):
+        if time.monotonic() > deadline:
+            die("Windows no se apaga (sigue en «" + label(state()) + "»)")
+        time.sleep(1)
+    # our connections would keep auto-reconnecting to a VM that is gone (and fight the next one): hang them up
+    pat = ["-u", str(os.getuid()), "-f", "[x]freerdp3 .*/wm-class:fune-"]
+    if run(["pkill", *pat], timeout=5).returncode == 0:
+        time.sleep(2)                             # in its reconnect loop FreeRDP sits on SIGTERM; the VM is off
+        run(["pkill", "-KILL", *pat], timeout=5)  # now, so no session can be left hanging
+    log("stopped" + (" (auto)" if "--auto" in args else ""))
+    shell_ipc("refresh")
+    print("Windows apagada · RAM liberada")
+
+
+def cmd_login_start(_):
+    """«Arrancar con el cargador»: once per session, at login, only on AC (the shell calls this at start-up)."""
+    marker = RUNTIME / "fune.login-started"
+    if marker.exists() or not settings().get("startOnAC") or not on_ac() or state() not in ("exited", "created"):
+        return
+    RUNTIME.mkdir(parents=True, exist_ok=True)
+    marker.touch()
+    log("login start (AC)")
+    up(quiet=True)
+
+
+def size_bytes(s, binary=False):
+    """«6G» (dockur: GiB, binary=True) · «6.57GB» (podman: decimal) · «6.1GiB» (binary by its own unit)."""
+    m = re.match(r"^\s*([\d.]+)\s*([kKMGT]?)(i?)B?", s or "")
+    if not m:
+        return 0
+    base = 1024 if binary or m.group(3) else 1000
+    return int(float(m.group(1)) * base ** " KMGT".index(m.group(2).upper() or " "))
+
+
+def compose_env(key, default):
+    m = re.search(rf'^\s+{key}:\s*"?([^"\n]+)"?', COMPOSE.read_text(encoding="utf-8"), re.M) if COMPOSE.is_file() else None
+    return m.group(1).strip() if m else default
+
+
+def cmd_stats(args):
+    """vCPU (0–1 of all cores), RAM and disk in bytes — the panel asks every 2 s while it is open."""
+    cores = int(compose_env("CPU_CORES", "4") or 4)
+    mem_max = size_bytes(compose_env("RAM_SIZE", "6G"), True)
+    disk_max = size_bytes(compose_env("DISK_SIZE", "96G"), True)
+    cpu = mem = 0.0
+    if state() in ("running", "paused"):
+        r = run(["podman", "stats", "--no-stream", "--no-reset", "--format", "{{.CPUPerc}}|{{.MemUsage}}", CONTAINER],
+                timeout=10)
+        if r.returncode == 0 and "|" in r.stdout:
+            c, m = r.stdout.strip().splitlines()[-1].split("|", 1)
+            try:
+                cpu = min(1.0, float(c.strip().rstrip("%")) / 100 / max(1, cores))
+            except ValueError:
+                cpu = 0.0
+            mem = size_bytes(m.split("/")[0])
+    disk = sum(f.stat().st_blocks * 512 for f in STORAGE.glob("data.*") if f.is_file()) if STORAGE.is_dir() else 0
+    print(json.dumps({"cpu": round(cpu, 4), "cores": cores, "mem": mem, "memMax": mem_max, "disk": disk,
+                      "diskMax": disk_max}))
+
+
+def label(st):
+    return {"running": "activa", "paused": "en pausa", "exited": "apagada", "created": "apagada",
+            "stopped": "apagada", "stopping": "apagándose", "missing": "sin instalar"}.get(st, st)
+
+
+def human(seconds):
+    m = int(seconds // 60)
+    return f"{m // 60} h {m % 60} min" if m >= 60 else f"{m} min"
+
+
+def cmd_status(args):
+    st = inspect()
+    s = (st.get("Status") or "unknown") if st else "missing"
+    since = started_at(st) if s in ("running", "paused") else None
+    up_s = (datetime.now(timezone.utc) - since).total_seconds() if since else 0
+    n = windows_apps_open() if s == "running" else 0
+    ready = s == "running" and rdp_ready(0.3)
+    paused_at = RUNTIME / "fune.paused-at"
+    try:
+        paused_since = int(paused_at.read_text()) if s == "paused" else 0
+    except (OSError, ValueError):
+        paused_since = 0
+    info = {"state": s, "label": label(s), "since": since.isoformat() if since else "", "uptime": int(up_s),
+            "apps": max(0, n), "rdp": f"{RDP_HOST}:{RDP_PORT}", "ready": ready, "installed": s != "missing",
+            "booting": s == "running" and not ready, "setupDone": installed_marker(), "hold": HOLD.exists(),
+            "pausedSince": paused_since, "podman": have("podman") and have("podman-compose"),
+            "freerdp": have("xfreerdp3"),
+            "vm": {"cores": int(compose_env("CPU_CORES", "4") or 4), "ram": size_bytes(compose_env("RAM_SIZE", "6G"), True),
+                   "disk": size_bytes(compose_env("DISK_SIZE", "96G"), True), "version": compose_env("VERSION", "11"),
+                   "diskUsed": sum(f.stat().st_blocks * 512 for f in STORAGE.glob("data.*") if f.is_file())
+                   if STORAGE.is_dir() else 0}}
+    if "--json" in args:
+        print(json.dumps(info, ensure_ascii=False))
+        return
+    parts = [label(s)]
+    if since:
+        parts.append(human(up_s))
+    if s == "running":
+        parts.append(f"{max(0, n)} app" + ("" if n == 1 else "s"))
+        parts.append(f"RDP {RDP_HOST}:{RDP_PORT}" if ready else "arrancando…")
+    print("船 " + " · ".join(parts))
+
+
+# ── first install ───────────────────────────────────────────────────────────────────────────
+def ensure_winapps():
+    """WinApps at the pinned commit (data only: we never run its installer or its launcher)."""
+    if not (WINAPPS / ".git").is_dir():
+        r = run(["git", "clone", "--quiet", WINAPPS_URL, str(WINAPPS)], timeout=300)
+        if r.returncode != 0:
+            die("no se pudo descargar WinApps: " + r.stderr.strip()[:200])
+    head = run(["git", "-C", str(WINAPPS), "rev-parse", "HEAD"]).stdout.strip()
+    if head != WINAPPS_REF:
+        run(["git", "-C", str(WINAPPS), "fetch", "--quiet", "origin"], timeout=300)
+        r = run(["git", "-C", str(WINAPPS), "checkout", "--quiet", "--detach", WINAPPS_REF])
+        if r.returncode != 0:
+            die("no encuentro la versión fijada de WinApps: " + r.stderr.strip()[:200])
+
+
+def crlf(src, dst):
+    data = src.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
+    # Windows PowerShell 5.1 reads a .ps1 without BOM as ANSI: accents and «·» arrive broken
+    if dst.suffix.lower() == ".ps1" and not data.startswith(b"\xef\xbb\xbf"):
+        data = b"\xef\xbb\xbf" + data
+    dst.write_bytes(data)
+
+
+def build_oem():
+    """/oem = WinApps' oem/ (its install.bat renamed) + OcarinaShell's install.bat and fune.ps1, CRLF."""
+    OEM.mkdir(parents=True, exist_ok=True)
+    src = WINAPPS / "oem"
+    for f in src.iterdir():
+        if f.is_file():
+            crlf(f, OEM / ("winapps-install.bat" if f.name == "install.bat" else f.name))
+    for f in (REPO / "assets/fune/oem").iterdir():
+        if f.is_file():
+            crlf(f, OEM / f.name)
+
+
+def password():
+    r = run(SECRET, timeout=10)
+    if r.returncode != 0 or not r.stdout:
+        die("no encuentro la contraseña de Windows en el llavero (secret-tool, service ocarinashell-fune)")
+    return r.stdout
+
+
+def cmd_create(_):
+    if state() != "missing":
+        die("el contenedor de Windows ya existe (ocarina fune status)")
+    for need in ("podman", "podman-compose", "xfreerdp3", "secret-tool"):
+        if not have(need):
+            die(f"falta {need}")
+    if not os.access("/dev/kvm", os.R_OK | os.W_OK):
+        die("no tengo acceso a /dev/kvm (¿SVM activo en la BIOS?)")
+    if not COMPOSE.is_file():
+        die(f"falta {COMPOSE} (scripts/install.sh)")
+    free = shutil.disk_usage(FUNE.parent).free // 2**30
+    if free < 140:
+        die(f"hacen falta ~140 GB libres y hay {free} GB")
+    STORAGE.mkdir(parents=True, exist_ok=True)
+    ensure_winapps()
+    build_oem()
+    compose_up()
+    log("created")
+    print("Windows se está instalando (20–40 min, sin intervención).\n"
+          "Progreso: http://127.0.0.1:8006 · al terminar: ocarina fune scan")
+
+
+IMAGE_STATE = STATE / "fune/image"           # the dockur image `update` moved to (else compose.yaml's pin)
+
+
+def compose_up():
+    """Create the container (and start it). The disk in /storage is never touched: dockur boots what it finds."""
+    env = dict(os.environ, FUNE_PASSWORD=password())
+    if IMAGE_STATE.is_file():
+        env["FUNE_IMAGE"] = IMAGE_STATE.read_text().strip()
+    # podman-compose ignores stop_grace_period: the 2 min for Windows' ACPI shutdown go in here
+    r = subprocess.run(["podman-compose", "--file", str(COMPOSE), "--podman-run-args=--stop-timeout=120", "up", "-d"],
+                       env=env, capture_output=True, text=True, timeout=1800)
+    if r.returncode != 0:
+        die("podman-compose falló: " + (r.stderr or r.stdout).strip()[-400:])
+
+
+# ── niri rules ──────────────────────────────────────────────────────────────────────────────
+def theme_asagi():
+    try:
+        c = json.loads((STATE / "theme.json").read_text(encoding="utf-8"))["tokens"].get("focusWindows") or ASAGI
+    except (OSError, ValueError, KeyError, TypeError):
+        c = ASAGI
+    return c if re.fullmatch(r"#[0-9a-fA-F]{6}", c) else ASAGI
+
+
+def lighter(hex_colour, t=0.3):
+    rgb = [int(hex_colour[i:i + 2], 16) for i in (1, 3, 5)]
+    return "#" + "".join(f"{round(c + (255 - c) * t):02x}" for c in rgb)
+
+
+def kdl_re(s):
+    return s.replace("#", "\\#")
+
+
+def cmd_rules(args):
+    """fune-rules.kdl: Windows apps (RemoteApp fune-*, and the Wine apps) get the asagi ring instead of the red one."""
+    c = theme_asagi()
+    wine_ids = [a["wmClass"] for a in wine_apps() if re.fullmatch(r"[A-Za-z0-9._+-]{1,80}", a.get("wmClass", ""))]
+    matches = ['    match app-id=r#"^fune-"#'] + [f'    match app-id=r#"^{re.escape(w)}$"#' for w in sorted(set(wine_ids))]
+    text = "\n".join([
+        "// GENERATED — owner: 船 Fune (bin/ocarina-fune rules). Windows apps: asagi focus ring (docs/02-DISENO §1),",
+        "// so what comes from Windows reads as such at a glance. RemoteApp windows: app-id fune-<app> (FreeRDP /wm-class).",
+        "window-rule {",
+        *matches,
+        "    focus-ring {",
+        f'        active-gradient from="{c}" to="{lighter(c, 0.32)}" angle=135',
+        f'        active-color "{c}"',
+        "    }",
+        "}",
+        # FreeRDP maps some of the session's invisible helper windows (the «RemoteApp Marker Window», untitled
+        # dialogs) as real toplevels. Opacity is a live rule: untitled = invisible, so a real window shows the moment
+        # Windows names it; the shell's Fune service floats the ones that stay untitled out of the way.
+        "window-rule {",
+        '    match app-id=r#"^fune-"# title=r#"^(|RemoteApp Marker Window)$"#',
+        "    exclude app-id=r#\"^fune-(desktop|web-)\"#",
+        "    opacity 0.0",
+        "    focus-ring { off; }",
+        "    border { off; }",
+        "    shadow { off; }",
+        "}",
+        # Windows apps open full width (Ayoub, 2026-10-17). niri cannot resize a RemoteApp window — Windows answers
+        # with its own size — so Windows opens them maximized in a desktop exactly this size and Win+F
+        # (bin/ocarina maximize) changes both sides at once
+        "window-rule {",
+        '    match app-id="^fune-windows$"',
+        "    default-column-width { proportion 1.0; }",
+        "}",
+        # the full desktop is one big window: give it the whole column
+        "window-rule {",
+        '    match app-id="^fune-desktop$"',
+        "    default-column-width { proportion 1.0; }",
+        "}",
+    ]) + "\n"
+    r = subprocess.run([str(BIN / "ocarina-niri-gen"), "apply", "fune-rules"], input=text, text=True,
+                       capture_output=True)
+    if r.returncode != 0:
+        die("niri rechazó fune-rules.kdl: " + r.stderr.strip())
+    if "--quiet" not in args:
+        print(f"fune-rules.kdl · anillo {c} · {len(matches)} patrón(es)")
+
+
+# ── apps (level 2: RemoteApp) ───────────────────────────────────────────────────────────────
+INFO_RE = re.compile(r'^([A-Z_]+)="(.*)"\s*$')
+DETECT_RE = re.compile(r'^(NAMES|EXES|ICONS)\+=\("(.*)"\)\s*$')
+# what a fresh Windows lists that nobody wants as a Linux launcher
+NOISE = re.compile(r"(?i)\\(msedge|msedge_proxy|iexplore|wmplayer|setup|unins\w*|update|wordpad|mip|"
+                   r"microsoft\.windows\.\w+|cmdextension|osk|fsquirt|sdclt|table30|pbrush|install\w*)\.exe$")
+
+
+# A fresh Windows lists ~50 programs (Xbox, widgets, stubs…). By default only what a person opens by name reaches
+# Torii: every program installed by Ayoub (not a [UWP] system app), the official WinApps apps that make sense, and
+# these system apps, with Spanish names. `scan --all` registers everything.
+SYSTEM_KEEP = {
+    "explorer": "Explorador de archivos", "cmd": "Símbolo del sistema", "powershell": "PowerShell",
+    "notepad": "Bloc de notas", "mspaint": "Paint", "snippingtool": "Recortes",
+    "windowsterminal": "Terminal de Windows",
+}
+OFFICIAL_SKIP = {"iexplorer", "powershell-ide"}
+DETECTED_SKIP = {"iediagcmd", "licensemanagershellext", "wab", "wabmig", "tabtip"}
+
+
+def winapps_info(path):
+    d = {}
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        m = INFO_RE.match(line)
+        if m:
+            d[m.group(1)] = m.group(2)
+    return d
+
+
+def load_app(aid):
+    try:
+        return json.loads((APPS / aid / "app.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def all_apps():
+    res = []
+    if APPS.is_dir():
+        for d in sorted(APPS.iterdir()):
+            a = load_app(d.name)
+            if a:
+                res.append(a)
+    return res
+
+
+def desktop_entry(aid, meta):
+    mime = ";".join(m for m in meta.get("mime", []) if m) + (";" if meta.get("mime") else "")
+    cats = ";".join(["X-Fune"] + [c for c in meta.get("categories", []) if c and c != "WinApps"]) + ";"
+    lines = [
+        "[Desktop Entry]", "Type=Application", f"Name={meta['name']}",
+        f"GenericName={meta.get('fullName') or meta['name']} · Windows",
+        "Comment=App de Windows · 船 Fune (se abre como una ventana más)",
+        f"Exec={BIN / 'ocarina-fune'} app {aid} %F", f"Icon={meta.get('icon') or 'computer'}",
+        f"Categories={cats}", f"StartupWMClass={APP_CLASS}", "Keywords=windows;fune;", "StartupNotify=false",
+        f"X-OcarinaShell-Fune={aid}",
+    ]
+    if mime:
+        lines.append(f"MimeType={mime}")
+    APPLICATIONS.mkdir(parents=True, exist_ok=True)
+    (APPLICATIONS / f"fune-{aid}.desktop").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def desktop_session_entry():
+    APPLICATIONS.mkdir(parents=True, exist_ok=True)
+    icon = WINAPPS / "install/windows.svg"
+    # every app window has app-id fune-windows (one shared connection): a hidden entry gives it a name and an icon
+    (APPLICATIONS / f"{APP_CLASS}.desktop").write_text("\n".join([
+        "[Desktop Entry]", "Type=Application", "Name=Windows", "Comment=Apps de Windows · 船 Fune",
+        f"Exec={BIN / 'ocarina-fune'} desktop", f"Icon={icon if icon.is_file() else 'computer'}", "NoDisplay=true",
+        f"StartupWMClass={APP_CLASS}",
+    ]) + "\n", encoding="utf-8")
+    (APPLICATIONS / "fune-desktop.desktop").write_text("\n".join([
+        "[Desktop Entry]", "Type=Application", "Name=Escritorio de Windows", "GenericName=Windows · 船 Fune",
+        "Comment=El escritorio completo de la máquina virtual en una ventana",
+        f"Exec={BIN / 'ocarina-fune'} desktop", f"Icon={icon if icon.is_file() else 'computer'}",
+        "Categories=X-Fune;System;", "StartupWMClass=fune-desktop", "Keywords=windows;fune;vm;escritorio;",
+        "X-OcarinaShell-Fune=desktop",
+    ]) + "\n", encoding="utf-8")
+
+
+def save_app(aid, meta):
+    (APPS / aid).mkdir(parents=True, exist_ok=True)
+    (APPS / aid / "app.json").write_text(json.dumps(meta, ensure_ascii=False, indent=1), encoding="utf-8")
+    desktop_entry(aid, meta)
+
+
+def cmd_scan(args):
+    """Ask Windows what is installed (WinApps' list of known apps + ExtractPrograms.ps1) over a hidden RemoteApp."""
+    ensure_winapps()
+    up()
+    scan = FUNE / "scan"
+    shutil.rmtree(scan, ignore_errors=True)
+    scan.mkdir(parents=True)
+    wscan = win_path(scan)
+    shutil.copy(WINAPPS / "install/ExtractPrograms.ps1", scan / "ExtractPrograms.ps1")
+    known = {}
+    bat = ["@echo off", f'type nul > "{wscan}\\installed.tmp"']
+    for d in sorted((WINAPPS / "apps").iterdir()):
+        info = d / "info"
+        if not info.is_file():
+            continue
+        i = winapps_info(info)
+        if i.get("WIN_EXECUTABLE"):
+            known[d.name] = i
+            bat.append(f'IF EXIST "{i["WIN_EXECUTABLE"]}" ECHO {d.name}^|^|^|{i["WIN_EXECUTABLE"]}'
+                       f' >> "{wscan}\\installed.tmp"')
+    # guest fixes that must hold even on a Windows installed before they existed (idempotent): the power button
+    # shuts down (dockur's ACPI shutdown at logout/poweroff), and OcarinaShell's first-logon log for `ocarina doctor`
+    bat += ["powercfg /setacvalueindex SCHEME_CURRENT SUB_BUTTONS PBUTTONACTION 3",
+            "powercfg /setdcvalueindex SCHEME_CURRENT SUB_BUTTONS PBUTTONACTION 3",
+            "powercfg /setactive SCHEME_CURRENT",
+            f'IF EXIST C:\\OEM\\fune.log copy /y C:\\OEM\\fune.log "{wscan}\\oem-fune.log" >nul',
+            # WinApps' TimeSync logon task polls a marker we never write, and under Windows Terminal its «hidden»
+            # PowerShell shows up as a RemoteApp window at every logon: remove it (and stop the running one); the
+            # classic console host keeps any other -WindowStyle Hidden really hidden
+            "schtasks /delete /tn TimeSync /f >nul 2>&1",
+            'powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like \'*TimeSync.ps1*\' } | Invoke-CimMethod -MethodName Terminate | Out-Null"',
+            'reg add "HKCU\\Console\\%%%%Startup" /v DelegationConsole /t REG_SZ /d {B23D10C0-E52E-411E-9D5B-C09FDF709C7D} /f >nul',
+            'reg add "HKCU\\Console\\%%%%Startup" /v DelegationTerminal /t REG_SZ /d {B23D10C0-E52E-411E-9D5B-C09FDF709C7D} /f >nul']
+    # the Fune agent (one connection for every app): installed or updated, started now, and at every logon
+    tok = run(AGENT_SECRET, timeout=10).stdout.strip()
+    if tok:
+        shutil.copy(REPO / "assets/fune/agent.ps1", scan / "agent.ps1")
+        shutil.copy(REPO / "assets/fune/launch.ps1", scan / "launch.ps1")
+        crlf(REPO / "assets/fune/launch.vbs", scan / "launch.vbs")
+        fd = os.open(scan / "token", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w") as h:
+            h.write(tok)
+        agent = r"C:\ProgramData\Fune\agent.ps1"
+        bat += [r'IF NOT EXIST "%ProgramData%\Fune" mkdir "%ProgramData%\Fune"',
+                f'copy /y "{wscan}\\agent.ps1" "{agent}" >nul',
+                f'copy /y "{wscan}\\launch.ps1" "%ProgramData%\\Fune\\launch.ps1" >nul',
+                f'copy /y "{wscan}\\launch.vbs" "%ProgramData%\\Fune\\launch.vbs" >nul',
+                f'copy /y "{wscan}\\token" "%ProgramData%\\Fune\\token" >nul',
+                r'icacls "%ProgramData%\Fune\token" /inheritance:r /grant:r *S-1-5-32-544:F "%USERNAME%":R >nul',
+                "netsh advfirewall firewall delete rule name=FuneAgent >nul 2>&1",
+                "netsh advfirewall firewall add rule name=FuneAgent dir=in action=allow protocol=TCP localport=7148 >nul",
+                # no logon task (it would run outside the RemoteApp session): each connection's first program,
+                # launch.ps1, becomes the agent of its session
+                "schtasks /delete /tn FuneAgent /f >nul 2>&1"]
+    via_agent = rdp_connected() and agent_call({"ping": True}) == "ok"
+    bat += [f'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "{wscan}\\ExtractPrograms.ps1"'
+            f' > "{wscan}\\detected"',
+            f'RENAME "{wscan}\\installed.tmp" installed']
+    if not via_agent:
+        bat.append("tsdiscon")                    # our own short connection: hang up when done
+    (scan / "scan.bat").write_bytes(("\r\n".join(bat) + "\r\n").encode("utf-8"))
+    print("Preguntando a Windows qué apps tiene… (≤ 90 s)")
+    p = None
+    if via_agent:                                 # inside the open session: no second connection
+        agent_call({"program": "C:\\Windows\\System32\\cmd.exe", "args": f"/C {wscan}\\scan.bat"})
+    else:
+        cmd = rdp_command(["/app:program:C:\\Windows\\System32\\cmd.exe,"
+                           + sub("cmd", f"/C {wscan}\\scan.bat"), "/wm-class:fune-scan"])
+        p = subprocess.Popen(cmd, env=rdp_env(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    t0 = time.monotonic()
+    while time.monotonic() - t0 < 90 and (p is None or p.poll() is None) and not (scan / "installed").exists():
+        time.sleep(1)
+    time.sleep(1)
+    (scan / "token").unlink(missing_ok=True)
+    if tok and (scan / "installed").exists():
+        (STATE / "fune").mkdir(parents=True, exist_ok=True)
+        (STATE / "fune/agent").touch()
+    if p is not None and p.poll() is None:
+        p.terminate()                             # FreeRDP may sit on SIGTERM while it waits for the server
+        try:
+            p.wait(3)
+        except subprocess.TimeoutExpired:
+            p.kill()
+    if not (scan / "installed").exists():
+        die("Windows no contestó al escaneo (¿primer inicio aún en curso?)")
+
+    found = 0
+    everything = "--all" in args
+    skip_existing = "--keep" in args
+    if not skip_existing:                         # a fresh list: apps uninstalled in Windows go away too
+        for d in APPS.glob("*/app.json"):
+            cmd_forget([d.parent.name], quiet=True)
+    APPS.mkdir(parents=True, exist_ok=True)
+    official_exes = set()
+    for line in (scan / "installed").read_text(encoding="utf-8", errors="replace").splitlines():
+        aid, _, exe = line.strip().partition("|||")
+        aid = aid.strip()
+        if aid not in known or not ID_RE.match(aid):
+            continue
+        i = known[aid]
+        official_exes.add(i["WIN_EXECUTABLE"].lower().rsplit("\\", 1)[-1])
+        if aid in OFFICIAL_SKIP and not everything:
+            continue
+        icon = WINAPPS / "apps" / aid / "icon.svg"
+        dst = APPS / aid
+        dst.mkdir(parents=True, exist_ok=True)
+        if icon.is_file():
+            shutil.copy(icon, dst / "icon.svg")
+        save_app(aid, {"id": aid, "name": SYSTEM_KEEP.get(aid) or i.get("NAME") or aid, "fullName": i.get("FULL_NAME", ""),
+                       "exe": i["WIN_EXECUTABLE"], "mime": [m for m in i.get("MIME_TYPES", "").split(";") if m],
+                       "categories": [c for c in i.get("CATEGORIES", "").split(";") if c],
+                       "icon": str(dst / "icon.svg") if icon.is_file() else "", "official": True})
+        found += 1
+
+    names, exes, icons = [], [], []
+    det = (scan / "detected").read_bytes().decode("utf-8", errors="replace") if (scan / "detected").exists() else ""
+    if det.startswith("\ufeff"):
+        det = det[1:]
+    for line in det.replace("\r", "").splitlines():
+        m = DETECT_RE.match(line)
+        if m:
+            {"NAMES": names, "EXES": exes, "ICONS": icons}[m.group(1)].append(m.group(2))
+    for name, exe, ico in zip(names, exes, icons):
+        base = exe.rsplit("\\", 1)[-1]
+        if base.lower() in official_exes or NOISE.search(exe):
+            continue
+        aid = re.sub(r"[^A-Za-z0-9._-]", "", base.rsplit(".", 1)[0].split()[0]).lower()[:40]
+        if not aid or not ID_RE.match(aid) or (skip_existing and load_app(aid)):
+            continue
+        uwp = "[UWP]" in name
+        if not everything and (aid in DETECTED_SKIP or (uwp and aid not in SYSTEM_KEEP)):
+            continue
+        name = SYSTEM_KEEP.get(aid) or re.sub(r"(\.exe)?\s*\[UWP\]$", "", name, flags=re.I).strip() or aid
+        dst = APPS / aid
+        dst.mkdir(parents=True, exist_ok=True)
+        icon = ""
+        try:
+            (dst / "icon.png").write_bytes(base64.b64decode(ico))
+            icon = str(dst / "icon.png")
+        except (ValueError, OSError):
+            pass
+        save_app(aid, {"id": aid, "name": name, "fullName": name, "exe": exe, "mime": [], "categories": [],
+                       "icon": icon, "official": False})
+        found += 1
+    desktop_session_entry()
+    (STATE / "fune").mkdir(parents=True, exist_ok=True)
+    (STATE / "fune/installed").touch()
+    if have("update-desktop-database"):
+        run(["update-desktop-database", str(APPLICATIONS)], timeout=30)
+    cmd_rules(["--quiet"])
+    shell_ipc("refresh")
+    print(f"{found} app(s) de Windows listas en Torii (ocarina fune apps)")
+
+
+def cmd_apps(args):
+    apps = [{"id": a["id"], "name": a["name"], "icon": a.get("icon", ""), "exe": a.get("exe", ""),
+             "official": a.get("official", False), "mime": len(a.get("mime", []))} for a in all_apps()]
+    if "--json" in args:
+        print(json.dumps({"apps": apps, "web": len(web_apps()), "wine": len(wine_apps())}, ensure_ascii=False))
+        return
+    for a in apps:
+        print(f"{a['id']:<22} {a['name']:<30} {a['exe']}")
+
+
+def cmd_forget(args, quiet=False):
+    """Remove an app from Torii (the program stays installed in Windows)."""
+    if not args or not ID_RE.match(args[0]):
+        die("uso: ocarina fune forget <id>")
+    aid = args[0]
+    (APPLICATIONS / f"fune-{aid}.desktop").unlink(missing_ok=True)
+    if (APPS / aid).is_dir() and (APPS / aid).resolve().parent == APPS.resolve():
+        shutil.rmtree(APPS / aid)
+    if not quiet:
+        shell_ipc("refresh")
+        print(f"{aid}: quitada de Torii")
+
+
+# ── level 0: web apps ───────────────────────────────────────────────────────────────────────
+WEB = FUNE.parent / "fune-web"                    # icons (outside the VM subvolume)
+
+
+def slug(s):
+    s = re.sub(r"[^a-z0-9]+", "-", s.lower().translate(str.maketrans("áéíóúñü", "aeiounu"))).strip("-")
+    return s[:40] or "web"
+
+
+def best_icon(url):
+    """The site's own largest icon (manifest, apple-touch-icon, rel=icon): no third-party favicon service."""
+    import urllib.parse
+    import urllib.request
+    ua = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) OcarinaShell-Fune"}
+
+    def get(u, limit=2_000_000):
+        with urllib.request.urlopen(urllib.request.Request(u, headers=ua), timeout=8) as r:
+            return r.geturl(), r.read(limit)
+
+    try:
+        final, html = get(url)
+    except (OSError, ValueError):
+        return None
+    page = html.decode("utf-8", errors="replace")
+    cands = []
+    for tag in re.findall(r"<link\b[^>]*>", page, re.I):
+        rel = (re.search(r'rel=["\']([^"\']+)', tag, re.I) or [None, ""])[1].lower()
+        href = (re.search(r'href=["\']([^"\']+)', tag, re.I) or [None, ""])[1]
+        if not href:
+            continue
+        if "manifest" in rel:
+            try:
+                murl = urllib.parse.urljoin(final, href)
+                _, m = get(murl)
+                for ic in json.loads(m).get("icons", []):
+                    size = max((int(x.split("x")[0]) for x in str(ic.get("sizes", "0x0")).split() if "x" in x),
+                               default=0)
+                    if str(ic.get("src", "")).lower().endswith((".png", ".webp")) or "png" in str(ic.get("type")):
+                        cands.append((size, urllib.parse.urljoin(murl, ic["src"])))
+            except (OSError, ValueError, KeyError, TypeError):
+                pass
+        elif "apple-touch-icon" in rel:
+            cands.append((180, urllib.parse.urljoin(final, href)))
+        elif "icon" in rel and href.lower().split("?")[0].endswith((".png", ".ico")):
+            size = re.search(r'sizes=["\'](\d+)x', tag, re.I)
+            cands.append((int(size.group(1)) if size else 32, urllib.parse.urljoin(final, href)))
+    root = urllib.parse.urljoin(final, "/")
+    cands += [(179, root + "apple-touch-icon.png"), (16, root + "favicon.ico")]
+    for _, u in sorted(cands, key=lambda c: -c[0]):
+        try:
+            _, data = get(u)
+        except (OSError, ValueError):
+            continue
+        png = data if data[:8] == PNG_SIG else ico_png(data)
+        if png:
+            return png
+    return None
+
+
+PNG_SIG = b"\x89PNG\r\n\x1a\n"
+
+
+def ico_png(data):
+    """The largest PNG embedded in an .ico (Vista+ icons keep the 256 px image as PNG); BMP-only icons → None."""
+    if len(data) < 6 or data[:4] != b"\x00\x00\x01\x00":
+        return None
+    best = None
+    for i in range(int.from_bytes(data[4:6], "little")):
+        e = data[6 + 16 * i: 22 + 16 * i]
+        if len(e) < 16:
+            break
+        w = e[0] or 256
+        size, off = int.from_bytes(e[8:12], "little"), int.from_bytes(e[12:16], "little")
+        img = data[off:off + size]
+        if img[:8] == PNG_SIG and (best is None or w > best[0]):
+            best = (w, img)
+    return best[1] if best and best[0] >= 48 else None
+
+
+def cmd_webapp(args):
+    if len(args) < 2 or not re.match(r"^https?://", args[1]):
+        die("uso: ocarina fune webapp <nombre> <https://url> [icono.png]")
+    name, url = args[0], args[1]
+    sid = slug(name)
+    WEB.mkdir(parents=True, exist_ok=True)
+    icon = "web-browser"
+    if len(args) > 2 and Path(args[2]).is_file():
+        shutil.copy(args[2], WEB / f"{sid}.png")
+        icon = str(WEB / f"{sid}.png")
+    else:
+        data = best_icon(url)
+        if data:
+            (WEB / f"{sid}.png").write_bytes(data)
+            icon = str(WEB / f"{sid}.png")
+    chrome = shutil.which("google-chrome-stable") or shutil.which("chromium") or "google-chrome-stable"
+    # Chrome names an --app window's Wayland app-id after the URL; --class keeps it ours (and the .desktop's)
+    wm = f"fune-web-{sid}"
+    APPLICATIONS.mkdir(parents=True, exist_ok=True)
+    (APPLICATIONS / f"fune-web-{sid}.desktop").write_text("\n".join([
+        "[Desktop Entry]", "Type=Application", f"Name={name}", "GenericName=App web · 船 Fune",
+        f"Comment={url}", f'Exec={chrome} --app={url} --class={wm} --name={wm}', f"Icon={icon}",
+        "Categories=X-Fune-Web;Network;", f"StartupWMClass={wm}", "StartupNotify=true",
+        f"X-OcarinaShell-Fune-Web={url}",
+    ]) + "\n", encoding="utf-8")
+    shell_ipc("refresh")
+    print(f"{name}: lista en Torii (fune-web-{sid}.desktop){'' if icon != 'web-browser' else ' · sin icono propio'}")
+
+
+def web_apps():
+    res = []
+    for f in sorted(APPLICATIONS.glob("fune-web-*.desktop")):
+        d = dict(line.split("=", 1) for line in f.read_text(encoding="utf-8").splitlines() if "=" in line)
+        res.append({"id": f.stem, "name": d.get("Name", f.stem), "url": d.get("X-OcarinaShell-Fune-Web", ""),
+                    "icon": d.get("Icon", "")})
+    return res
+
+
+# ── level 1: Wine / Proton ──────────────────────────────────────────────────────────────────
+WINE = FUNE.parent / "wine"                       # one prefix per app: wine/<id>/pfx
+PROTON = Path("/usr/share/steam/compatibilitytools.d/proton-cachyos-slr")
+
+
+def wine_env(wid):
+    env = dict(os.environ)
+    # GAMEID names the window: Proton sets WM_CLASS steam_app_<id> (one per app → its own icon and the asagi ring)
+    env.update({"WINEPREFIX": str(WINE / wid / "pfx"), "GAMEID": f"umu-fune{re.sub(r'[^A-Za-z0-9]', '', wid)}", "STORE": "none",
+                "PROTON_VERB": "run", "PROTONPATH": str(PROTON) if PROTON.is_dir() else "GE-Proton",
+                "PROTON_USE_NTSYNC": "1", "WINEDEBUG": "-all", "UMU_LOG": "0"})
+    return env
+
+
+def wine_apps():
+    res = []
+    if WINE.is_dir():
+        for d in sorted(WINE.iterdir()):
+            try:
+                res.append(json.loads((d / "app.json").read_text(encoding="utf-8")))
+            except (OSError, ValueError):
+                pass
+    return res
+
+
+def wine_unix(wid, winpath):
+    """C:\\Program Files\\X\\x.exe inside the prefix → its Unix path."""
+    m = re.match(r"^([A-Za-z]):\\(.*)$", winpath)
+    if not m:
+        return Path(winpath)
+    return WINE / wid / "pfx" / f"drive_{m.group(1).lower()}" / m.group(2).replace("\\", "/")
+
+
+def exe_icon(exe, dest):
+    """The program's own icon (its first icon group, largest image) → dest/icon.png. Needs icoutils."""
+    if not (have("wrestool") and have("icotool")):
+        return None
+    first = re.search(r"--name=(\S+)", run(["wrestool", "-l", "-t", "14", str(exe)], timeout=20).stdout)
+    if not first:
+        return None
+    ico = subprocess.run(["wrestool", "-x", "-t", "14", "-n", first.group(1).strip("'"), str(exe)],
+                         capture_output=True, timeout=20).stdout
+    if not ico:
+        return None
+    (dest / "icon.ico").write_bytes(ico)
+    sizes = re.findall(r"--index=(\d+) --width=(\d+)", run(["icotool", "-l", str(dest / "icon.ico")], timeout=20).stdout)
+    if not sizes:
+        return None
+    idx = max(sizes, key=lambda t: int(t[1]))[0]
+    out = dest / "icon.png"
+    run(["icotool", "-x", "-i", idx, "-o", str(out), str(dest / "icon.ico")], timeout=20)
+    return str(out) if out.is_file() else None
+
+
+def wine_dpi(wid):
+    """Wine draws at 96 ppp: give the prefix the output's scale (1,75 → 168 ppp), or its UI is tiny on this panel."""
+    dpi = round(96 * output_scale() / 100)
+    r = run(["umu-run", "reg", "add", r"HKCU\Control Panel\Desktop", "/v", "LogPixels", "/t", "REG_DWORD",
+             "/d", str(dpi), "/f"], timeout=180, env=wine_env(wid))
+    log(f"wine {wid}: LogPixels {dpi} → {r.returncode}")
+
+
+def cmd_wine(args):
+    sub = args[0] if args else "help"
+    if sub == "install":                          # wine install <id> <setup.exe|.msi>
+        if len(args) < 3 or not ID_RE.match(args[1]) or not Path(args[2]).is_file():
+            die("uso: ocarina fune wine install <id> <instalador.exe|.msi>")
+        wid = args[1]
+        (WINE / wid).mkdir(parents=True, exist_ok=True)
+        print(f"Instalando en el prefijo {WINE / wid / 'pfx'} (el instalador se abre como una ventana)…")
+        r = subprocess.run(["umu-run", str(Path(args[2]).resolve())], env=wine_env(wid))
+        print("Hecho. Ahora: ocarina fune wine add", wid, '"C:\\\\Program Files\\\\…\\\\app.exe" "Nombre"')
+        sys.exit(r.returncode)
+    if sub == "add":                              # wine add <id> <C:\path\app.exe|/unix/app.exe> <name> [mime;…]
+        if len(args) < 4 or not ID_RE.match(args[1]):
+            die('uso: ocarina fune wine add <id> <"C:\\ruta\\app.exe"|/ruta/app.exe> <nombre> [tipos-mime]')
+        wid, exe, name = args[1], args[2], args[3]
+        unix = wine_unix(wid, exe) if re.match(r"^[A-Za-z]:\\", exe) else Path(exe).resolve()
+        if not unix.is_file():
+            die(f"no existe {unix}")
+        (WINE / wid).mkdir(parents=True, exist_ok=True)
+        meta = {"id": wid, "name": name, "exe": str(unix), "wmClass": f"steam_app_fune{re.sub(r'[^A-Za-z0-9]', '', wid)}",
+                "mime": [m for m in (args[4] if len(args) > 4 else "").split(";") if m]}
+        (WINE / wid / "app.json").write_text(json.dumps(meta, ensure_ascii=False, indent=1), encoding="utf-8")
+        icon = exe_icon(unix, WINE / wid) or "wine"
+        wine_dpi(wid)
+        mime = ";".join(meta["mime"]) + (";" if meta["mime"] else "")
+        APPLICATIONS.mkdir(parents=True, exist_ok=True)
+        (APPLICATIONS / f"fune-wine-{wid}.desktop").write_text("\n".join([
+            "[Desktop Entry]", "Type=Application", f"Name={name}", "GenericName=Windows (Wine) · 船 Fune",
+            "Comment=App de Windows sin máquina virtual (Wine/Proton)",
+            f"Exec={BIN / 'ocarina-fune'} wine run {wid} %F", f"Icon={icon}", "Categories=X-Fune;X-Fune-Wine;",
+            f"StartupWMClass={meta['wmClass']}", "StartupNotify=false", f"X-OcarinaShell-Fune-Wine={wid}",
+        ] + ([f"MimeType={mime}"] if mime else [])) + "\n", encoding="utf-8")
+        cmd_rules(["--quiet"])
+        shell_ipc("refresh")
+        print(f"{name}: lista en Torii (Wine/Proton, prefijo {wid})")
+        return
+    if sub == "run":                              # wine run <id> [file…]
+        if len(args) < 2 or not ID_RE.match(args[1]):
+            die("uso: ocarina fune wine run <id> [archivo…]")
+        wid = args[1]
+        try:
+            meta = json.loads((WINE / wid / "app.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            die(f"no conozco la app de Wine «{wid}» (ocarina fune wine list)")
+        files = ["Z:" + str(Path(f).resolve()).replace("/", "\\") for f in args[2:]]
+        log(f"wine {wid}")
+        os.execvpe("umu-run", ["umu-run", meta["exe"], *files], wine_env(wid))
+    if sub == "list":
+        for a in wine_apps():
+            print(f"{a['id']:<20} {a['name']:<28} {a['exe']}")
+        return
+    if sub == "remove":
+        if len(args) < 2 or not ID_RE.match(args[1]):
+            die("uso: ocarina fune wine remove <id>")
+        (APPLICATIONS / f"fune-wine-{args[1]}.desktop").unlink(missing_ok=True)
+        (WINE / args[1] / "app.json").unlink(missing_ok=True)
+        cmd_rules(["--quiet"])
+        shell_ipc("refresh")
+        print(f"{args[1]}: quitada de Torii · el prefijo sigue en {WINE / args[1]} (bórralo a mano si quieres)")
+        return
+    print("ocarina fune wine install <id> <instalador> · add <id> <exe> <nombre> [mime] · run <id> [archivo…] · "
+          "list · remove <id>")
+
+
+# ── Mamori (fase 16) ────────────────────────────────────────────────────────────────────────
+def idle_or_die(what):
+    st = state()
+    if st == "running" and windows_apps_open() > 0:
+        die(f"hay apps de Windows abiertas: {what} espera a que las cierres")
+    return st
+
+
+def cmd_update(args):
+    """Newest dockur image and WinApps data, with the VM off. The Windows disk is kept: dockur boots it as it is."""
+    st = idle_or_die("la actualización")
+    r = run(["podman", "search", "--list-tags", "--limit", "500", "docker.io/dockurr/windows"], timeout=60)
+    tags = sorted((t for t in re.findall(r"\s(\d+\.\d+)\s*$", r.stdout, re.M)), key=lambda v: tuple(map(int, v.split("."))))
+    current = (IMAGE_STATE.read_text().strip() if IMAGE_STATE.is_file()
+               else re.search(r"image:.*?(docker\.io/dockurr/windows:[\d.]+)", COMPOSE.read_text()).group(1))
+    newest = f"docker.io/dockurr/windows:{tags[-1]}" if tags else current
+    run(["git", "-C", str(WINAPPS), "fetch", "--quiet", "origin"], timeout=300)
+    if newest == current and "--force" not in args:
+        print(f"dockur al día ({current})")
+        return
+    if not podman("pull", "-q", newest, timeout=1800):
+        die(f"no se pudo descargar {newest}")
+    if st not in ("missing", "exited", "created", "stopped"):
+        cmd_stop([])
+    if st != "missing":
+        podman("rm", CONTAINER, timeout=60)        # the container only: /storage is a bind mount and stays
+    IMAGE_STATE.parent.mkdir(parents=True, exist_ok=True)
+    IMAGE_STATE.write_text(newest + "\n")
+    compose_up()
+    if st in ("missing", "exited", "created", "stopped"):
+        cmd_stop([])                              # it was off: leave it off
+    log(f"updated {current} → {newest}")
+    print(f"dockur {current} → {newest} · el disco de Windows se conserva")
+
+
+def on_ac():
+    for p in Path("/sys/class/power_supply").glob("*/online"):
+        try:
+            if p.read_text().strip() == "1":
+                return True
+        except OSError:
+            pass
+    return False
+
+
+def cmd_maintenance(args):
+    """An hour with Windows on and idle, on AC: Windows Update and its own maintenance run; then off again."""
+    minutes = int(args[0]) if args and args[0].isdigit() else 60
+    if not on_ac():
+        die("el mantenimiento de Windows solo se hace con el cargador")
+    st = state()
+    if st == "missing":
+        die("Windows no está instalado")
+    was_off = st in ("exited", "created", "stopped")
+    RUNTIME.mkdir(parents=True, exist_ok=True)
+    HOLD.touch()
+    try:
+        maintain(minutes, was_off, "--stop" in args)
+    finally:
+        HOLD.unlink(missing_ok=True)
+
+
+def maintain(minutes, was_off, stop_after):
+    up(quiet=True)
+    log(f"maintenance {minutes} min")
+    end = time.monotonic() + minutes * 60
+    while time.monotonic() < end:
+        if not on_ac():
+            log("maintenance: unplugged, ending early")
+            break
+        time.sleep(30)
+    if windows_apps_open() > 0:
+        print("Mantenimiento hecho · hay apps abiertas: Windows sigue encendida")
+        return
+    if was_off or stop_after:
+        cmd_stop([])
+    else:
+        cmd_pause([])
+
+
+def cmd_backup(args):
+    """A sparse copy of the Windows disk, with the VM off (cp --sparse=always: only the used blocks)."""
+    st = state()
+    if st not in ("missing", "exited", "created", "stopped"):
+        die("apaga Windows antes de copiar su disco (ocarina fune stop)")
+    dest_root = Path(args[0]).expanduser() if args else FUNE.parent / "fune-backups"
+    dest = dest_root / datetime.now().strftime("fune-%Y%m%d-%H%M")
+    files = [f for f in STORAGE.iterdir() if f.is_file()] if STORAGE.is_dir() else []
+    if not files:
+        die("no hay disco de Windows que copiar")
+    need = sum(f.stat().st_blocks * 512 for f in files)
+    if shutil.disk_usage(dest_root if dest_root.exists() else dest_root.parent).free < need * 1.1:
+        die(f"no cabe la copia ({need // 2**30} GB)")
+    dest.mkdir(parents=True)
+    for f in files:
+        r = run(["cp", "--sparse=always", "--reflink=never", "--preserve=timestamps", str(f), str(dest / f.name)])
+        if r.returncode != 0:
+            die(f"falló la copia de {f.name}: {r.stderr.strip()}")
+    log(f"backup → {dest}")
+    print(f"Copia en {dest} ({need / 2**30:.1f} GB usados)")
+
+
+def cmd_smoke(args):
+    """Fune's smoke test (scripts/smoke-test.sh, `ocarina doctor`): read-only, never starts anything."""
+    bad = 0
+
+    def line(ok, msg, warn=False):
+        nonlocal bad
+        if not ok and not warn:
+            bad += 1
+        print(("ok    " if ok else "aviso " if warn else "FALLO ") + msg)
+
+    for need in ("podman", "podman-compose", "xfreerdp3", "secret-tool"):
+        line(have(need), f"{need} instalado")
+    line(os.access("/dev/kvm", os.R_OK | os.W_OK), "/dev/kvm accesible")
+    line(COMPOSE.is_file(), f"compose en {COMPOSE}")
+    line(run(SECRET, timeout=10).returncode == 0, "contraseña en el llavero")
+    st = state()
+    line(st != "missing", f"contenedor {CONTAINER}: {label(st)}", warn=st == "missing")
+    if st != "missing":
+        r = run(["podman", "port", CONTAINER], timeout=10)
+        outside = [ln for ln in r.stdout.splitlines() if "->" in ln and "127.0.0.1:" not in ln]
+        line(not outside, "puertos solo en 127.0.0.1" + (f" ({outside})" if outside else ""))
+        to = run(["podman", "inspect", "--format", "{{.Config.StopTimeout}}", CONTAINER]).stdout.strip()
+        line(to.isdigit() and int(to) >= 60, f"apagado ACPI con margen ({to} s)")
+    attrs = run(["lsattr", "-d", str(FUNE)]).stdout
+    line("C" in attrs.split()[0] if attrs else False, "disco NOCOW (chattr +C)")
+    broken = [f.name for f in APPLICATIONS.glob("fune-*.desktop")
+              if "ocarina-fune" in f.read_text() and str(BIN / "ocarina-fune") not in f.read_text()]
+    line(not broken, "accesos .desktop apuntan a este repo" + (f" ({broken})" if broken else ""))
+    line(NIRI_RULES.is_file(), "reglas de niri (fune-rules.kdl)", warn=True)
+    sys.exit(1 if bad else 0)
+
+
+COMMANDS = {
+    "status": cmd_status, "create": cmd_create, "start": cmd_start, "up": lambda a: up("--quiet" in a),
+    "pause": cmd_pause, "resume": cmd_resume, "stop": cmd_stop,
+    "app": cmd_app, "run": cmd_run, "desktop": cmd_desktop, "scan": cmd_scan, "apps": cmd_apps,
+    "forget": cmd_forget, "webapp": cmd_webapp, "wine": cmd_wine, "rules": cmd_rules,
+    "update": cmd_update, "maintenance": cmd_maintenance, "backup": cmd_backup, "smoke": cmd_smoke,
+    "stats": cmd_stats, "login-start": cmd_login_start, "askpass": cmd_askpass, "toggle": cmd_toggle,
+}
+
+
+def main():
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help", "help"):
+        print(__doc__.strip())
+        return
+    fn = COMMANDS.get(args[0])
+    if fn is None:
+        die(f"subcomando desconocido «{args[0]}» (ocarina fune help)")
+    fn(args[1:])
+
+
+if __name__ == "__main__":
+    main()

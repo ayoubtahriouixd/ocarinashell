@@ -1,0 +1,10 @@
+# OcarinaShell (fase 13): Plymouth leaves without clearing the screen; the greeter is already drawing over it.
+[Unit]
+Description=Plymouth → OcarinaShell greeter hand-over
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+# stays «active» once done: a .path with PathExists= would otherwise start it again and again while the flag exists
+RemainAfterExit=yes
+ExecStart=-/usr/bin/plymouth quit --retain-splash

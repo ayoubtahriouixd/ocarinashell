@@ -1,0 +1,8 @@
+# OcarinaShell (fase 13) — /etc/greetd/config.toml. Previous file: /var/lib/ocarinashell/greetd-config.toml.previo
+[terminal]
+# tty1: Plymouth is already there, so there is no VT switch (a switch would flash)
+vt = 1
+
+[default_session]
+command = "/usr/local/lib/ocarinashell/greeter-launch"
+user = "greeter"

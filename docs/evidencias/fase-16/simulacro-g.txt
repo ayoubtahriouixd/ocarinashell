@@ -1,0 +1,22 @@
+# Simulacro g · sin red y sin Snake
+# 2026-10-17 21:18
+
+$ ocarina-mamori run   (código 0)
+
+--- historial ---
+
+$ ocarina-mamori plan --refresh   (código 0)
+守 Plan del 2026-10-17 21:18 · IA: none · decisión: mature hasta el 2026-10-20 21:18
+  · madurando 7 días: mesa
+    mesa 1:26.2.3-1 → 1:26.2.4-1  [critical]
+    AUR papirus-folders 1.14.0-1 → 1.14.1-1: no — cambia otros ficheros: extra.sh · sin IA: espera a una versión con diff trivial o a Snake
+
+--- journal ---
+[info/info] Mamori en pausa 1 días · hasta el 2026-10-18 21:18
+en pausa hasta el 2026-10-18 21:18: no hago nada
+[info/info] Mamori reanudado
+ciclo terminado: nothing
+aplazado: sin conexión a internet
+
+
+VEREDICTO: SUPERADO: aplaza sin red; sin IA madura 7 días y el AUR no trivial espera

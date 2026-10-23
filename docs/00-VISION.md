@@ -31,9 +31,11 @@ y cero CPU cuando no haces nada.
 ## Momentos de firma (lo que tiene que dejar boquiabierto)
 1. **Hanko de espacios**: los espacios de trabajo son numerales kanji 一 二 三…; el activo es un sello rojo que
    **se desliza con muelle** hasta el nuevo espacio.
-2. **Shima, la isla viva**: en el centro de la barra, una píldora negra que se transforma (*morph* con muelle)
-   entre reloj → música (portada + ecualizador real de PipeWire) → OSD de volumen/brillo → aviso de notificación
-   → grabación. Al pasar el ratón muestra la fecha en kanji y la microestación del día (七十二候).
+2. **Shima, la isla viva**: en el centro de la barra, una píldora negra (de papel en los temas claros) que se
+   transforma (*morph* con muelle) entre reloj → música (portada + ecualizador real de PipeWire) → OSD de
+   volumen/brillo → aviso de notificación → grabación. Al pasar el ratón muestra la fecha en kanji y la microestación
+   del día (七十二候); al tocarla se derrama como tinta en 広場 **Hiroba**: calendario, tiempo, música, el equipo en
+   anillos y un gato ネコ de neón que asiente al ritmo real de la música (su neón rojo toma el acento del tema).
 3. **Kagi, el bloqueo que suena**: cada tecla de la contraseña ilumina un agujero de la ocarina y lanza una onda;
    los puntos de la contraseña son pétalos de sakura; contraseña errónea → la ocarina tiembla y las ondas se
    apagan; correcta → estallido de ondas y la pantalla se disuelve. Reloj gigante, fecha en kanji, proverbio del
@@ -59,6 +61,13 @@ y cero CPU cuando no haces nada.
     duermes; Ayoub solo ve un resumen semanal sereno y, si algo no le convence, un botón de «deshacer».
 15. **蛇 Snake, la serpiente blanca (白蛇)**: en Japón, guardiana de la casa y mensajera de buena fortuna. Aquí es una IA
     local que piensa sin nube ni suscripciones: aparece cuando hace falta (un discreto 蛇 en la barra) y desaparece después.
+    También escucha (声, Super+Alt+A): la voz se transcribe en el propio equipo y nunca toca el disco.
+16. **器 El cajón que nace de la ocarina**: tocar la ocarina de la barra (o Super+D) hace brotar un panel de vidrio con
+    las apps por categorías (hanko de kanji), las frecuentes en grande y todas de la A a la Z; escribir filtra con las
+    letras en rojo.
+17. **墨 La barra que respira**: CPU, RAM y GPU como trazos de tinta con su número encima y una marca de pico que baja
+    despacio, como un vúmetro; al pasar el ratón, los números se vuelven kanji (脳 記 絵). Solo se mueven cuando llega
+    una medida nueva.
 
 ## Idioma y tono
 - UI en **español** claro. El japonés es ornamento y poesía: kanji junto a la etiqueta, nunca en su lugar.
@@ -78,13 +87,15 @@ y cero CPU cuando no haces nada.
 | 忍 **Shinobi** | negro puro | lo usa el modo ahorro; luminancia mínima |
 
 Cada tema trae su fondo original (`assets/wallpapers/`, generado por `tools/wallpapers.py`). El usuario puede
-añadir los suyos (anime incluido) desde Kabegami; nosotros nunca distribuimos arte con derechos.
+añadir los suyos (anime incluido) desde Kabegami; nosotros nunca distribuimos arte con derechos. 季 Con la rotación
+por estación, cada fondo se etiqueta con 春夏秋冬 y cambia solo con cada microestación (七十二候, unos 5 días), sin
+temporizadores. Los temas claros también aclaran la isla y Hiroba.
 
 ## Mockups (objetivo visual)
 | Fichero | Qué fija |
 |---|---|
 | `01-escritorio.png` | barra Obi, isla, espacios hanko, ventanas niri (radio 14, anillo de foco degradado), Ghostty con fastfetch kanji y prompt, Neovim con statusline kanji, notificación |
-| `02-centro-de-control.png` | Engawa: rápidos con kanji de marca de agua, tarjetas 忍 Shinobi y 鬼 Oni, tarjeta 滑 Fluido (×2 · ×4 · ×6 · A medida; llega con la fase 11 B), sliders (brillo por pantalla: portátil + monitor externo), perfiles 省/均/速, música, batería |
+| `02-centro-de-control.png` | Engawa: rápidos con kanji de marca de agua, tarjetas 忍 Shinobi y 鬼 Oni, tarjeta 滑 Fluido (×2 · ×4 · ×6 · A medida), sliders (brillo por pantalla: portátil + monitor externo), perfiles 省/均/速, música, batería |
 | `03-bloqueo.png` | Kagi: composición asimétrica, reloj 196 px, fecha kanji, pétalos, proverbio vertical con sello |
 | `04-lanzador.png` | Torii: búsqueda, chips de modo, resultados con coincidencias en rojo, acciones, pie de atajos |
 | `05-energia.png` | Dengen: kanji de pincel, selección roja, «mantén para apagar» |
@@ -96,6 +107,9 @@ añadir los suyos (anime incluido) desde Kabegami; nosotros nunca distribuimos a
 | `11-snake.png` | 蛇 Snake: asistente local en un panel, respuesta con contexto del sistema y acción propuesta con confirmación |
 | `12-pantallas.png` | Settei → Pantalla: 配置 Haichi (pantallas a escala, principal 主, perfiles, «revertir en 15 s»), brillo de cada pantalla y 保護 cuidado del OLED |
 | `13-fluido.png` | 滑 Nameraka activo sobre un vídeo a pantalla completa: página Fluido de Engawa (30 → 120 fps, tira de ritmo, modos, motor, calidad) y OSD de la isla |
+| `14-isla-hiroba.png` · `16-isla-hiroba-anime.png` | 広場 Hiroba, la isla abierta: tú, la hora, el mes, 七十二候 y el tiempo, música y el equipo; la variante con los toques anime (líneas de velocidad, pétalos, vinilo, trama) |
+| `15-barra-islas.png` | la barra en «islas» (estilo por defecto): sin barra, una cápsula de vidrio detrás de cada grupo |
+| `17-isla-v2.png` | la isla v2: aura 紅→金, el día como sello, kamon de la estación y el billete al pasar el ratón |
 | `assets/boot/limine/preview-*.png` | menú de Limine real (QEMU) con el tema oscuro y claro |
 | `assets/boot/plymouth/preview-*.png` | Plymouth: arranque, apagado, reinicio y contraseña de disco |
 

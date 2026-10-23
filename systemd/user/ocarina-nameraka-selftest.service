@@ -1,0 +1,15 @@
+# OcarinaShell · 滑 Nameraka self-test at login: writes ~/.local/state/ocarinashell/nameraka/selftest.json so the shell
+# knows whether Fluido is available (and why not) without starting anything. ocarina doctor runs it too.
+[Unit]
+Description=OcarinaShell · 滑 Nameraka (comprobación)
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/libexec/ocarinashell/nameraka self-test
+Nice=19
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=graphical-session.target

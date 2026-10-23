@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# ocarina-mado — installs 窓 Mado's window rules (~/.local/state/ocarinashell/niri/user-rules.kdl, included by the
+# niri config). The new contents come on stdin; they are validated with `niri validate` as a standalone config
+# and only then moved into place atomically (niri reloads included files by itself). On error nothing changes and
+# niri's message is printed on stderr.
+#   apply        read the full new file from stdin, validate, install
+#   path         print the rules file path
+set -euo pipefail
+
+dir="${XDG_STATE_HOME:-$HOME/.local/state}/ocarinashell/niri"
+file="$dir/user-rules.kdl"
+
+case "${1:-}" in
+  path) printf '%s\n' "$file" ;;
+  apply)
+    mkdir -p "$dir"
+    tmp="$(mktemp "$dir/.user-rules.XXXXXX.kdl")"
+    trap 'rm -f "$tmp"' EXIT
+    cat > "$tmp"
+    # only window rules: the file keeps a hand-edited preamble, which must never smuggle spawn, binds or include
+    # (comments, blank lines, `window-rule {`, its indented body and closing braces; same rule as honban-rules)
+    if bad="$(sed -e 's#//.*##' "$tmp" | grep -nvE '^(window-rule \{|\}|[[:space:]]+.*|[[:space:]]*)$')"; then
+      echo "nodo no permitido en user-rules.kdl: ${bad%%$'\n'*}" >&2
+      exit 1
+    fi
+    if bad="$(sed -e 's#//.*##' "$tmp" | grep -nE '(^|[[:space:];{}])(spawn-at-startup|spawn-sh-at-startup|spawn|include|binds)([[:space:]]|$|\{)')"; then
+      echo "contenido no permitido en user-rules.kdl: ${bad%%$'\n'*}" >&2
+      exit 1
+    fi
+    if ! out="$(niri validate -c "$tmp" 2>&1)"; then
+      printf '%s\n' "$out" | sed 's/\x1b\[[0-9;]*m//g' | tail -n 12 >&2
+      exit 1
+    fi
+    if grep -qi deprecat <<< "$out"; then
+      printf '%s\n' "$out" | sed 's/\x1b\[[0-9;]*m//g' | grep -i deprecat | sed 's/^/aviso: /' >&2
+    fi
+    chmod 0644 "$tmp"
+    mv -f "$tmp" "$file"
+    trap - EXIT
+    echo ok
+    ;;
+  *) echo "uso: ocarina-mado apply < reglas.kdl | path" >&2; exit 2 ;;
+esac

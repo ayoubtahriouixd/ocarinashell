@@ -35,25 +35,27 @@ jobs:
         run: |
           python3 tools/build_data.py
           git diff --exit-code -- assets/data
+          python3 tests/contraste.py
 
   instalador-arch:
-    name: instalador en Arch (usuario normal)
+    name: instalador en Arch (usuario normal, --demo)
     runs-on: ubuntu-latest
     container: archlinux:latest
     steps:
       - name: Paquetes mínimos
-        run: pacman -Syu --noconfirm --needed git python
+        run: pacman -Syu --noconfirm --needed git python curl
       - uses: actions/checkout@v4
-      - name: Instala el kit desde este commit como un usuario sin privilegios
+      - name: El recorrido completo sin cambiar nada, como un usuario sin privilegios
         run: |
           useradd -m prueba
-          cp -a "$GITHUB_WORKSPACE" /tmp/kit
-          chown -R prueba /tmp/kit
-          su prueba -c "git -C /tmp/kit switch -q -c ci"
-          su prueba -c "OCARINA_REPO=${GITHUB_REPOSITORY} OCARINA_GIT_URL=file:///tmp/kit OCARINA_VERSION=ci \
-            bash /tmp/kit/install.sh --yes --no-sudo-temporal"
-          su prueba -c "test -f ~/ocarinashell/CLAUDE.md && git -C ~/ocarinashell remote get-url upstream"
-      - name: Segunda ejecución (ya instalado) y --check
+          cp -a "$GITHUB_WORKSPACE" /home/prueba/ocarinashell
+          chown -R prueba /home/prueba/ocarinashell
+          su prueba -c "cd ~/ocarinashell && ./install.sh --demo --simple"
+          su prueba -c "cd ~/ocarinashell && bash scripts/install.sh --dry-run >/dev/null"
+      - name: Los paquetes de scripts/paquetes.txt existen en los repos de Arch (los de CachyOS se avisan)
         run: |
-          su prueba -c "OCARINA_REPO=${GITHUB_REPOSITORY} OCARINA_GIT_URL=file:///tmp/kit bash /tmp/kit/install.sh --yes"
-          su prueba -c "OCARINA_REPO=${GITHUB_REPOSITORY} bash /tmp/kit/install.sh --check --yes"
+          missing=""
+          for p in $(grep -v '^\s*#' scripts/paquetes.txt | grep -v '^\['); do
+            pacman -Si "$p" >/dev/null 2>&1 || missing+="$p "
+          done
+          echo "::notice::fuera de los repos de Arch (CachyOS o AUR): ${missing:-ninguno}"

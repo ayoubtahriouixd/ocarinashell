@@ -1,0 +1,11 @@
+# OcarinaShell (fase 13, D-068): the boot theme follows the desktop theme. Installed by scripts/root/arranque-auto.sh
+# with @HOME@ replaced. theme.json is replaced atomically by ocarina-theme (rename): PathChanged catches it.
+[Unit]
+Description=OcarinaShell · watch the theme for the boot chain
+
+[Path]
+PathChanged=@HOME@/.local/state/ocarinashell/theme.json
+Unit=ocarina-boot-sync.service
+
+[Install]
+WantedBy=multi-user.target

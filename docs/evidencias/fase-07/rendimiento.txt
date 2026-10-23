@@ -1,0 +1,14 @@
+Fase 07 · rendimiento (perf-auditor independiente + medidas propias) — 2026-10-15
+Ajustes cerrado: CPU qs 0,27 % (mediana; ~todo es el redibujado del título de Claude Code, que cambia cada segundo →
+  corregido: FocusedTitle quita los iconos giratorios del principio del título); despertares con título fijo 0,5–1,8/s.
+Ajustes abierto (Apariencia, Pantalla, Fondos, Energía), sin tocar: CPU 0,00–0,07 %, 0,9–1,4 despertares/s.
+Procesos hijos de qs con Ajustes cerrado: ninguno salvo `udevadm monitor` (Haichi, añadido tras la auditoría:
+  bloqueado en espera de eventos DRM, 0 CPU). Sin temporizadores periódicos.
+Energía: `busctl` 2 veces al abrir; el refresco de 5 min ya solo corre con la ventana visible y fuera de Shinobi.
+Índice de Fondos: 57 ms (6 fondos, caché) · 200 imágenes: 1,45 s en frío / 0,05 s en caché (kabegami-indice.txt).
+Memoria del servicio (cgroup / RSS de qs), reinicio limpio + recorrido de 6 páginas:
+  arranque 213 / 342 MB · tras recorrer Ajustes 286 / 430 · cerrado 10 s 274 / 383 · tras 3 aperturas más de Fondos
+  282 / 368 → sin fuga (no crece al repetir), meseta de ~60 MB tras el primer uso (tipos QML compilados, imágenes,
+  glifos). MALLOC_ARENA_MAX=2 probado: sin mejora (215/343 · 293/440 · 281/393 · 284/375), retirado.
+  Pendiente fase 17 (D-028): presupuesto de memoria de la shell completa.
+Arranque de la shell: 195 ms.

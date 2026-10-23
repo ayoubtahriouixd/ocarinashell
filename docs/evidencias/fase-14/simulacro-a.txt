@@ -1,0 +1,20 @@
+── 1) corrupto al arrancar
+       WARN qml: Settings: settings.json corrupto, copia en $TMP/xdg/ocarinashell/settings.json.roto-2026-10-17T13-36-20-842Z SyntaxError: JSON.parse: Parse error
+       INFO qml: SIM corrupted $TMP/xdg/ocarinashell/settings.json.roto-2026-10-17T13-36-20-842Z kept false theme kurenai
+       INFO qml: SIM loaded theme kurenai gaps 12 version 4
+  ✓ copia .roto idéntica al fichero dañado (settings.json.roto-2026-10-17T13-36-20-842Z)
+  ✓ settings.json reescrito y válido
+  ✓ valores por defecto (tema kurenai)
+  ✓ señal corrupted → aviso (OSD + notificación en la shell real)
+── 2) corrupto en caliente (con ajustes buenos en memoria)
+       INFO qml: SIM loaded theme sumi gaps 20 version 4
+       WARN qml: Settings: settings.json corrupto, copia en $TMP/xdg/ocarinashell/settings.json.roto-2026-10-17T13-36-26-436Z SyntaxError: JSON.parse: Parse error
+       INFO qml: SIM corrupted $TMP/xdg/ocarinashell/settings.json.roto-2026-10-17T13-36-26-436Z kept true theme sumi
+  ✓ copia .roto del fichero roto
+  ✓ se conservan los ajustes de la sesión (sumi, gaps 20) y se reescriben
+  ✓ aviso con «se mantienen los de esta sesión»
+── 3) valores fuera de rango y versión en texto
+     avisos de rango: 4
+  ✓ cada valor absurdo vuelve a su valor por defecto; version «4» → 4 sin repetir migraciones
+  ✓ el resto del fichero se conserva
+resultado: 9 bien · 0 mal

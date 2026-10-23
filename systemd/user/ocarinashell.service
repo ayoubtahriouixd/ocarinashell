@@ -1,0 +1,34 @@
+# OcarinaShell · the shell itself (one `qs` process). Restart=always: a crash or an external kill (SIGTERM counts
+# as a clean exit for systemd) brings it back in 1 s; 4 failures in 60 s → safe mode.
+# docs/01-ARQUITECTURA §2 · docs/06-ACTUALIZACIONES capa 4
+[Unit]
+Description=OcarinaShell (Quickshell)
+Documentation=file://%h/ocarinashell/docs/01-ARQUITECTURA.md
+PartOf=graphical-session.target
+After=graphical-session.target
+Requisite=graphical-session.target
+StartLimitIntervalSec=60
+StartLimitBurst=4
+OnFailure=ocarinashell-safe.service
+
+[Service]
+Type=exec
+# Always the same config id: Quickshell 0.3 does not canonicalise paths (01-ARQUITECTURA §3)
+# grayscale text antialiasing: subpixel AA paints colour fringes on the OLED (visual QA, phase 3)
+Environment=QSG_DISTANCEFIELD_ANTIALIASING=gray
+# systemd supervises every crash (D-072): Quickshell's own handler relaunched the shell inside the same PID, left
+# zombies and the dead instance's Process children behind, and hid crash loops from the start limit (safe mode)
+Environment=QS_DISABLE_CRASH_HANDLER=1
+# no transparent huge pages (THP is «always» on CachyOS): they made ~140 MB of the shell's RSS (perf-auditor, fase 17)
+MemoryTHP=disable
+ExecStart=/usr/bin/qs -c ocarina
+Restart=always
+RestartSec=1
+# direct: an auto-restart does not pass through «failed», so OnFailure= (safe mode) fires only when the start limit is
+# hit. With the default (normal) every single crash triggered it at once and safe mode's Conflicts= cancelled the
+# restart (found by simulacro d, fase 14; systemd ≥ 254)
+RestartMode=direct
+Slice=app-graphical.slice
+
+[Install]
+WantedBy=graphical-session.target

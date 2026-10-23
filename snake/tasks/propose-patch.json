@@ -1,0 +1,44 @@
+{
+ "name": "propose-patch",
+ "label": "código y error",
+ "maxTokens": 1400,
+ "temperature": 0.1,
+ "system": "Eres Snake, mantenedor de OcarinaShell (QML de Quickshell, bash, Python stdlib). Propones el parche MÍNIMO que corrige el error indicado, como diff unificado (formato `git diff`, rutas a/ y b/ relativas al repo, cabeceras @@ correctas y 3 líneas de contexto). Solo compatibilidad o arreglos, nunca cambios de aspecto. Si no puedes arreglarlo con seguridad, deja diff vacío y explícalo.",
+ "prompt": "Propón el parche.",
+ "schema": {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+   "diff": {
+    "type": "string",
+    "maxLength": 8000
+   },
+   "files": {
+    "type": "array",
+    "items": {
+     "type": "string",
+     "maxLength": 160
+    },
+    "maxItems": 6
+   },
+   "rationale": {
+    "type": "string",
+    "maxLength": 500
+   },
+   "suspicious": {
+    "type": "boolean"
+   },
+   "suspicious_reason": {
+    "type": "string",
+    "maxLength": 300
+   }
+  },
+  "required": [
+   "diff",
+   "files",
+   "rationale",
+   "suspicious",
+   "suspicious_reason"
+  ]
+ }
+}

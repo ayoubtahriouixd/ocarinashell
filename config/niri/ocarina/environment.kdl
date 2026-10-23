@@ -1,0 +1,9 @@
+// Environment for programs that niri spawns. Programs started by systemd get the same values from
+// ~/.config/environment.d/60-ocarina.conf (config/environment.d/), which niri-session imports.
+environment {
+    QT_QPA_PLATFORMTHEME "qt6ct"
+    QT_QPA_PLATFORM "wayland;xcb"
+    ELECTRON_OZONE_PLATFORM_HINT "auto"
+    // Steam via xwayland-satellite gets native pixels (sharp, tiny at 1,75): its own UI scale (fase 11)
+    STEAM_FORCE_DESKTOPUI_SCALING "1.75"
+}

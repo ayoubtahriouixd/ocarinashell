@@ -1,0 +1,238 @@
+#!/usr/bin/env bash
+# ocarina-powerctl — the only root helper of OcarinaShell's power modes (忍 Shinobi, 鬼 Oni) and the charge limit.
+# Run through pkexec (polkit action org.ocarinashell.powerctl: active local session only, no password) or by the
+# boot unit ocarina-charge.service. Every operation and every value is on a whitelist; anything else is refused
+# with exit code 2 before touching the system. `status` needs no root (sysfs is world-readable).
+#
+#   boost on|off                 CPU turbo (cpufreq boost, per policy when available)
+#   epp <preference>             amd-pstate/intel_pstate EPP, only values listed by the kernel
+#   gpu auto|low|high            amdgpu power_dpm_force_performance_level (every amdgpu card)
+#   charge <start> <end>         charge thresholds, start 40–95, end 50–100, start < end; remembered for the boot unit
+#   charge off                   no limit (charges to 100 %); remembered too
+#   charge restore               re-apply the remembered limit (ocarina-charge.service at boot)
+#   wifi-ps on|off [iface]       Wi-Fi power save on one (or every) wireless interface (iw)
+#   fan auto|full                ThinkPad fan: firmware control or full speed (needs thinkpad_acpi fan_control=1;
+#                                «full» only on AC — the firmware keeps its own thermal protection either way)
+#   scx lavd|stop                sched-ext through scx_loader (D-Bus, as root): start scx_lavd in gaming mode, or stop
+#                                the running scheduler (back to the kernel's EEVDF)
+#   status                       JSON with all of the above
+set -euo pipefail
+export PATH=/usr/bin:/bin
+umask 022
+
+state_dir=/var/lib/ocarinashell
+charge_file="$state_dir/charge"
+cpufreq=/sys/devices/system/cpu/cpufreq
+
+die() { echo "ocarina-powerctl: $*" >&2; exit 2; }
+fail() { echo "ocarina-powerctl: $*" >&2; exit 1; }
+log() { logger -t ocarina-powerctl -- "$*" 2>/dev/null || true; }
+need_root() { [[ $EUID -eq 0 ]] || die "necesita root (pkexec)"; }
+is_int() { [[ "$1" =~ ^[0-9]{1,3}$ ]]; }
+readf() { [[ -r "$1" ]] && tr -d '\n' < "$1" || true; }
+
+# sysfs writes: the kernel validates too, but we never write something we did not check first
+put() {   # $1 = file, $2 = value
+  [[ -w "$1" ]] || fail "no se puede escribir $1"
+  printf '%s' "$2" > "$1" || fail "el kernel rechazó «$2» en $1"
+}
+
+batteries() {
+  local b
+  for b in /sys/class/power_supply/BAT*; do
+    [[ -d "$b" && "$(readf "$b/type")" == Battery ]] && printf '%s\n' "$b"
+  done
+}
+amdgpu_cards() {
+  local c
+  for c in /sys/class/drm/card[0-9]*; do
+    [[ "$c" =~ /card[0-9]+$ ]] || continue
+    [[ "$(readlink -f "$c/device/driver" 2>/dev/null)" == */amdgpu ]] && printf '%s\n' "$c/device"
+  done
+}
+wifi_ifaces() {
+  local n
+  for n in /sys/class/net/*; do
+    [[ -d "$n/wireless" ]] && basename "$n"
+  done
+}
+
+op_boost() {
+  [[ $# -eq 1 && "$1" =~ ^(on|off)$ ]] || die "uso: boost on|off"
+  need_root
+  local v=0; [[ "$1" == on ]] && v=1
+  # per policy when the kernel has it (amd-pstate): power-profiles-daemon writes those too, and a global 0 would make
+  # its own later writes fail (D-059). The global switch only on drivers without per-policy boost.
+  local p found=0
+  for p in "$cpufreq"/policy*/boost; do [[ -e "$p" ]] && { put "$p" "$v"; found=1; }; done
+  if ((!found)); then
+    [[ -e "$cpufreq/boost" ]] || fail "este procesador no expone el turbo"
+    put "$cpufreq/boost" "$v"
+  fi
+  log "boost $1"
+}
+
+op_epp() {
+  [[ $# -eq 1 && "$1" =~ ^[a-z_]{1,32}$ ]] || die "uso: epp <preferencia>"
+  local avail; avail="$(readf "$cpufreq/policy0/energy_performance_available_preferences")"
+  [[ -n "$avail" ]] || fail "este sistema no tiene EPP"
+  [[ " $avail " == *" $1 "* ]] || die "EPP «$1» no está en la lista del kernel: $avail"
+  need_root
+  local p
+  for p in "$cpufreq"/policy*/energy_performance_preference; do put "$p" "$1"; done
+  log "epp $1"
+}
+
+op_gpu() {
+  [[ $# -eq 1 && "$1" =~ ^(auto|low|high)$ ]] || die "uso: gpu auto|low|high"
+  need_root
+  local d found=0
+  while IFS= read -r d; do
+    [[ -e "$d/power_dpm_force_performance_level" ]] || continue
+    put "$d/power_dpm_force_performance_level" "$1"; found=1
+  done < <(amdgpu_cards)
+  ((found)) || fail "no hay GPU amdgpu"
+  log "gpu $1"
+}
+
+write_thresholds() {   # $1 = start, $2 = end, on every battery that has them
+  local b s e cur_end found=0
+  while IFS= read -r b; do
+    e="$b/charge_control_end_threshold"; s="$b/charge_control_start_threshold"
+    [[ -e "$e" ]] || continue
+    found=1
+    if [[ -e "$s" ]]; then
+      # the kernel refuses start ≥ end at every step: order the two writes so each one is valid on its own
+      cur_end="$(readf "$e")"
+      if [[ "$1" -lt "${cur_end:-100}" ]]; then put "$s" "$1"; put "$e" "$2"
+      else put "$e" "$2"; put "$s" "$1"; fi
+    else
+      put "$e" "$2"
+    fi
+  done < <(batteries)
+  ((found)) || fail "la batería no admite límite de carga"
+}
+
+op_charge() {
+  if [[ $# -eq 1 && "$1" == off ]]; then
+    need_root
+    write_thresholds 0 100
+    install -d -m 0755 "$state_dir"; printf 'off\n' > "$charge_file"
+    log "charge off"; return
+  fi
+  if [[ $# -eq 1 && "$1" == restore ]]; then
+    need_root
+    [[ -r "$charge_file" ]] || { echo "sin límite guardado"; return 0; }
+    local saved; saved="$(head -c 16 "$charge_file" | tr -d '\n')"
+    if [[ "$saved" == off ]]; then write_thresholds 0 100; log "charge restore off"; return; fi
+    [[ "$saved" =~ ^([0-9]{1,3})\ ([0-9]{1,3})$ ]] || fail "límite guardado no válido: $saved"
+    set -- "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+    local restoring=1
+  fi
+  if [[ $# -ne 2 ]] || ! is_int "$1" || ! is_int "$2"; then
+    die "uso: charge <inicio 40–95> <fin 50–100> | charge off | charge restore"
+  fi
+  local start=$((10#$1)) end=$((10#$2))
+  ((start >= 40 && start <= 95)) || die "inicio fuera de rango (40–95): $start"
+  ((end >= 50 && end <= 100)) || die "fin fuera de rango (50–100): $end"
+  ((start < end)) || die "el inicio ($start) debe ser menor que el fin ($end)"
+  need_root
+  write_thresholds "$start" "$end"
+  if [[ -z "${restoring:-}" ]]; then
+    install -d -m 0755 "$state_dir"; printf '%d %d\n' "$start" "$end" > "$charge_file"
+  fi
+  log "charge $start $end${restoring:+ (restore)}"
+}
+
+op_wifi_ps() {
+  [[ ($# -eq 1 || $# -eq 2) && "$1" =~ ^(on|off)$ ]] || die "uso: wifi-ps on|off [interfaz]"
+  if [[ $# -eq 2 ]]; then
+    [[ "$2" =~ ^[A-Za-z0-9_.-]{1,15}$ && -d "/sys/class/net/$2/wireless" ]] || die "no es una interfaz Wi-Fi: $(printf '%q' "$2" | head -c 40)"
+  fi
+  need_root
+  local i found=0
+  while IFS= read -r i; do
+    [[ "$i" =~ ^[A-Za-z0-9_.-]{1,15}$ ]] || continue
+    [[ $# -eq 2 && "$i" != "$2" ]] && continue
+    iw dev "$i" set power_save "$1" || fail "iw rechazó power_save $1 en $i"
+    found=1
+  done < <(wifi_ifaces)
+  ((found)) || fail "no hay interfaces Wi-Fi"
+  log "wifi-ps $*"
+}
+
+fan_file=/proc/acpi/ibm/fan
+on_ac() {
+  local s
+  for s in /sys/class/power_supply/*; do
+    [[ "$(readf "$s/type")" == Mains && "$(readf "$s/online")" == 1 ]] && return 0
+  done
+  return 1
+}
+op_fan() {
+  [[ $# -eq 1 && "$1" =~ ^(auto|full)$ ]] || die "uso: fan auto|full"
+  need_root
+  if [[ ! -w "$fan_file" ]] || ! grep -q "^commands:.*level" "$fan_file"; then fail "sin control del ventilador (thinkpad_acpi fan_control=1)"; fi
+  if [[ "$1" == full ]]; then
+    on_ac || fail "el ventilador al máximo solo se permite con el cargador"
+    put "$fan_file" "level full-speed"
+  else
+    put "$fan_file" "level auto"
+  fi
+  log "fan $1"
+}
+
+scx_call() { busctl --system --timeout=5 call org.scx.Loader /org/scx/Loader org.scx.Loader "$@"; }
+op_scx() {
+  [[ $# -eq 1 && "$1" =~ ^(lavd|stop)$ ]] || die "uso: scx lavd|stop"
+  need_root
+  command -v scx_lavd >/dev/null || fail "scx_lavd no está instalado (scx-scheds)"
+  if [[ "$1" == lavd ]]; then
+    scx_call StartScheduler su scx_lavd 1 >/dev/null || fail "scx_loader rechazó scx_lavd"   # 1 = gaming
+  else
+    scx_call StopScheduler >/dev/null || fail "scx_loader no pudo parar el planificador"
+  fi
+  log "scx $1"
+}
+
+json_str() { local s="${1//\\/\\\\}"; s="${s//\"/\\\"}"; printf '"%s"' "$s"; }
+op_status() {
+  [[ $# -eq 0 ]] || die "uso: status"
+  local boost="" epp avail gpu="" b start="" end="" i ps wifi="" first=1 fan="" fanctl=false scx=
+  boost="$(readf "$cpufreq/policy0/boost")"; [[ -n "$boost" ]] || boost="$(readf "$cpufreq/boost")"
+  epp="$(readf "$cpufreq/policy0/energy_performance_preference")"
+  avail="$(readf "$cpufreq/policy0/energy_performance_available_preferences")"; avail="${avail% }"
+  while IFS= read -r b; do gpu="$(readf "$b/power_dpm_force_performance_level")"; break; done < <(amdgpu_cards)
+  while IFS= read -r b; do
+    start="$(readf "$b/charge_control_start_threshold")"; end="$(readf "$b/charge_control_end_threshold")"; break
+  done < <(batteries)
+  while IFS= read -r i; do
+    ps="$(iw dev "$i" get power_save 2>/dev/null | sed -n 's/^Power save: //p')"
+    ((first)) || wifi+=","
+    wifi+="$(json_str "$i"):$(json_str "$ps")"; first=0
+  done < <(wifi_ifaces)
+  if [[ -r "$fan_file" ]]; then
+    fan="$(sed -n 's/^level:[[:space:]]*//p' "$fan_file")"
+    grep -q '^commands:.*level' "$fan_file" && fanctl=true
+  fi
+  [[ "$(readf /sys/kernel/sched_ext/state)" == enabled ]] && scx="$(readf /sys/kernel/sched_ext/root/ops)"
+  printf '{"boost":%s,"epp":%s,"eppAvailable":%s,"gpu":%s,"charge":{"start":%s,"end":%s,"saved":%s},"wifiPs":{%s},"fan":{"level":%s,"control":%s},"scx":%s,"scxAvailable":%s}\n' \
+    "$(case "$boost" in 1) echo true ;; 0) echo false ;; *) echo null ;; esac)" \
+    "$(json_str "$epp")" "$(json_str "$avail")" "$(json_str "$gpu")" \
+    "${start:-null}" "${end:-null}" "$(json_str "$(head -c 16 "$charge_file" 2>/dev/null | tr -d '\n' || true)")" "$wifi" \
+    "$(json_str "$fan")" "$fanctl" "$(json_str "${scx%%_*}")" "$(command -v scx_lavd >/dev/null && echo true || echo false)"
+}
+
+[[ $# -ge 1 ]] || die "uso: boost|epp|gpu|charge|wifi-ps|fan|scx|status …"
+cmd="$1"; shift
+case "$cmd" in
+  boost) op_boost "$@" ;;
+  epp) op_epp "$@" ;;
+  gpu) op_gpu "$@" ;;
+  charge) op_charge "$@" ;;
+  wifi-ps) op_wifi_ps "$@" ;;
+  fan) op_fan "$@" ;;
+  scx) op_scx "$@" ;;
+  status) op_status "$@" ;;
+  *) die "operación no permitida: $(printf '%q' "$cmd" | head -c 40)" ;;
+esac

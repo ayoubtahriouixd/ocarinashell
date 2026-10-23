@@ -1,0 +1,30 @@
+// OcarinaShell · niri 26.04 — root config (linked to ~/.config/niri by scripts/install.sh).
+// Hand-written modules live in ocarina/; generated includes live in ~/.local/state/ocarinashell/niri/ and are
+// optional (a missing file is only a warning). Order matters: later files override earlier ones (D-021):
+//   layout/input/animations…: merged field by field · touchpad/trackpoint/touch and each animation: replaced whole
+//   binds: last definition of a key wins · window/layer rules: evaluated in include order
+//   output "X": NOT merged, the FIRST matching block wins → output blocks only in outputs.kdl (owner: Haichi)
+// Validate: niri validate (the Claude Code hook does it on every edit).
+
+include "ocarina/input.kdl"
+include "ocarina/layout.kdl"
+include "ocarina/appearance.kdl"
+include "ocarina/animations.kdl"
+include "ocarina/rules.kdl"
+include "ocarina/layer-rules.kdl"
+include "ocarina/binds.kdl"
+include "ocarina/recent-windows.kdl"
+include "ocarina/environment.kdl"
+include "ocarina/startup.kdl"
+include "ocarina/misc.kdl"
+
+// ── Generated (one owner each; written atomically after `niri validate`) ─────────────────────────
+include optional=true "~/.local/state/ocarinashell/niri/colors.kdl"        // theme engine (ocarina-theme)
+include optional=true "~/.local/state/ocarinashell/niri/outputs.kdl"       // Displays · 配置 Haichi
+include optional=true "~/.local/state/ocarinashell/niri/shinobi.kdl"       // Modes · 忍 Shinobi
+include optional=true "~/.local/state/ocarinashell/niri/oni.kdl"           // Modes · 鬼 Oni
+include optional=true "~/.local/state/ocarinashell/niri/fune-rules.kdl"    // 船 Fune
+include optional=true "~/.local/state/ocarinashell/niri/honban-rules.kdl"  // 本番 Honban
+include optional=true "~/.local/state/ocarinashell/niri/user-rules.kdl"    // 窓 Mado
+include optional=true "~/.local/state/ocarinashell/niri/user-binds.kdl"    // 技 Ajustes › Atajos (ocarina-binds)
+include optional=true "~/.local/state/ocarinashell/niri/overrides.kdl"     // Settei (last word)

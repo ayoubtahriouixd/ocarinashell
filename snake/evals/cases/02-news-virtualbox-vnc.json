@@ -1,0 +1,13 @@
+{
+ "id": "news-virtualbox-vnc",
+ "category": "news",
+ "task": "triage-news",
+ "input": "Título: virtualbox-ext-vnc >= 7.2.12-2 requires manual intervention\nPreviously, we installed its contents in a way that made pacman not aware of the files (using VBoxManage extpack install ... from an install script). To mitigate issues during upgrade, you can use one of the following methods:\nUninstall virtualbox-ext-vnc before upgrading the system, then installing it again.\nRun VBoxManage extpack uninstall 'VNC' as root before upgrading the system.\nInstruct pacman once to overwrite the existing files:\npacman -Syu --overwrite '/usr/lib/virtualbox/ExtensionPacks/VNC/*'\n(Contexto: virtualbox-ext-vnc NO está instalado en este equipo; usa Podman/KVM.)",
+ "expect": {
+  "news_asks_manual_steps": true,
+  "applies_here": [
+   "no",
+   "unknown"
+  ]
+ }
+}

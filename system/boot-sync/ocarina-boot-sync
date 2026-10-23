@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# OcarinaShell · boot theme in «auto» (fase 13, D-068). Runs as root from ocarina-boot-sync.service, started by
+# ocarina-boot-sync.path whenever the user's resolved theme (theme.json) changes, and once per boot.
+# If the theme's light/dark no longer matches the boot chain, it switches Limine, Plymouth (initramfs included) and the
+# greeter to it — one snapper snapshot for the whole change, at the lowest CPU/IO priority. Uses only the root-owned
+# copy in /usr/local/lib/ocarinashell/boot (scripts/root/arranque-auto.sh installs and refreshes it), never ~/ocarinashell.
+set -euo pipefail
+trap '' TERM                     # a shutdown must not cut an initramfs in half: systemd waits (TimeoutStopSec)
+
+LIB=/usr/local/lib/ocarinashell/boot
+owner=${OCARINA_OWNER:?OCARINA_OWNER no definido}
+home=$(getent passwd "$owner" | cut -d: -f6)
+theme="$home/.local/state/ocarinashell/theme.json"
+
+want=$(python3 -I -c 'import json, sys
+t = json.load(open(sys.argv[1]))
+print("light" if t.get("tokens", {}).get("mode") == "light" else "dark")' "$theme" 2>/dev/null || echo dark)
+have=$(sed -n 's/^variant = "\([a-z]*\)";.*/\1/p' /usr/share/plymouth/themes/ocarinashell/ocarinashell.script 2>/dev/null || true)
+lim=dark
+grep -q '^# ── OcarinaShell · tema de Limine (claro)' /boot/limine.conf && lim=light
+greeter=$want
+[[ -f /etc/ocarinashell/greeter.json ]] && greeter=$(sed -n 's/.*"variant": *"\([a-z]*\)".*/\1/p' /etc/ocarinashell/greeter.json)
+
+if [[ $want == "$have" && $want == "$lim" && $want == "$greeter" ]]; then
+  echo "arranque ya en «$want» (tema: $(python3 -I -c 'import json,sys;print(json.load(open(sys.argv[1]))["id"])' "$theme" 2>/dev/null || echo ?))"
+  exit 0
+fi
+echo "el tema pide «$want»: Limine=$lim · Plymouth=${have:-?} · greeter=$greeter → cambio"
+OCARINA_SNAPSHOT_DONE=$(snapper -c root create -d "ocarinashell: tema de arranque automático → $want" --print-number)
+export OCARINA_SNAPSHOT_DONE OCARINA_OWNER=$owner
+timeout=$(sed -n '1,/^[[:space:]]*\//s/^timeout:[[:space:]]*\([0-9]*\).*/\1/p' /boot/limine.conf | head -1)
+[[ $timeout =~ ^[0-9]+$ ]] || timeout=3
+[[ $lim == "$want" ]] || bash "$LIB/scripts/root/limine-tema.sh" "$want" --timeout "$timeout"
+[[ $have == "$want" ]] || bash "$LIB/scripts/root/plymouth-tema.sh" "$want"
+if [[ -f /etc/ocarinashell/greeter.json && $greeter != "$want" ]]; then
+  bash "$LIB/scripts/root/greeter.sh" actualizar "$want"
+fi
+echo "arranque cambiado a «$want» (snapshot #$OCARINA_SNAPSHOT_DONE)"

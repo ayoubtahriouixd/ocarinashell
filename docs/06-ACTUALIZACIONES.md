@@ -7,14 +7,19 @@ informe», nunca quedarse sin escritorio. Seis capas:
 
 ## Capa 1 · Siempre se puede volver atrás (sistema)
 - `snap-pac`: snapshot pre/post en cada transacción de pacman. `limine-snapper-sync`: esos snapshots son
-  arrancables desde el menú de Limine. Verificado en la fase 0 y de nuevo en la 14.
+  arrancables desde el menú de Limine. CachyOS lo trae; `ocarina doctor` comprueba que siga en pie.
 - **Kernel LTS de respaldo** (`linux-cachyos-lts`) instalado y en el menú de arranque: si un kernel nuevo falla
   (amdgpu, suspensión, Wi-Fi), se arranca el LTS y Mamori hace el resto.
-- `kernel-modules-hook` (si existe en los repos; verifícalo): conserva los módulos del kernel en ejecución tras
+- `kernel-modules-hook` (repos oficiales): conserva los módulos del kernel en ejecución tras
   actualizarlo, para que enchufar un USB o cargar un módulo no falle hasta el siguiente reinicio.
 - `paccache` conserva 3 versiones de cada paquete → cualquier paquete se puede bajar de versión al instante:
   `sudo pacman -U /var/cache/pacman/pkg/<paquete>-<versión>-*.pkg.tar.zst`.
 - La config de usuario vive en git (`~/ocarinashell`): `git revert`/`git checkout` deshacen cualquier cambio.
+- **控 Hikae ligero (D-070)**: snapper también para `@home` (config `home`; la pone `scripts/root/fase-14.sh` o
+  `scripts/root/snapper-home.sh instalar`): 24 snapshots
+  horarios + 7 diarios + 4 semanales de `~`, sin copiar datos (CoW), con límites de espacio. `ocarina backup
+  restore <ruta>` recupera en `~/Restaurado/<fecha>-#n/` sin root y nunca encima del original. Mismo SSD: cubre borrados
+  y errores, no un disco muerto ni un robo (para eso, un destino externo con restic se puede añadir sin cambiar el CLI).
 
 ## Capa 2 · Solo paquetes estables y actualizaciones completas
 - Núcleo SOLO desde repos oficiales/CachyOS: `niri`, `quickshell` (nunca `-git`), `ghostty`, `neovim`, Qt.
@@ -25,7 +30,9 @@ informe», nunca quedarse sin escritorio. Seis capas:
   (Mamori lo comprueba con `pacman -Sup --ignore …` antes de hacerlo). Nada de `IgnorePkg` permanentes.
 - AUR solo con **paru** (con `NewsOnUpgrade` y `LocalRepo`: los paquetes del AUR compilados se guardan en un repo
   local, así que bajar de versión o reinstalar no exige recompilar). Cada actualización del AUR exige revisar el diff
-  del PKGBUILD (lo hace la IA de Mamori; si no está disponible, esa actualización espera).
+  del PKGBUILD (lo hace Snake; sin IA, solo pasa un diff trivial: cambian únicamente `pkgver`, `pkgrel`, sumas y la
+  versión dentro de las URLs). Mamori no usa paru para instalar: `ocarina-maint aur-build <paquete> <commit>` compila ese commit exacto del AUR
+  como un usuario efímero sin acceso a `/home` y root solo instala el resultado; el repo local es solo de root (D-080).
 - 滑 Nameraka depende de dos piezas de fuera de pacman: **lsfg-vk** (AUR, con paru y PKGBUILD revisado como todo el AUR;
   nunca `-git`) y la **DLL de Lossless Scaling**, que actualiza Steam (rama `lsfg-vk`). Tras cambiar cualquiera de las
   dos, Mesa, PipeWire o niri: `nameraka self-test` y recalibración (la DLL se detecta por su huella). Si algo falla,
@@ -37,7 +44,7 @@ informe», nunca quedarse sin escritorio. Seis capas:
 - Las dependencias opcionales (matugen, gpu-screen-recorder, Wallhaven…) son eso: opcionales. Si faltan o fallan,
   la función se oculta y Ajustes › Acerca de › Diagnóstico explica por qué.
 
-## Capa 3 · Código que no se cae (lo cumplen todas las fases desde la 3)
+## Capa 3 · Código que no se cae (reglas para todo el código)
 1. **Aislamiento por `Loader`**: cada módulo opcional y cada página que use un módulo de Quickshell «sensible»
    (Bluetooth, Networking, Polkit, Greetd, Screencopy, BackgroundEffect…) vive en su propio fichero cargado con
    `Loader`. Si una actualización cambia o elimina un tipo, falla SOLO ese `Loader` (estado `Loader.Error`), se
@@ -55,27 +62,43 @@ informe», nunca quedarse sin escritorio. Seis capas:
 8. **Herramientas externas**: `command -v` antes de usarlas; nunca se asume que existen.
 
 ## Capa 4 · Si aun así falla, hay red
-- `ocarinashell.service`: `Restart=on-failure`, `RestartSec=1`, `StartLimitIntervalSec=60`, `StartLimitBurst=4`,
-  `OnFailure=ocarinashell-safe.service`.
+- `ocarinashell.service`: `Restart=always`, `RestartSec=1`, `RestartMode=direct` (sin él, cada caída disparaba el modo
+  seguro), `StartLimitIntervalSec=60`, `StartLimitBurst=4`, `OnFailure=ocarinashell-safe.service`,
+  `QS_DISABLE_CRASH_HANDLER=1` (las caídas las cuenta systemd, no el relanzador de Quickshell; D-072). Medido: una caída
+  suelta vuelve en ~2,8 s; 4 seguidas → modo seguro en 4,9 s.
 - **Modo seguro** (`ocarinashell-safe.service` → `shell/safe/shell.qml`): solo tipos básicos y estables
   (PanelWindow, Text, Rectangle, Process, FileView). Barra mínima con sello rojo 殻 «Modo seguro», reloj, batería,
-  y botones: Reintentar (reset-failed + start), Terminal, Ver errores (journal), Bloquear (swaylock). `Conflicts=`
+  y botones: Diagnóstico (panel 診 con los errores del journal; la causa ya sale en la barra), Reintentar
+  (reset-failed + start), Terminal, Ver errores (journal), Bloquear (swaylock). `Conflicts=`
   con el servicio normal. Entrar en modo seguro dispara a Mamori para que lo arregle solo.
 - El CLI `ocarina` ya tiene respaldo para todo lo esencial (volumen, brillo, multimedia, bloqueo con swaylock).
 - `swaylock` tematizado siempre instalado como bloqueo de emergencia.
 
 ## Capa 5 · Pruebas de humo y reversión automática
-- **Pruebas de humo** (`scripts/smoke-test.sh` = `ocarina doctor --post-update`, < 30 s): versiones; `niri validate` sin
+- **Pruebas de humo** (`scripts/smoke-test.sh` = `ocarina doctor --post-update`, < 30 s; 22
+  comprobaciones pasivas en ~2 s, `--smoke` = solo las pasivas, informe JSON + código de salida, ampliable con
+  `scripts/smoke.d/`): versiones; `niri validate` sin
   errores ni deprecaciones; reinicio de la shell sin errores en 5 s; cada destino IPC responde a una función
   inocua; modo prueba del bloqueo abre y cierra; Ghostty `+validate-config`; Neovim arranca sin errores (headless);
   `fish -n`; `starship prompt`; unidades activas; la shell es dueña de `org.freedesktop.Notifications` y del agente
   polkit; portales vivos; fuentes presentes; `ocarina-theme apply --dry-run`; bloque de Limine presente; tema Plymouth
-  dentro del initramfs actual; FreeRDP/Docker de Fune (si está activo); `nameraka self-test` (si está instalado; no
+  dentro del initramfs actual; FreeRDP/Podman de Fune (si está activo); `nameraka self-test` (si está instalado; no
   bloqueante: avisa y dispara el playbook de 滑, nunca la reversión; los códigos 13–15 no cuentan como fallo). Resultado en
-  `~/.local/state/ocarinashell/smoke.json`.
+  `~/.local/state/ocarinashell/smoke.json`. Los avisos (deprecaciones, Nameraka, piezas opcionales) nunca cuentan como
+  fallo: son trabajo para el playbook, no motivo de reversión.
+- **Tras cada transacción** (`/etc/pacman.d/hooks/90-ocarinashell.hook` → `/var/lib/ocarinashell/needs-check` →
+  `ocarina-postupdate.path` de usuario): pruebas de humo automáticas. Solo en modo **activo** (reinicio de la shell +
+  bloqueo de prueba) si la transacción tocó la base de la shell (Qt, Quickshell, Mesa, Vulkan, PipeWire, Wayland, niri,
+  glib/glibc, systemd, fuentes); si no, pasivas. Las transacciones hechas sin sesión (TTY) se prueban al entrar.
+  Un fallo → notificación crítica con el motivo; un éxito no molesta.
 - **Reversión**: si fallan tras una actualización y la adaptación automática (capa 6) no lo arregla, Mamori ejecuta
   `snapper undochange <pre>..<post>` del par de la transacción, reinicia la shell, repite las pruebas y retiene el lote.
-- **Arranque fallido**: cada arranque correcto escribe una marca. Si un arranque llega por el kernel LTS o falta la marca
+  A mano: `ocarina rollback`. El ayudante solo acepta el **último** par (deshacer uno viejo borraría lo que vino
+  después) y, como `/boot` no está en el snapshot, reinstala desde la caché la versión previa de cada paquete que toca
+  la cadena de arranque (kernel, módulos, firmware, initcpio); si alguna no está en la caché, no toca nada. Una
+  transacción que instaló un kernel desde cero no se revierte así: se baja con `downgrade` o se retiene.
+- **Arranque fallido**: cada arranque correcto escribe una marca (`ocarina-bootmark.service`, en
+  `~/.local/state/ocarinashell/boot/`; una alerta deja `alert.json` para Mamori y una notificación). Si un arranque llega por el kernel LTS o falta la marca
   del arranque anterior tras instalar un kernel nuevo, Mamori retiene ese kernel, reinstala el anterior desde la caché y
   lo cuenta en el informe.
 
@@ -94,7 +117,7 @@ previa sí se hace en segundo plano). Si no se cumple, lo reintenta más tarde. 
    anuncios de CachyOS, `arch-audit` (CVE), `fwupdmgr get-updates`.
 3. **Clasificación**: seguridad (CVE alta/crítica corregida en el lote) · críticos (kernel, mesa, niri, quickshell, qt6-*,
    systemd, glibc, pipewire*, wireplumber, linux-firmware, limine, plymouth, power-profiles-daemon, scx-*, freerdp,
-   docker) · saltos de versión mayor · AUR · resto.
+   docker, podman) · saltos de versión mayor · AUR · resto.
 4. **Política**: lote solo con «resto» → se aplica. Con críticos o saltos mayores → **maduración** (por defecto 3 días
    en repos) + revisión de la IA. Con seguridad alta/crítica → sin maduración, revisión rápida de la IA y se aplica.
    Noticias con intervención manual → la IA la estudia y la hace si es segura; si exige una decisión de Ayoub, le pregunta
@@ -107,19 +130,20 @@ previa sí se hace en segundo plano). Si no se cumple, lo reintenta más tarde. 
    Dengen ofrece «Actualizar y reiniciar»; el kernel nuevo entra en tu siguiente reinicio normal. Si es un parche de
    seguridad del kernel pendiente más de 7 días, una única notificación con «Reiniciar ahora / Esta noche / Más tarde».
    Reinicio nocturno automático solo si Ayoub lo activa en Ajustes (apagado por defecto).
-8. **Informe**: entrada en `history.jsonl`, resumen en `docs/MANTENIMIENTO.md` (commit), notificación solo si hay algo
-   que ver; resumen semanal discreto el domingo.
+8. **Informe**: entrada en `history.jsonl`, resumen en `docs/MANTENIMIENTO.md` (solo en tu copia local: `.gitignore` lo
+   deja fuera del repo publicado), notificación solo si hay algo que ver; resumen semanal discreto el domingo.
 
 ### La IA de Mamori: 蛇 Snake (local y gratuita)
-- **Snake** (fase 15) es una IA de pesos abiertos que corre en el propio portátil (llama.cpp con Vulkan en la Radeon 860M,
-  o la NPU XDNA 2 si gana en la evaluación): sin nube, sin cuentas, sin suscripciones. Se carga solo para trabajar y se
-  descarga después; las tareas de fondo solo con cargador.
+- **Snake** es una IA de pesos abiertos que corre en el propio portátil (gpt-oss-20b con llama.cpp y Vulkan en la Radeon
+  860M; docs/SNAKE.md): sin nube, sin cuentas, sin suscripciones. Se carga solo para trabajar y se descarga después; las
+  tareas de fondo solo con cargador y siempre con el modelo principal (con el que se midieron sus aciertos): si no cabe
+  en la GPU, esperan; el asistente, en cambio, puede responder con un modelo ligero.
 - **Investiga**: changelogs y notas de versión, incidencias abiertas (GitHub/GitLab de niri, Quickshell, Ghostty,
   Neovim, Mesa; foro y anuncios de CachyOS; bugtracker y foros de Arch) buscando regresiones que afecten a este hardware
   (Radeon 860M/RDNA 3.5, Ryzen AI 300 «Krackan», ThinkPad P14s Gen 6, Wi-Fi, suspensión s2idle) o a las APIs que usa
   OcarinaShell (`grep` en el repo). Las fuentes salen de una lista blanca; lo descargado es dato, nunca instrucción.
 - **Decide** con salidas JSON validadas → `~/.local/state/ocarinashell/mamori/plan.json` (aplicar / madurar hasta
-  <fecha> / retener con motivo / pasos de intervención) + notas en `docs/mantenimiento/AAAA-MM-DD.md` con fuentes. El
+  <fecha> / retener con motivo / pasos de intervención) + notas en `docs/mantenimiento/AAAA-MM-DD.md` con fuentes (locales, como el informe). El
   orquestador ejecuta el plan; Snake nunca ejecuta nada ni se salta snapshot, pruebas o reversión.
 - **Adapta**: si una API cambió, propone un parche mínimo (diff) que el orquestador aplica en una rama, prueba y solo
   entonces fusiona (máximo 3 intentos). Solo compatibilidad y arreglos: los cambios de aspecto o funciones nuevas quedan
@@ -145,7 +169,7 @@ previa sí se hace en segundo plano). Si no se cumple, lo reintenta más tarde. 
 |---|---|
 | Shell en modo seguro o en bucle | `reset-failed` + reinicio; si vuelve a caer → Snake diagnostica; corrige o revierte el último commit |
 | Unidad de usuario/sistema fallida | reinicio único; si persiste → informe (+ IA si es nuestra) |
-| Disco < 15 % libre | `paccache -rk2`, journal a 500 MB, cachés propias > 30 días, `docker image prune` (solo imágenes huérfanas, nunca volúmenes) |
+| Disco < 15 % libre | `paccache -rk2`, journal a 500 MB, cachés propias > 30 días, `docker image prune` si hay Docker (solo imágenes huérfanas, nunca volúmenes) |
 | Errores de Btrfs (`btrfs device stats`) o SSD (`nvme smart-log`: crítico, % usado alto) | aviso urgente + recomendación de copia |
 | `db.lck` de pacman huérfano (sin pacman corriendo) | se elimina |
 | Mirrors lentos o caídos | `cachyos-rate-mirrors` (o equivalente) |
@@ -165,16 +189,28 @@ BIOS se preparan y aplican en el siguiente reinicio con cargador; **BIOS/EC con 
 automático tras 14 días de maduración).
 
 ### Control y transparencia
-Ajustes › 守 Mantenimiento (mockup 10): estado, línea temporal, retenciones con motivo, salud, «Deshacer la última
-actualización», interruptores (piloto automático, Snake/Claude, firmware, reinicio nocturno, mejoras automáticas). CLI:
-`ocarina mamori status|run|pause <días>|resume|hold <pkg> <días>|unhold <pkg>|rollback|report`.
+Ajustes › 守 Mantenimiento (mockup 10): estado, línea temporal, retenciones con motivo y «Liberar ahora», salud,
+«Deshacer la última actualización», informe semanal, pausa, interruptores (piloto automático, IA, batería, maduración,
+AUR, firmware, reinicio nocturno, mejoras automáticas, notificaciones) y 控 Copias. CLI:
+`ocarina mamori status|run [--interactive] [--dry-run]|plan [--refresh]|conditions|heal|pause <días>|resume|hold <pkg>
+<días>|unhold <pkg>|holds|rollback|report [--weekly]|periodic|jail`. Implementación: `bin/ocarina-mamori` + `lib/mamori/`
+(un módulo por paso), estado en `~/.local/state/ocarinashell/mamori/`, journal `ocarina-mamori`, simulacros en
+`tests/mamori-simulacros.py`, decisiones D-080 y D-081.
 
 ### Seguridad del piloto automático
 - Ayudante root `ocarina-maint` (`/usr/local/libexec/`, bash estricto) con **lista blanca** de operaciones y argumentos
-  validados: `snapshot`, `download`, `upgrade` (con kernels retenidos si aplica), `rollback <pre> <post>` (solo pares
-  pre/post de snap-pac o de Mamori), `downgrade <pkg>` (solo desde la caché), `paccache`, `journal-vacuum`, `scrub`,
-  `fw-refresh`, `fw-stage <id>`, `mirrors`, `health`. Regla sudoers mínima: `NOPASSWD` SOLO para ese ayudante. El sudo
-  temporal de la construcción desaparece en la fase 17.
+  validados: `snapshot`, `download` (`checkupdates -d`: nunca deja la base de sincronización a medias), `upgrade` (con
+  kernels retenidos si aplica), `rollback <pre> <post>` (solo el último par pre/post de snap-pac o de Mamori),
+  `downgrade <pkg> [<versión>]` (solo paquetes firmados de la caché), `paccache`, `journal-vacuum`, `scrub`,
+  `fw-refresh`, `fw-stage <id>` (nunca BIOS/EC), `mirrors`, `db-unlock`, `health`, `aur-build <paquete> <commit>`
+  (D-080), `unit-restart <unidad fallida>`, `time-sync`, y de solo lectura `boot-check` y `last-pair`. `upgrade` se niega
+  si un repo `file://` es escribible por alguien que no sea root. Valida todo **antes** de actuar como root; códigos 2 (rechazado) y 3 (estado inseguro); cada llamada
+  queda en el journal (`journalctl -t ocarina-maint`); un `flock` impide dos a la vez. Regla sudoers mínima:
+  `NOPASSWD` SOLO para ese ayudante (`/etc/sudoers.d/91-ocarina-maint`, con `visudo -c`). Batería de ataques:
+  `tests/ocarina-maint-mal.sh`. `./install.sh` copia el ayudante; la regla sudoers (y los snapshots de `home`) los pone
+  `sudo bash scripts/root/fase-14.sh` (idempotente: snapshot, `visudo -c`, comprueba que nada más va sin contraseña y
+  lanza la batería de ataques). Sin esa regla, Mamori no puede actuar como root. No hay más sudo sin contraseña: el
+  permiso temporal con el que se construyó OcarinaShell se quitó en la fase 17.
 - Snake no ejecuta nada (solo propone con salidas validadas). El hook de guardia sigue activo si se usa Claude Code. Alcance limitado al repo, `~/.config`, `~/.local/state` y
   `~/.local/share/ocarinashell`; nunca toca documentos ni datos personales. Todo queda en git y en el historial.
 - Interruptor de emergencia: `ocarina mamori pause` o el interruptor de Ajustes.

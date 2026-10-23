@@ -1,0 +1,478 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2015  # `valid && valid || die`: die/continue are exactly the else branch here
+# ocarina-maint — the only root helper of 守 Mamori and `ocarina update` (docs/06-ACTUALIZACIONES › Seguridad del
+# piloto automático). Called as `sudo -n /usr/local/libexec/ocarina-maint <op> …` (sudoers: NOPASSWD for this file
+# only, /etc/sudoers.d/91-ocarina-maint). Every operation and every argument is on a whitelist and is validated BEFORE
+# anything runs as root; anything else exits 2 untouched. Everything is logged to the journal (tag ocarina-maint).
+#
+#   snapshot <descripción>                 single root snapshot «mamori: <descripción>» (prints its number)
+#   download                               fetch pending upgrades into the cache without touching the sync DB
+#                                          (checkupdates -d: no partial-upgrade state is ever left behind)
+#   upgrade [--hold <kernel>]…             pacman -Syu --noconfirm; --hold only for kernels and linux-firmware*,
+#                                          the only packages nothing depends on (docs/06 capa 2)
+#   rollback <pre> <post>                  snapper undochange of the LAST pre/post pair of a pacman transaction
+#                                          (snap-pac or Mamori); packages that touch the boot chain are reinstalled
+#                                          afterwards in their pre version from the cache so /boot matches (/boot is
+#                                          not in the snapshot). Refused if any of those versions is not cached.
+#   downgrade <paquete> [<versión>]        pacman -U from the cache only (default: the newest cached version older
+#                                          than the installed one; with <versión>, that exact cached build)
+#   aur-build <paquete> <commit>           build one AUR update as a throw-away unprivileged user (systemd
+#                                          DynamicUser) from that exact commit of aur.archlinux.org, then install
+#                                          it: only packages already installed from the local repo [ocarina-aur]
+#                                          (root-owned), the commit hash being what 守 Mamori/Snake approved
+#   paccache [2|3]                         keep 3 (or 2, disk nearly full) versions of installed packages, 0 of removed
+#   journal-vacuum                         journal down to 500 MB
+#   scrub start|status                     btrfs scrub of / (start runs in the background with idle IO)
+#   fw-refresh                             fwupdmgr refresh
+#   fw-stage <id-de-dispositivo>           fwupdmgr update of one NON-system-firmware device (BIOS/EC are refused:
+#                                          they need Ayoub's approval, docs/06 capa 6)
+#   mirrors                                cachyos-rate-mirrors
+#   db-unlock                              remove /var/lib/pacman/db.lck only if no pacman/paru/makepkg is running
+#   unit-restart <unidad>                  restart a system unit that is in «failed» state (never one that runs, never
+#                                          greetd, the display manager, dbus, logind or systemd's own)
+#   time-sync                              timedatectl set-ntp true + restart systemd-timesyncd
+#   last-pair                              JSON (read-only): the last pre/post pair of root (what rollback accepts)
+#   health                                 JSON: btrfs errors, NVMe health, free space, failed units, db.lck, snapshots
+#   boot-check                             JSON (read-only): Limine theme block and LTS entry, Plymouth theme inside
+#                                          every initramfs the menu boots (the smoke tests cannot read /boot)
+#   help                                   this text
+# Exit codes: 0 ok · 1 the operation failed · 2 refused (whitelist/validation) · 3 refused (unsafe state).
+set -euo pipefail
+export PATH=/usr/bin:/bin LC_ALL=C
+umask 022
+
+me=ocarina-maint
+cache=/var/cache/pacman/pkg
+snapdir=/.snapshots
+
+die()     { log "RECHAZADO: $*"; echo "$me: $*" >&2; exit 2; }
+unsafe()  { log "RECHAZADO (estado): $*"; echo "$me: $*" >&2; exit 3; }
+fail()    { log "FALLO: $*"; echo "$me: $*" >&2; exit 1; }
+log()     { logger -t "$me" -- "${SUDO_USER:+[$SUDO_USER] }$*" 2>/dev/null || true; }
+need_root() { [[ $EUID -eq 0 ]] || die "necesita root (sudo -n $0 …)"; }
+is_num()  { [[ "$1" =~ ^[1-9][0-9]{0,6}$ ]]; }
+# package names as pacman allows them; versions as epoch:pkgver-pkgrel (pkgrel may be 1.1 on CachyOS)
+is_pkg()  { [[ "$1" =~ ^[a-z0-9@_+][a-z0-9@._+-]{0,99}$ ]]; }
+is_ver()  { [[ "$1" =~ ^([0-9]+:)?[A-Za-z0-9._+~]{1,64}-[0-9]+(\.[0-9]+)?$ ]]; }
+# one plain line, no shell or snapper metacharacters (descriptions end up in snapper and in the journal)
+is_desc() { [[ "$1" =~ ^[[:alnum:][:space:]áéíóúüñÁÉÍÓÚÜÑ.,:_()/+-]{1,64}$ && "$1" != *$'\n'* ]]; }
+kernel_like() { [[ "$1" =~ ^linux(-[a-z0-9]+)*$ && "$1" != *-headers && "$1" != *-docs ]] || [[ "$1" =~ ^linux-firmware(-[a-z0-9]+)*$ ]]; }
+pacman_busy() { pgrep -x 'pacman|paru|makepkg|pacman-key' >/dev/null; }
+lock() {   # one operation at a time (Mamori, `ocarina update` and Ayoub never overlap)
+  exec 9>/run/ocarina-maint.lock
+  flock -n 9 || unsafe "otra operación de ocarina-maint está en marcha"
+}
+# run a command, mirror its output to the caller and to the journal
+run_logged() {
+  log "ejecuta: $*"
+  local rc=0
+  "$@" 2>&1 | tee >(logger -t "$me" 2>/dev/null || cat >/dev/null) || rc=${PIPESTATUS[0]}
+  return "$rc"
+}
+
+# snapper list, one row per line, fields separated by \x1f (not a tab: IFS would merge the empty pre-number of a «pre»
+# row): number type pre-number cleanup description userdata (python csv: descriptions may hold commas)
+snaplist() {
+  snapper --csvout -c root list --columns number,type,pre-number,cleanup,description,userdata \
+    | python3 -I -c 'import csv, sys
+r = csv.reader(sys.stdin); next(r, None)
+for row in r:
+    print("\x1f".join(c.replace("\x1f", " ") for c in row))'
+}
+
+# file:// repositories (paru's LocalRepo [ocarina-aur]) must be root's alone: `upgrade` runs pacman -Syu as root, and a
+# repo a user can write is a way for any process of that user to have a package of its own installed as root
+local_repos_safe() {
+  local r srv dir bad
+  while IFS= read -r r; do
+    while IFS= read -r srv; do
+      [[ "$srv" == file://* ]] || continue
+      dir="${srv#file://}"
+      [[ -d "$dir" ]] || continue
+      # symlinks always show 0777: for them only the owner counts
+      bad="$(find "$dir" -maxdepth 1 \( ! -user root -o \( ! -type l -perm /022 \) \) -print -quit 2>/dev/null)"
+      [[ -z "$bad" ]] || { echo "$dir"; return 1; }
+    done < <(pacman-conf --repo "$r" Server 2>/dev/null)
+  done < <(pacman-conf --repo-list 2>/dev/null)
+}
+
+# --- operations -------------------------------------------------------------------------------------------------------
+op_snapshot() {
+  [[ $# -eq 1 ]] && is_desc "$1" || die "uso: snapshot <descripción> (1–64 caracteres: letras, números, espacios, .,:_()/+-)"
+  need_root
+  local n
+  n="$(snapper -c root create -p -c number -u ocarina=mamori -d "mamori: $1")"
+  log "snapshot #$n «mamori: $1»"
+  echo "$n"
+}
+
+op_download() {
+  [[ $# -eq 0 ]] || die "uso: download"
+  need_root; lock
+  command -v checkupdates >/dev/null || fail "falta checkupdates (pacman-contrib)"
+  local rc=0
+  run_logged checkupdates -d || rc=$?
+  # checkupdates: 0 = updates (downloaded), 2 = nothing pending, 1 = error
+  case "$rc" in 0|2) return 0 ;; *) fail "checkupdates -d terminó con $rc" ;; esac
+}
+
+op_upgrade() {
+  local holds=() a
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --hold) [[ $# -ge 2 ]] || die "uso: upgrade [--hold <kernel>]…"
+              is_pkg "$2" && kernel_like "$2" || die "solo se pueden retener kernels y linux-firmware*: «$2»"
+              pacman -Qq "$2" >/dev/null 2>&1 || die "«$2» no está instalado"
+              holds+=("--ignore" "$2"); shift 2 ;;
+      *) die "argumento no permitido: «$1»" ;;
+    esac
+  done
+  need_root; lock
+  pacman_busy && unsafe "pacman ya está en marcha"
+  local d; d="$(local_repos_safe)" || unsafe "el repo local $d no es solo de root (scripts/root/fase-16.sh lo arregla)"
+  if ((${#holds[@]})); then
+    # a held kernel must not leave anything depending on its new version (docs/06 capa 2): dry-run first
+    pacman -Sup --noconfirm "${holds[@]}" >/dev/null 2>&1 || unsafe "retener ${holds[*]} deja dependencias rotas"
+  fi
+  run_logged pacman -Syu --noconfirm "${holds[@]}" || fail "pacman -Syu falló"
+  log "upgrade ok${holds:+ (retenidos: ${holds[*]})}"
+}
+
+# packages whose files live where the boot chain reads them: the kernel image and modules, the initramfs inputs,
+# firmware and microcode. After an undochange their files are back but /boot is not, so they are reinstalled.
+touches_boot() {   # $1 = local db entry dir (…/var/lib/pacman/local/<name>-<ver>)
+  [[ -r "$1/files" ]] || return 1
+  grep -qE '^usr/lib/(modules|initcpio|firmware)/|^boot/|^etc/mkinitcpio' "$1/files"
+}
+has_entry() {   # $1 = local db dir, $2 = package name: is <name>-<ver>-<rel> there? (names may contain dashes)
+  local d rest
+  for d in "$1/$2"-*; do
+    [[ -d "$d" ]] || continue
+    rest="${d#"$1/$2"-}"
+    [[ "$rest" =~ ^[^-]+-[^-]+$ ]] && return 0
+  done
+  return 1
+}
+op_rollback() {
+  [[ $# -eq 2 ]] && is_num "$1" && is_num "$2" || die "uso: rollback <pre> <post> (números de snapshot)"
+  local pre=$1 post=$2
+  ((post > pre)) || die "el post (#$post) debe ser posterior al pre (#$pre)"
+  need_root; lock
+  pacman_busy && unsafe "pacman está en marcha"
+  [[ -e /var/lib/pacman/db.lck ]] && unsafe "la base de datos de pacman está bloqueada (db.lck)"
+
+  local rows pre_row post_row
+  rows="$(snaplist)" || fail "snapper list falló"
+  pre_row="$(awk -F'\x1f' -v n="$pre" '$1 == n' <<<"$rows")"
+  post_row="$(awk -F'\x1f' -v n="$post" '$1 == n' <<<"$rows")"
+  [[ -n "$pre_row" ]] || die "no existe el snapshot #$pre"
+  [[ -n "$post_row" ]] || die "no existe el snapshot #$post"
+  local pre_type pre_cleanup pre_desc pre_ud post_type post_pre
+  IFS=$'\x1f' read -r _ pre_type _ pre_cleanup pre_desc pre_ud <<<"$pre_row"
+  IFS=$'\x1f' read -r _ post_type post_pre _ _ _ <<<"$post_row"
+  [[ "$pre_type" == pre && "$post_type" == post && "$post_pre" == "$pre" ]] \
+    || die "#$pre/#$post no son un par pre/post (tipos $pre_type/$post_type, pre del post = ${post_pre:-ninguno})"
+  # only pacman transactions: snap-pac (description = the pacman command line, cleanup number) or Mamori (userdata)
+  if ! [[ "$pre_cleanup" == number && "$pre_desc" =~ ^(pacman|paru)\  ]] && [[ "$pre_ud" != *ocarina=mamori* ]]; then
+    die "#$pre no es de una transacción de pacman (snap-pac) ni de Mamori: «$pre_desc»"
+  fi
+  # only the LAST transaction: undoing an older one would also wipe whatever later transactions changed
+  local last_pre
+  last_pre="$(awk -F'\x1f' '$2 == "pre" {n = $1} END {print n}' <<<"$rows")"
+  [[ "$last_pre" == "$pre" ]] || unsafe "#$pre no es la última transacción (la última es #$last_pre): no se puede deshacer sola"
+
+  local pre_db="$snapdir/$pre/snapshot/var/lib/pacman/local" post_db="$snapdir/$post/snapshot/var/lib/pacman/local"
+  [[ -d "$pre_db" && -d "$post_db" ]] || fail "no puedo leer la base de datos de pacman de los snapshots"
+  # the transaction = local db entries that differ between pre and post; boot-chain ones must be in the cache in
+  # their pre version BEFORE anything is undone (all or nothing)
+  local changed=() boot_files=() e name ver f
+  mapfile -t changed < <(comm -3 <(ls "$pre_db") <(ls "$post_db") | tr -d '\t' | sort -u)
+  ((${#changed[@]})) || unsafe "el par #$pre/#$post no cambió ningún paquete: nada que deshacer"
+  for e in "${changed[@]}"; do
+    if [[ -d "$pre_db/$e" ]] && { touches_boot "$pre_db/$e" || { [[ -d "$post_db/$e" ]] && touches_boot "$post_db/$e"; }; }; then
+      name="$(sed -n '/^%NAME%$/{n;p;q}' "$pre_db/$e/desc")"; ver="$(sed -n '/^%VERSION%$/{n;p;q}' "$pre_db/$e/desc")"
+      f="$(find "$cache" -maxdepth 1 -type f -name "$name-$ver-*.pkg.tar.zst" ! -name '*.sig' -print -quit)"
+      [[ -n "$f" ]] || unsafe "$name $ver toca el arranque y no está en la caché: la reversión dejaría /boot desparejado"
+      boot_files+=("$f")
+    fi
+  done
+  # a package installed by the transaction that touches the boot chain (a new kernel): undochange removes its files
+  # but its boot entry would stay; refuse, Mamori handles kernels with downgrade/hold instead
+  for e in "${changed[@]}"; do
+    if [[ -d "$post_db/$e" ]] && touches_boot "$post_db/$e"; then
+      name="$(sed -n '/^%NAME%$/{n;p;q}' "$post_db/$e/desc")"
+      has_entry "$pre_db" "$name" \
+        || unsafe "la transacción instaló $name (arranque) desde cero: usa downgrade/retención, no rollback"
+    fi
+  done
+
+  log "rollback #$pre..#$post (${#changed[@]} entradas; ${#boot_files[@]} de arranque a reinstalar)"
+  run_logged snapper -c root undochange "$pre..$post" || fail "snapper undochange falló"
+  if ((${#boot_files[@]})); then
+    run_logged pacman -U --noconfirm "${boot_files[@]}" || fail "reinstalar los paquetes de arranque falló"
+  fi
+  log "rollback #$pre..#$post ok"
+}
+
+op_downgrade() {
+  [[ $# -ge 1 && $# -le 2 ]] && is_pkg "$1" || die "uso: downgrade <paquete> [<versión>]"
+  local pkg=$1 want="${2:-}" cur f v best="" bestv=""
+  [[ -z "$want" ]] || is_ver "$want" || die "versión no válida: «$want»"
+  cur="$(pacman -Q "$pkg" 2>/dev/null | awk '{print $2}')" || true
+  [[ -n "$cur" ]] || die "«$pkg» no está instalado"
+  while IFS= read -r -d '' f; do
+    # <name>-<ver>-<rel>-<arch>.pkg.tar.zst: the name itself may contain dashes, so strip from the right
+    v="$(basename "$f" .pkg.tar.zst)"; v="${v%-*}"; v="${v#"$pkg"-}"
+    [[ "$(basename "$f")" == "$pkg-$v-"* ]] && is_ver "$v" || continue
+    [[ -f "$f.sig" ]] || continue            # only signed packages from the repos (or our signed local repo)
+    if [[ -n "$want" ]]; then
+      [[ "$v" == "$want" ]] && { best=$f; bestv=$v; }
+    elif (( $(vercmp "$v" "$cur") < 0 )) && { [[ -z "$bestv" ]] || (( $(vercmp "$v" "$bestv") > 0 )); }; then
+      best=$f; bestv=$v
+    fi
+  done < <(find "$cache" -maxdepth 1 -type f -name "$pkg-*.pkg.tar.zst" -print0)
+  [[ -n "$best" ]] || die "no hay ${want:-ninguna versión anterior a $cur} de $pkg firmada en la caché"
+  # the archive must really be that package (file names can lie)
+  [[ "$(pacman -Qp "$best" 2>/dev/null)" == "$pkg $bestv" ]] || die "$(basename "$best") no contiene $pkg $bestv"
+  [[ "$bestv" != "$cur" ]] || die "$pkg ya está en $cur"
+  need_root; lock
+  pacman_busy && unsafe "pacman está en marcha"
+  run_logged pacman -U --noconfirm "$best" || fail "pacman -U falló"
+  log "downgrade $pkg $cur → $bestv"
+}
+
+op_last_pair() {
+  [[ $# -eq 0 ]] || die "uso: last-pair"
+  need_root
+  local rows pre post
+  rows="$(snaplist)" || fail "snapper list falló"
+  pre="$(awk -F'\x1f' '$2 == "pre" {r = $0} END {print r}' <<<"$rows")"
+  [[ -n "$pre" ]] || { echo '{}'; return 0; }
+  local n desc ud
+  IFS=$'\x1f' read -r n _ _ _ desc ud <<<"$pre"
+  post="$(awk -F'\x1f' -v p="$n" '$2 == "post" && $3 == p {print $1; exit}' <<<"$rows")"
+  jq -nc --argjson pre "$n" --arg post "$post" --arg d "$desc" --arg u "$ud" \
+    '{pre: $pre, post: ($post | tonumber? // null), description: $d, mamori: ($u | test("ocarina=mamori"))}'
+}
+
+op_paccache() {
+  [[ $# -le 1 && "${1:-3}" =~ ^[23]$ ]] || die "uso: paccache [2|3]"
+  need_root; lock
+  run_logged paccache -rk"${1:-3}" && run_logged paccache -ruk0 || fail "paccache falló"
+}
+
+op_unit_restart() {
+  [[ $# -eq 1 && "$1" =~ ^[A-Za-z0-9@_.:-]{1,100}\.(service|socket|timer|mount|path)$ ]] || die "uso: unit-restart <unidad>"
+  case "$1" in
+    greetd.service|display-manager.service|dbus*|systemd-*|user@*|getty@*|sshd.service|NetworkManager.service|polkit.service)
+      die "$1 no se reinicia desde aquí" ;;
+  esac
+  need_root
+  systemctl is-failed -q "$1" || unsafe "$1 no está fallida: no se toca"
+  run_logged systemctl reset-failed "$1" || true
+  run_logged systemctl restart "$1" || fail "$1 sigue fallando"
+  sleep 2
+  systemctl is-failed -q "$1" && fail "$1 vuelve a fallar"
+  log "unit-restart $1 ok"
+}
+
+op_time_sync() {
+  [[ $# -eq 0 ]] || die "uso: time-sync"
+  need_root
+  run_logged timedatectl set-ntp true || fail "timedatectl set-ntp falló"
+  run_logged systemctl restart systemd-timesyncd.service || fail "systemd-timesyncd no arranca"
+}
+
+# One AUR update, built by root's rules: the PKGBUILD comes from aur.archlinux.org at the commit Mamori approved (the
+# caller only names a package and a 40-hex hash), the build runs as a throw-away DynamicUser with no access to /home,
+# and only a package with exactly that name is installed. Nothing a user wrote is ever executed as root.
+aur_repo=/var/lib/repo/ocarina-aur
+op_aur_build() {
+  [[ $# -eq 2 ]] && is_pkg "$1" && [[ "$2" =~ ^[0-9a-f]{40}$ ]] || die "uso: aur-build <paquete> <commit de 40 hex>"
+  local pkg=$1 commit=$2
+  pacman -Qq "$pkg" >/dev/null 2>&1 || die "«$pkg» no está instalado (solo se actualiza lo que ya tienes)"
+  pacman -Sl ocarina-aur 2>/dev/null | awk -v p="$pkg" '$2 == p {f = 1} END {exit !f}' \
+    || die "«$pkg» no viene del repo local [ocarina-aur]"
+  need_root; lock
+  pacman_busy && unsafe "pacman está en marcha"
+  local d; d="$(local_repos_safe)" || unsafe "el repo local $d no es solo de root (scripts/root/fase-16.sh lo arregla)"
+  [[ -d "$aur_repo" ]] || fail "falta $aur_repo"
+  local work=/var/lib/ocarina-aur-build
+  log "aur-build $pkg @ $commit"
+  # the build: no root, no /home, a private /tmp; network only for git and the sources the PKGBUILD downloads
+  # shellcheck disable=SC2016  # the build script gets its values as positional arguments, not by expansion
+  run_logged systemd-run --wait --pipe --quiet --collect --unit="ocarina-aur-build-$pkg" \
+    -p DynamicUser=yes -p StateDirectory=ocarina-aur-build -p ProtectHome=yes -p ProtectSystem=strict \
+    -p PrivateTmp=yes -p NoNewPrivileges=yes -p Nice=19 -p IOSchedulingClass=idle -p RuntimeMaxSec=7200 \
+    -p WorkingDirectory="$work" --setenv=HOME="$work" --setenv=PKGDEST="$work/out" --setenv=LC_ALL=C \
+    /usr/bin/bash -euo pipefail -c '
+      rm -rf "$HOME/src" "$PKGDEST"; mkdir -p "$PKGDEST"
+      git clone --quiet "https://aur.archlinux.org/$1.git" "$HOME/src"
+      cd "$HOME/src"
+      git -c advice.detachedHead=false checkout --quiet "$2"
+      [[ "$(git rev-parse HEAD)" == "$2" ]]
+      # PGP keys of the sources, as paru PgpFetch does: the ones the approved commit ships, then any other key the
+      # reviewed PKGBUILD names by its FULL fingerprint (validpgpkeys) from a keyserver
+      shopt -s nullglob
+      for k in keys/pgp/*.asc; do gpg --batch --quiet --import "$k" 2>/dev/null || true; done
+      for fpr in $(sed -n "s/^[[:space:]]*validpgpkeys = \([0-9A-Fa-f]\{40\}\)$/\1/p" .SRCINFO); do
+        gpg --batch --list-keys "$fpr" >/dev/null 2>&1 \
+          || gpg --batch --quiet --keyserver hkps://keyserver.ubuntu.com --recv-keys "$fpr" 2>/dev/null || true
+      done
+      makepkg --noconfirm --nosign --cleanbuild -f' bash "$pkg" "$commit" || fail "la compilación de $pkg falló"
+  local f out=() name
+  shopt -s nullglob
+  for f in "$work/out/"*.pkg.tar.zst; do
+    name="$(pacman -Qp "$f" 2>/dev/null | awk '{print $1}')"
+    [[ "$name" == "$pkg" ]] || { log "ignoro $(basename "$f") (no es $pkg)"; continue; }
+    install -m 0644 -o root -g root "$f" "$aur_repo/" || fail "no pude copiar $(basename "$f") al repo local"
+    out+=("$aur_repo/$(basename "$f")")
+  done
+  shopt -u nullglob
+  ((${#out[@]})) || fail "la compilación no produjo $pkg"
+  run_logged repo-add -q -R "$aur_repo/ocarina-aur.db.tar.gz" "${out[@]}" || fail "repo-add falló"
+  run_logged pacman -U --noconfirm "${out[@]}" || fail "pacman -U de $pkg falló"
+  rm -rf "$work/src" "$work/out"
+  log "aur-build $pkg ok"
+}
+
+op_journal_vacuum() {
+  [[ $# -eq 0 ]] || die "uso: journal-vacuum"
+  need_root
+  run_logged journalctl --vacuum-size=500M || fail "journalctl --vacuum-size falló"
+}
+
+op_scrub() {
+  [[ $# -eq 1 && "$1" =~ ^(start|status)$ ]] || die "uso: scrub start|status"
+  need_root
+  if [[ "$1" == status ]]; then btrfs scrub status / || true; return 0; fi
+  btrfs scrub status / 2>/dev/null | grep -q 'Status:.*running' && unsafe "ya hay un scrub en marcha"
+  run_logged btrfs scrub start -c 3 / || fail "btrfs scrub start falló"
+}
+
+op_fw_refresh() {
+  [[ $# -eq 0 ]] || die "uso: fw-refresh"
+  command -v fwupdmgr >/dev/null || fail "falta fwupdmgr"
+  need_root
+  run_logged fwupdmgr refresh --assume-yes || fail "fwupdmgr refresh falló"
+}
+
+op_fw_stage() {
+  [[ $# -eq 1 && "$1" =~ ^[0-9a-f]{40}$ ]] || die "uso: fw-stage <id de dispositivo de fwupd (40 hex)>"
+  command -v fwupdmgr >/dev/null || fail "falta fwupdmgr"
+  local info
+  info="$(fwupdmgr get-devices --json 2>/dev/null | python3 -I -c 'import json, sys
+want = sys.argv[1]
+for d in json.load(sys.stdin).get("Devices", []):
+    if d.get("DeviceId") == want:
+        flags = d.get("Flags", [])
+        system = "internal" in flags and any(k in (d.get("Plugin", "") + " " + d.get("Name", "")).lower()
+                                            for k in ("uefi", "system firmware", "embedded controller", "bios", " ec"))
+        print("system" if system else "ok"); break
+else:
+    print("missing")' "$1")" || fail "fwupdmgr get-devices falló"
+  case "$info" in
+    ok) ;;
+    system) die "$1 es firmware del sistema (BIOS/EC): necesita la aprobación de Ayoub" ;;
+    *) die "no existe el dispositivo $1" ;;
+  esac
+  need_root; lock
+  run_logged fwupdmgr update "$1" --assume-yes --no-reboot-check || fail "fwupdmgr update falló"
+}
+
+op_mirrors() {
+  [[ $# -eq 0 ]] || die "uso: mirrors"
+  command -v cachyos-rate-mirrors >/dev/null || fail "falta cachyos-rate-mirrors"
+  need_root; lock
+  pacman_busy && unsafe "pacman está en marcha"
+  run_logged cachyos-rate-mirrors || fail "cachyos-rate-mirrors falló"
+}
+
+op_db_unlock() {
+  [[ $# -eq 0 ]] || die "uso: db-unlock"
+  [[ -e /var/lib/pacman/db.lck ]] || { echo "no hay db.lck"; return 0; }
+  pacman_busy && unsafe "pacman está en marcha: db.lck no está huérfano"
+  need_root
+  rm -f /var/lib/pacman/db.lck
+  log "db.lck huérfano eliminado"
+}
+
+op_health() {
+  [[ $# -eq 0 ]] || die "uso: health"
+  need_root
+  local btrfs_err=0 nvme_crit="" nvme_used="" free failed lck=false
+  btrfs_err="$(btrfs device stats / 2>/dev/null | awk '{s += $2} END {print s + 0}')"
+  if command -v nvme >/dev/null; then
+    local sl; sl="$(nvme smart-log /dev/nvme0 -o json 2>/dev/null || true)"
+    nvme_crit="$(jq -r '.critical_warning // empty' <<<"$sl" 2>/dev/null || true)"
+    nvme_used="$(jq -r '.percent_used // empty' <<<"$sl" 2>/dev/null || true)"
+  fi
+  free="$(df --output=pcent / | tail -n1 | tr -dc 0-9)"; free=$((100 - free))
+  failed="$(systemctl --failed --plain --no-legend 2>/dev/null | awk '{print $1}' | paste -sd, -)"
+  [[ -e /var/lib/pacman/db.lck ]] && ! pacman_busy && lck=true
+  local snaps=0 oldest=0 rows
+  if rows="$(snaplist)"; then
+    snaps="$(awk -F'\x1f' '$1 != "0" && $1 != ""' <<<"$rows" | wc -l)"
+    oldest="$(snapper --csvout --iso -c root list --columns number,date 2>/dev/null | awk -F, 'NR > 1 && $1 != "0" {print $2; exit}')"
+    oldest="$(date -d "$oldest" +%s 2>/dev/null || echo 0)"
+  fi
+  jq -nc --argjson be "${btrfs_err:-0}" --arg nc "$nvme_crit" --arg nu "$nvme_used" --argjson fr "$free" \
+     --arg fu "$failed" --argjson lk "$lck" --argjson sn "${snaps:-0}" --argjson so "${oldest:-0}" \
+     '{btrfsErrors: $be, nvmeCriticalWarning: ($nc | tonumber? // null), nvmePercentUsed: ($nu | tonumber? // null),
+       rootFreePercent: $fr, failedUnits: ($fu | split(",") | map(select(. != ""))), orphanDbLock: $lk,
+       snapshots: $sn, snapshotsDays: (if $so > 0 then ((now - $so) / 86400 | floor) else null end)}'
+}
+
+op_boot_check() {
+  [[ $# -eq 0 ]] || die "uso: boot-check"
+  need_root
+  local conf=/boot/limine.conf block=false image=false lts=false silent=0 imgs=() img list ok rows=()
+  if [[ -r "$conf" ]]; then
+    grep -q '^# ── OcarinaShell · tema de Limine' "$conf" && block=true
+    [[ -f /boot/ocarinashell-limine.png ]] && image=true
+    grep -q 'kernel-id=linux-cachyos-lts' "$conf" && lts=true
+    silent="$(sed '/limine_history/,$d' "$conf" | grep -c 'cmdline:.*splash' || true)"
+    mapfile -t imgs < <(sed -n 's/^[[:space:]]*module_path: boot():\([^#]*initramfs[^#]*\).*/\/boot\1/p' "$conf" \
+                        | grep -v limine_history | sort -u)
+  fi
+  for img in "${imgs[@]}"; do
+    ok=false
+    list="$(lsinitcpio "$img" 2>/dev/null || true)"
+    grep -qx 'usr/share/plymouth/themes/ocarinashell/ocarinashell.script' <<<"$list" \
+      && grep -qx 'usr/lib/plymouth/script.so' <<<"$list" && ok=true
+    rows+=("$(jq -nc --arg p "$img" --argjson o "$ok" '{path: $p, plymouth: $o}')")
+  done
+  jq -nc --argjson c "$([[ -r "$conf" ]] && echo true || echo false)" --argjson b "$block" --argjson i "$image" \
+     --argjson l "$lts" --argjson s "${silent:-0}" --argjson r "[$(IFS=,; echo "${rows[*]}")]" \
+     '{limineConf: $c, limineBlock: $b, limineImage: $i, ltsEntry: $l, silentEntries: $s, initramfs: $r}'
+}
+
+# --- dispatch ---------------------------------------------------------------------------------------------------------
+[[ $# -ge 1 ]] || die "falta la operación (ocarina-maint help)"
+op=$1; shift
+for a in "$@"; do
+  # no argument may carry control characters or be absurdly long, whatever the operation
+  [[ ${#a} -le 128 && "$a" != *[$'\001'-$'\037']* ]] || die "argumento no permitido"
+done
+case "$op" in
+  snapshot)       op_snapshot "$@" ;;
+  download)       op_download "$@" ;;
+  upgrade)        op_upgrade "$@" ;;
+  rollback)       op_rollback "$@" ;;
+  downgrade)      op_downgrade "$@" ;;
+  paccache)       op_paccache "$@" ;;
+  journal-vacuum) op_journal_vacuum "$@" ;;
+  scrub)          op_scrub "$@" ;;
+  fw-refresh)     op_fw_refresh "$@" ;;
+  fw-stage)       op_fw_stage "$@" ;;
+  mirrors)        op_mirrors "$@" ;;
+  db-unlock)      op_db_unlock "$@" ;;
+  aur-build)      op_aur_build "$@" ;;
+  unit-restart)   op_unit_restart "$@" ;;
+  time-sync)      op_time_sync "$@" ;;
+  health)         op_health "$@" ;;
+  boot-check)     op_boot_check "$@" ;;
+  last-pair)      op_last_pair "$@" ;;
+  help|-h|--help) sed -n '2,/^# Exit codes/p' "$0" | sed 's/^# \{0,1\}//' ;;
+  *) die "operación no permitida: «$op»" ;;
+esac

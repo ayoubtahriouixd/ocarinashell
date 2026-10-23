@@ -1,0 +1,10 @@
+{
+ "id": "cl-mesa-minor",
+ "category": "changelog",
+ "task": "review-changelog",
+ "input": "Mesa 26.2.5 — bug-fix release\n- radv: fix GPU hang with some Vulkan compute shaders on RDNA3.5 (gfx1152).\n- radeonsi: fix video decode corruption on VCN 4.\n- anv/iris: various Intel fixes.\nNo API changes; drop-in replacement for 26.2.4.\nAPIs usadas en el repo: Vulkan (RADV) en native/nameraka y llama.cpp (ggml-vulkan).",
+ "expect": {
+  "breaking": false,
+  "recommendation": "apply"
+ }
+}

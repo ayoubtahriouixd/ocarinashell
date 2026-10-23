@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# ocarina-wallcache — pre-renders the blurred wallpaper used by Kagi (lock) and the overview backdrop, so nothing
+# is ever blurred live in QML (docs/04-RENDIMIENTO, rule 4). Idempotent; output name depends on the content hash.
+# usage: ocarina-wallcache <image> [--width PX]   → prints the path of the blurred JPEG
+set -euo pipefail
+img="${1:?uso: ocarina-wallcache <imagen> [--width PX]}"; shift
+width=960
+while (($#)); do case "$1" in --width) width="$2"; shift 2 ;; *) echo "opción desconocida: $1" >&2; exit 1 ;; esac; done
+[[ -r "$img" ]] || { echo "no puedo leer $img" >&2; exit 1; }
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/ocarinashell/wallpapers"
+mkdir -p "$cache"
+key=$(sha1sum "$(readlink -f "$img")" | cut -c1-16)
+out="$cache/$key-blur-$width.jpg"
+if [[ ! -s "$out" ]]; then
+  tmp="$(mktemp --tmpdir="$cache" .blur.XXXXXX.jpg)"
+  trap 'rm -f "$tmp" "$tmp.small.v"' EXIT
+  if command -v vips >/dev/null; then
+    # small copy + strong blur: once scaled to the screen it is indistinguishable from a full-size blur
+    # stderr: vips warns about optional modules (openslide) it does not need
+    vips thumbnail "$img" "$tmp.small.v" "$width" --size both 2>/dev/null
+    vips gaussblur "$tmp.small.v" "${tmp}[Q=88,strip]" 14 2>/dev/null
+  else
+    magick "$img" -resize "${width}x" -blur 0x14 -quality 88 -strip "$tmp"
+  fi
+  chmod 644 "$tmp"; mv "$tmp" "$out"
+fi
+echo "$out"

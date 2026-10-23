@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# ocarina-clip — clipboard helper for 蔵 Kura (cliphist + wl-clipboard + wtype). Never prints clipboard contents
+# except through `decode`-based copies into the clipboard itself.
+#   thumbs <dir> <id>…   thumbnails (≤ 320×200 PNG) of image entries that lack one; removes thumbs of other ids
+#   copy <id>            put entry <id> back on the clipboard (wl-copy guesses the MIME type)
+#   copy-file <path>     put a file (a pinned image) on the clipboard
+#   copy-pin <pins.json> <index>   put a pinned text on the clipboard (read with jq: never through argv)
+#   paste [terminal]     type the paste shortcut into the focused window (Ctrl+V, or Ctrl+Shift+V for terminals)
+#   delete <id>          delete one entry
+#   wipe <dir>           delete the whole history and its thumbnails
+# CLIPHIST_DB_PATH (honoured by cliphist itself) points to another database, e.g. for tests.
+set -euo pipefail
+
+die() { printf 'ocarina-clip: %s\n' "$*" >&2; exit 1; }
+num() { [[ "${1:-}" =~ ^[0-9]+$ ]] || die "id no válido: ${1:-}"; }
+
+cmd="${1:-}"; shift || true
+case "$cmd" in
+  thumbs)
+    dir="${1:?dir}"; shift
+    mkdir -p "$dir"
+    declare -A keep=()
+    for id in "$@"; do
+      num "$id"; keep[$id]=1
+      f="$dir/$id.png"
+      [[ -s "$f" ]] && continue
+      if command -v vips >/dev/null; then
+        if cliphist decode "$id" | vips thumbnail_source '[descriptor=0]' "$f.tmp.png" 320 --height 200 2>/dev/null; then
+          mv "$f.tmp.png" "$f"
+        else
+          rm -f "$f.tmp.png"
+        fi
+      else
+        cliphist decode "$id" > "$f.tmp" && mv "$f.tmp" "$f"
+      fi
+    done
+    for f in "$dir"/*.png; do
+      [[ -e "$f" ]] || continue
+      b="$(basename "$f" .png)"
+      if [[ "$b" =~ ^[0-9]+$ && -z "${keep[$b]:-}" ]]; then rm -f "$f"; fi
+    done
+    ;;
+  copy)
+    num "${1:-}"
+    cliphist decode "$1" | wl-copy
+    ;;
+  copy-file)
+    [[ -r "${1:-}" ]] || die "no se puede leer ${1:-}"
+    wl-copy < "$1"
+    ;;
+  copy-pin)
+    [[ -r "${1:-}" ]] || die "no se puede leer ${1:-}"
+    num "${2:-}"
+    jq -j --argjson i "$2" '.pins[$i].text // empty' "$1" | wl-copy
+    ;;
+  paste)
+    command -v wtype >/dev/null || die "falta wtype"
+    sleep 0.15                       # let the previously focused window get the keyboard back
+    if [[ "${1:-}" == terminal ]]; then
+      wtype -M ctrl -M shift -k v -m shift -m ctrl
+    else
+      wtype -M ctrl -k v -m ctrl
+    fi
+    ;;
+  delete)
+    num "${1:-}"
+    printf '%s\t\n' "$1" | cliphist delete
+    ;;
+  wipe)
+    cliphist wipe
+    dir="${1:-}"
+    if [[ -n "$dir" && -d "$dir" ]]; then
+      for f in "$dir"/*.png; do rm -f "$f"; done
+    fi
+    ;;
+  *) die "uso: ocarina-clip thumbs|copy|copy-file|copy-pin|paste|delete|wipe …" ;;
+esac

@@ -1,0 +1,17 @@
+{
+ "id": "tr-sign",
+ "category": "translate",
+ "task": "translate",
+ "input": "立入禁止",
+ "expect": {
+  "translation_es": {
+   "contains": [
+    "prohibid|no pasar|no entrar"
+   ]
+  },
+  "reading_hiragana": {
+   "similar": "たちいりきんし",
+   "threshold": 0.7
+  }
+ }
+}

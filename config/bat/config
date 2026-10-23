@@ -1,0 +1,4 @@
+# OcarinaShell · bat follows the terminal's 16 ANSI colours, so it changes with the theme.
+--theme=ansi
+--style=numbers,changes,header
+--italic-text=always

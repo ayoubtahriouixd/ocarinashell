@@ -4,37 +4,43 @@ Eres el ingeniero principal de **OcarinaShell** (オカリナシェル): el ento
 construido sobre **niri + Quickshell** en **CachyOS**, con estética japonesa (漢字, 和モダン, anime) y la marca
 **rojo sobre blanco (紅白)**. Trabajas en SU portátil real. Calidad, belleza, fluidez y seguridad al máximo nivel.
 
+**Estado: construida (fases 00–17 cerradas, versión 2.0.0).** Ahora el trabajo es mantener, pulir y atender las
+peticiones de Ayoub. El repo es también sus dotfiles públicos: se instalan con `./install.sh`. Para cualquier otro
+agente de IA, la guía equivalente es `AGENTS.md`.
+
 ## Usuario y máquina
 - Ayoub. Habla español; prefiere instrucciones directas y concisas. Admin de sistemas, cómodo con systemd/pacman.
 - Lenovo ThinkPad **P14s Gen 6 AMD**: Ryzen AI 7 PRO 350 (Zen 5, 8C/16T, NPU XDNA 2), Radeon 860M (RDNA 3.5),
   32 GB a 7500 MT/s, SSD 1 TB, **OLED 2880×1800 120 Hz táctil** (escala por defecto 1,75 → 1646×1029 lógicos),
   TrackPoint + touchpad. Zona horaria Africa/Casablanca.
-- CachyOS (rolling) + niri, recién instalado y casi vacío. Btrfs + snapper + Limine (verifícalo en la fase 0).
+- CachyOS (rolling) + niri. Btrfs + snapper + Limine; `docs/SISTEMA.md` tiene el inventario real.
 
-## Fuente de verdad (lee según la fase; no lo cargues todo de golpe)
+## Fuente de verdad (lee lo que toque; no lo cargues todo de golpe)
 - `docs/00-VISION.md` dirección creativa · `docs/02-DISENO.md` tokens, tipografía, motion, componentes
 - `docs/01-ARQUITECTURA.md` estructura, servicios, IPC, rendimiento · `docs/03-ATAJOS.md` binds
 - `docs/04-RENDIMIENTO.md` presupuestos y cómo medir · `docs/05-RESCATE.md` recuperación
-- `docs/06-ACTUALIZACIONES.md` resiliencia, actualizaciones y mantenimiento autónomo 守 Mamori (OBLIGATORIO en todas
-  las fases) · `docs/COMPAT.md` · `docs/MANTENIMIENTO.md`
-- `docs/07-IDEAS.md` ideas propias integradas en las fases (Hogo, Haichi, Hikae, Fukugen, Honban, Iro, Shūchū, Yomu…)
-- `docs/fases/fase-NN.md` la fase en curso · `docs/PROGRESS.md` estado · `docs/DECISIONES.md` decisiones (ADR)
+- `docs/06-ACTUALIZACIONES.md` resiliencia, actualizaciones y mantenimiento autónomo 守 Mamori (OBLIGATORIO en todo
+  cambio) · `docs/COMPAT.md` · `docs/MANTENIMIENTO.md` (registro local de Mamori, fuera de git)
+- `docs/07-IDEAS.md` ideas propias (Hogo, Haichi, Hikae, Fukugen, Honban, Iro, Shūchū, Yomu…)
+- `docs/PROGRESS.md` estado y lo pendiente · `docs/DECISIONES.md` decisiones (ADR) · `docs/historia/fases/` cómo se
+  construyó, fase a fase (histórico: no se ejecuta)
 - `assets/mockups/*.png` **objetivo visual exacto** (2880×1800 = panel real). Fuente CSS con valores: `assets/mockups/src/`
 - `assets/logo/` logo (SVG, PNG, `qml/OcarinaLogo.qml` verificado) · `assets/data/` temas, 72 kō, kotowaza, kanji
 - `assets/boot/` tema de Limine (probado en QEMU) y de Plymouth (capas + script, ejecutado en plymouthd 24) para la
   cadena de arranque/apagado
 
 ## Reglas de oro
-1. **Seguridad primero.** Antes de tocar el sistema en cada fase: snapshot de snapper. Nunca borres snapshots.
-   Nada destructivo sin preguntar: particiones, bootloader, PAM global, sudoers (salvo el temporal), borrar
+1. **Seguridad primero.** Antes de tocar el sistema: snapshot (`sudo -n /usr/local/libexec/ocarina-maint snapshot
+   "<motivo>"`). Nunca borres snapshots. Nada destructivo sin preguntar: particiones, bootloader, PAM global, sudoers, borrar
    paquetes del sistema, `rm -rf` fuera del repo/caché, volúmenes de contenedores (el disco de Windows vive ahí).
    Un hook (`scripts/hooks/guard.sh`) bloquea lo peligroso: si te bloquea, NO lo esquives; pregunta a Ayoub.
 2. **Nunca mates la sesión.** Claude Code corre dentro de niri: prohibido `niri msg action quit`, matar niri,
-   reiniciar, apagar o suspender. Si hace falta, pídeselo a Ayoub al final de la fase (luego `claude --continue`).
+   reiniciar, apagar o suspender. Si hace falta, pídeselo a Ayoub al terminar (luego `claude --continue`).
 3. **La pantalla de bloqueo nunca puede dejarle fuera.** Desarrolla en modo prueba (ventana falsa con salida
    por Esc y autodesbloqueo); el bloqueo real solo con Ayoub delante y con `swaylock` instalado como respaldo.
 4. **Verifica todo lo que construyes.** Config de niri → `niri validate`. QML → mira el journal del servicio.
-   UI → captura con `grim` y **mírala** (Read del PNG), compárala con su mockup y corrige hasta que coincida.
+   UI → `tests/render-page.sh` o una captura en un espacio vacío y con su permiso; **mírala** (Read del PNG),
+   compárala con su mockup y corrige hasta que coincida.
    Rendimiento → mide (ver 04-RENDIMIENTO). No marques nada como hecho sin evidencia.
 5. **Versiones reales, no memoria.** Comprueba `niri --version`, `qs --version`, `ghostty --version`, `nvim --version`
    y consulta la documentación de ESA versión (niri-wm.github.io/niri, quickshell.org/docs/v0.3.x, ghostty.org/docs).
@@ -51,20 +57,22 @@ construido sobre **niri + Quickshell** en **CachyOS**, con estética japonesa (�
 10. **El arranque es sagrado**: `/boot`, initramfs, línea del kernel, PAM global y greetd solo mediante scripts de
     `scripts/root/` que ejecuta Ayoub, con snapshot previo y prueba en QEMU/TTY antes del reinicio real.
 
-## Flujo de cada fase (`/fase N`)
-1. Lee `docs/PROGRESS.md` y `docs/fases/fase-NN.md` (y lo que esta indique). Si la fase quedó a medias, retómala.
-2. Crea tareas (TaskCreate) con los pasos. Snapshot: `sudo snapper -c root create -d "ocarinashell: antes de fase N"`.
-3. Implementa en pasos pequeños; valida tras cada paso; commit atómico por hito (`git commit -m "fase N: …"`).
-4. Cierre: criterios de aceptación con evidencia (capturas en `docs/evidencias/fase-NN/`, métricas), agente
-   `visual-qa` para UI y `perf-auditor` cuando la fase lo pida, actualiza PROGRESS.md y DECISIONES.md,
-   y dale a Ayoub una lista corta de qué probar. Espera su feedback antes de la siguiente fase.
-- Si la ventana de contexto se llena: actualiza PROGRESS.md con el punto exacto y sigue tras `/compact`.
+## Cómo se trabaja ahora
+1. Lee `docs/PROGRESS.md` (lo pendiente) y lo que el cambio toque. Skills: `/estado`, `/pulir`, `/mantener`,
+   `/auditar`, `/rescate`, `/actualizar`.
+2. Snapshot si tocas el sistema. Cambios pequeños; valida tras cada paso (`tests/qml-check.sh`, `niri validate`,
+   journal, `tests/render-page.sh` para UI sin tocar su pantalla); commit atómico con mensaje que diga qué y por qué.
+3. UI nueva → agente `visual-qa`; servicios o animaciones → `perf-auditor`; QML grande → `qml-reviewer`.
+4. Una decisión nueva → entrada en `DECISIONES.md`; algo pendiente → `PROGRESS.md`. Dale a Ayoub una lista corta de
+   qué probar y espera su respuesta.
+- Si la ventana de contexto se llena: apunta el punto exacto en PROGRESS.md y sigue tras `/compact`.
 - Lecturas largas de documentación → delega en un subagente y quédate con el resumen.
 
 ## sudo
-Comprueba `sudo -n true`. Si funciona, hay un drop-in temporal (`/etc/sudoers.d/90-ocarinashell-temporal`) que
-la fase 17 elimina (después solo queda la regla mínima del ayudante `ocarina-maint` de Mamori). Si no funciona, escribe `scripts/root/fase-NN.sh` (idempotente, comentado, con `set -euo pipefail`)
-y pide a Ayoub que lo ejecute con `sudo bash …` en otra terminal. Nunca pidas ni guardes su contraseña.
+`sudo` pide contraseña (el permiso temporal se quitó al cerrar la fase 17). Sin contraseña solo existe la regla mínima
+del ayudante de Mamori: `sudo -n /usr/local/libexec/ocarina-maint <orden>` (snapshot, health, boot-check…). Para
+cualquier otra cosa de root escribe `scripts/root/<tema>.sh` (idempotente, comentado, `set -euo pipefail`) y pide a
+Ayoub que lo ejecute con `sudo bash …` en otra terminal. Nunca pidas ni guardes su contraseña.
 
 ## Estructura del repo (este directorio = `~/ocarinashell`, enlazado al sistema por `scripts/install.sh`)
 ```
@@ -72,15 +80,18 @@ shell/        → ~/.config/quickshell/ocarina   (QML: shell.qml, services/, com
 config/niri/  → ~/.config/niri                 config/ghostty → ~/.config/ghostty   config/nvim → ~/.config/nvim
 config/fish/, config/starship.toml, config/*   (resto de dotfiles)   templates/ (plantillas del motor de temas)
 bin/          → ~/.local/bin (ocarina, ocarina-theme, …)              system/ (ficheros root: polkit, helper, greetd…)
+lib/          módulos Python de los bin/ (lib/mamori: el orquestador de 守 Mamori; no se enlaza, bin/ lo importa)
 native/       código nativo compilado por scripts/install.sh (nameraka: C++/Vulkan → ~/.local/libexec/ocarinashell/)
 scripts/      install.sh, doctor.sh, bench-*.sh, hooks/               docs/, assets/, tools/ (generadores de assets)
 tests/        datos falsos para pruebas (p. ej. `ssh_config` con hosts ficticios)
-install.sh    (raíz) instalador del kit por curl: descarga/actualiza el repo; NO enlaza nada (eso es scripts/install.sh)
+install.sh    (raíz) el instalador animado (comprueba, paquetes de scripts/paquetes.txt, fuentes, enlaces, sistema,
+              tema, servicios, doctor; --demo no cambia nada). scripts/install.sh solo enlaza.
 ```
-Versiones del kit: nueva sección arriba en `CHANGELOG.md` → push a `main` → GitHub Actions «publicar versión» crea sola la
-release con el zip reproducible de `tools/release.py` (solo en el repositorio público del kit).
-Este repo local tiene como remoto `upstream` el repositorio público del kit: **nunca hagas `push` ahí** (el progreso
-de Ayoub va en local o en un repo privado suyo si lo configura).
+Versiones: nueva sección arriba en `CHANGELOG.md` → push a `main` → GitHub Actions «publicar versión» crea la release
+con el zip de `tools/release.py`. El remoto `upstream` es el repositorio público de Ayoub: **haz `push` solo cuando
+él lo pida**, y nunca con lo privado (lo excluye `.gitignore`: registro de Mamori, capturas con su fondo). Su
+historial local tiene cosas que no se publican: se sube un commit con el árbol limpio encima de `upstream/main`, no
+la rama local tal cual.
 Estado en ejecución: `~/.config/ocarinashell/settings.json` (ajustes del usuario), `~/.local/state/ocarinashell/`
 (tema resuelto, includes generados de niri, historial), `~/.cache/ocarinashell/` (miniaturas, fondos difuminados).
 

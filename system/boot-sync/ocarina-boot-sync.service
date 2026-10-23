@@ -1,0 +1,16 @@
+# OcarinaShell (fase 13, D-068): switches Limine/Plymouth/greeter to the theme's light or dark when they differ.
+# Started by ocarina-boot-sync.path and, 2 min after each boot, by ocarina-boot-sync.timer (never WantedBy a target:
+# multi-user.target would wait for it). A no-op (one python call) when nothing changed.
+[Unit]
+Description=OcarinaShell · boot theme follows the desktop theme
+After=local-fs.target
+
+[Service]
+Type=oneshot
+Environment=OCARINA_OWNER=@USER@
+# themes switched in a row (trying them in Settei) cost one rebuild, not several
+ExecStartPre=/usr/bin/sleep 45
+ExecStart=/usr/bin/nice -n 19 /usr/bin/ionice -c 3 /usr/local/lib/ocarinashell/boot/ocarina-boot-sync
+TimeoutStartSec=15min
+TimeoutStopSec=10min
+

@@ -1,0 +1,37 @@
+# Simulacro f · arranque fallido de un kernel nuevo
+# 2026-10-17 21:15
+
+$ ocarina-mamori boot   (código 0)
+
+$ ocarina-mamori plan --refresh   (código 0)
+守 Plan del 2026-10-17 21:15 · IA: none · decisión: apply
+  · críticos maduros (7 días): linux-cachyos
+  · kernels retenidos solos (pacman -Syu --ignore): linux-cachyos
+    python-cachetools 7.2.2-1 → 7.2.3-1
+    linux-cachyos 7.2.9-1 → 7.2.10-1  [critical]
+
+$ ocarina-mamori holds   (código 0)
+  linux-cachyos 7.2.10-1 · hasta el 2026-11-16 21:15 · de Mamori · 7.2.10-1 no arrancó (missing-mark)
+
+--- holds.json ---
+{
+ "linux-cachyos": {
+  "until": 1794863704,
+  "reason": "7.2.10-1 no arrancó (missing-mark)",
+  "kind": "auto",
+  "version": "7.2.10-1",
+  "since": 1792271704
+ }
+}
+
+--- historial ---
+{"at": 1792271704, "kind": "rollback", "title": "Kernel retenido: linux-cachyos 7.2.10-1", "detail": "linux-cachyos 7.2.10-1 retenido 30 días; vuelto a la versión anterior de la caché", "result": "hold"}
+
+--- journal ---
+[dry-run] ocarina-maint downgrade linux-cachyos
+[rollback/hold] Kernel retenido: linux-cachyos 7.2.10-1 · linux-cachyos 7.2.10-1 retenido 30 días; vuelto a la versión anterior de la caché
+[dry-run] notificación: Kernel retenido — linux-cachyos 7.2.10-1 retenido 30 días; vuelto a la versión anterior de la caché
+En tu próximo reinicio arrancará el kernel anterior.
+
+
+VEREDICTO: SUPERADO: kernel retenido 30 días, bajada desde la caché, el resto del lote sigue (--hold del kernel)

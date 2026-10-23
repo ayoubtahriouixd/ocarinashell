@@ -1,0 +1,10 @@
+{
+ "id": "pkg-new-dependency",
+ "category": "pkgbuild",
+ "task": "review-pkgbuild",
+ "input": "--- a/PKGBUILD\n+++ b/PKGBUILD\n@@ -3,12 +3,14 @@\n pkgname=paru\n-pkgver=2.1.0\n-pkgrel=3\n+pkgver=2.2.0\n+pkgrel=1\n url=\"https://github.com/Morganamilo/paru\"\n-depends=('git' 'pacman')\n+depends=('git' 'pacman' 'libalpm.so>=16')\n makedepends=('cargo')\n source=(\"$pkgname-$pkgver.tar.gz::https://github.com/Morganamilo/paru/archive/v$pkgver.tar.gz\")\n-sha256sums=('aaaa1111bbbb2222cccc3333dddd4444eeee5555ffff6666aaaa7777bbbb8888')\n+sha256sums=('1111aaaa2222bbbb3333cccc4444dddd5555eeee6666ffff7777aaaa8888bbbb')\n+prepare() {\n+  cd \"$pkgname-$pkgver\"\n+  cargo fetch --locked --target \"$(rustc -vV | sed -n 's/host: //p')\"\n+}",
+ "expect": {
+  "verdict": "benign",
+  "trivial": false
+ }
+}

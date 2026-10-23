@@ -335,7 +335,7 @@
   },
   "nameraka": {
    "kanji": "滑",
-   "es": "Vídeo fluido"
+   "es": "Nameraka"
   }
  },
  "settingsPages": [
@@ -343,115 +343,134 @@
    "id": "apariencia",
    "kanji": "外観",
    "glyph": "彩",
-   "es": "Apariencia"
+   "es": "Apariencia",
+   "keys": "tema colores fuente oscuro claro acento"
   },
   {
    "id": "barra",
    "kanji": "帯",
    "glyph": "帯",
-   "es": "Barra e isla"
+   "es": "Barra e isla",
+   "keys": "obi shima isla reloj"
   },
   {
    "id": "pantalla",
    "kanji": "画面",
    "glyph": "画",
-   "es": "Pantalla"
+   "es": "Pantalla",
+   "keys": "monitor escala resolucion brillo haichi"
   },
   {
    "id": "sonido",
    "kanji": "音",
    "glyph": "音",
-   "es": "Sonido"
+   "es": "Sonido",
+   "keys": "audio volumen microfono altavoz"
   },
   {
    "id": "red",
    "kanji": "網",
    "glyph": "網",
-   "es": "Red y Bluetooth"
+   "es": "Red y Bluetooth",
+   "keys": "wifi internet bluetooth vpn"
   },
   {
    "id": "energia",
    "kanji": "電源",
    "glyph": "電",
-   "es": "Energía"
+   "es": "Energía",
+   "keys": "bateria suspender carga perfil"
   },
   {
    "id": "shinobi",
    "kanji": "忍",
    "glyph": "忍",
-   "es": "Shinobi"
+   "es": "Shinobi",
+   "keys": "ahorro bateria"
   },
   {
    "id": "oni",
    "kanji": "鬼",
    "glyph": "鬼",
-   "es": "Oni"
+   "es": "Oni",
+   "keys": "rendimiento potencia"
   },
   {
    "id": "nameraka",
    "kanji": "滑",
    "glyph": "滑",
-   "es": "Vídeo fluido"
+   "es": "Nameraka",
+   "keys": "vídeo fluido fps lossless lsfg"
   },
   {
    "id": "fune",
    "kanji": "船",
    "glyph": "船",
-   "es": "Apps de Windows"
+   "es": "Apps de Windows",
+   "keys": "windows maquina virtual"
   },
   {
    "id": "snake",
    "kanji": "蛇",
    "glyph": "蛇",
-   "es": "Snake"
+   "es": "Snake",
+   "keys": "ia asistente local"
   },
   {
    "id": "mamori",
    "kanji": "守",
    "glyph": "守",
-   "es": "Mantenimiento"
+   "es": "Mantenimiento",
+   "keys": "actualizaciones mantenimiento"
   },
   {
    "id": "bloqueo",
    "kanji": "鍵",
    "glyph": "鍵",
-   "es": "Bloqueo"
+   "es": "Bloqueo",
+   "keys": "kagi contrasena huella pantalla de bloqueo"
   },
   {
    "id": "entrada",
    "kanji": "入力",
    "glyph": "入",
-   "es": "Teclado y ratón"
+   "es": "Teclado y ratón",
+   "keys": "teclado raton touchpad trackpoint"
   },
   {
    "id": "atajos",
    "kanji": "技",
    "glyph": "技",
-   "es": "Atajos"
+   "es": "Atajos",
+   "keys": "teclas binds"
   },
   {
    "id": "notificaciones",
    "kanji": "通知",
    "glyph": "文",
-   "es": "Notificaciones"
+   "es": "Notificaciones",
+   "keys": "fumi no molestar"
   },
   {
    "id": "ventanas",
    "kanji": "窓",
    "glyph": "窓",
-   "es": "Ventanas"
+   "es": "Ventanas",
+   "keys": "mado reglas"
   },
   {
    "id": "fondos",
    "kanji": "壁紙",
    "glyph": "壁",
-   "es": "Fondos"
+   "es": "Fondos",
+   "keys": "kabegami wallpaper fondo"
   },
   {
    "id": "acerca",
    "kanji": "情報",
    "glyph": "情",
-   "es": "Acerca de"
+   "es": "Acerca de",
+   "keys": "version sistema"
   }
  ],
  "toggles": {

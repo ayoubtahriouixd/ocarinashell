@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# ocarina-quickterm — 端 drop-down terminal (Mod+º). Ghostty 1.3 can only toggle its own quick terminal from a
+# global shortcut (XDG GlobalShortcuts portal), which niri does not implement (D-051). So: one Ghostty window with a
+# fixed title, floating at the top by a niri rule (config/niri/ocarina/rules.kdl), and this toggle:
+#   · no window            → open it (instant: Ghostty's single instance)
+#   · focused              → hide it: move it to the empty workspace at the end of its monitor (Obi hides it)
+#   · elsewhere / unfocused → bring it to the focused workspace and focus it
+# The shell keeps running while hidden. Exit the shell (Ctrl+D) to close it for good.
+set -euo pipefail
+title="端 Terminal desplegable"
+
+if ! command -v niri >/dev/null || ! command -v jq >/dev/null; then exec ghostty +new-window; fi
+wins="$(niri msg -j windows 2>/dev/null)" || exec ghostty +new-window
+
+read -r id focused ws < <(jq -r --arg t "$title" \
+  'map(select(.title == $t)) | first // empty | "\(.id) \(.is_focused) \(.workspace_id)"' <<<"$wins") || true
+
+if [[ -z "${id:-}" ]]; then
+  exec ghostty +new-window --title="$title"
+fi
+
+wss="$(niri msg -j workspaces)"
+if [[ "$focused" == true ]]; then
+  # the last workspace of that monitor is always the empty one: hiding there never shifts the others
+  last="$(jq -r --argjson w "$ws" '(map(select(.id == $w)) | first.output) as $o
+          | map(select(.output == $o)) | max_by(.idx).idx' <<<"$wss")"
+  niri msg action move-window-to-workspace --window-id "$id" --focus false "$last"
+else
+  cur="$(jq -r 'map(select(.is_focused)) | first | "\(.id) \(.idx)"' <<<"$wss")"
+  if [[ "${cur%% *}" != "$ws" ]]; then
+    niri msg action move-window-to-workspace --window-id "$id" --focus false "${cur##* }"
+  fi
+  niri msg action focus-window --id "$id"
+fi

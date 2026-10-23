@@ -1,0 +1,42 @@
+# 船 Fune — Windows 11 in KVM for WinApps (fase 12, D-062). Rootless Podman: `podman-compose` reads this file at
+# ~/.config/winapps/compose.yaml (WinApps' fixed path). Container name WinApps: WinApps looks for it by that name.
+# Never `podman-compose down -v`: /storage is the Windows disk (the guard hook blocks it).
+#
+# The password lives in gnome-keyring (secret-tool, service ocarinashell-fune); dockur has no *_FILE support, so
+# `ocarina fune create` passes it as FUNE_PASSWORD only when the container is created. It is never written to disk by
+# us (dockur keeps it in Windows' own unattend answer file, inside the VM disk).
+name: winapps
+services:
+  windows:
+    # pinned; `ocarina fune update` moves it (FUNE_IMAGE, ~/.local/state/ocarinashell/fune/image) with the VM off
+    image: ${FUNE_IMAGE:-docker.io/dockurr/windows:6.06}
+    container_name: WinApps
+    environment:
+      VERSION: "11"                              # Windows 11 Pro (D-062)
+      RAM_SIZE: "6G"
+      CPU_CORES: "4"
+      DISK_SIZE: "96G"                           # sparse raw image on a NOCOW subvolume: grows on demand
+      USERNAME: "ayoub"
+      PASSWORD: "${FUNE_PASSWORD:-}"
+      LANGUAGE: "Spanish"
+      REGION: "es-ES"
+      KEYBOARD: "es-ES"
+      SAMBA: "N"                                 # files go through RDP drive redirection (+home-drive), not a share
+      # Podman → dockur's user-mode network (passt): only listed ports reach Windows (3389 is always there)
+      USER_PORTS: "7148"
+    devices:
+      - /dev/kvm
+      - /dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    ports:                                       # loopback only: nothing listens outside the laptop
+      - 127.0.0.1:8006:8006
+      - 127.0.0.1:3389:3389/tcp
+      - 127.0.0.1:3389:3389/udp
+      - 127.0.0.1:7148:7148                     # 船 Fune agent (assets/fune/agent.ps1): token-protected
+    volumes:
+      - ${HOME}/.local/share/ocarinashell/fune/storage:/storage
+      - ${HOME}/.local/share/ocarinashell/fune/oem:/oem
+    restart: "no"
+    stop_grace_period: 2m

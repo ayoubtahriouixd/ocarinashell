@@ -1,0 +1,91 @@
+# OcarinaShell · Ghostty 1.3 (docs/historia/fases/fase-08.md). Reference: `ghostty +show-config --default --docs`.
+# Colours come from the theme engine; effects (ink cursor shader) come from a file the shell rewrites when
+# AC power / 忍 Shinobi / reduced motion change. ocarina-theme sends SIGUSR2 to reload everything live.
+config-file = ?~/.local/state/ocarinashell/theme/ghostty.conf
+config-file = ?~/.local/state/ocarinashell/theme/ghostty-effects.conf
+
+# ── Type ────────────────────────────────────────────────────────────────────────────────────────
+# JetBrains Mono first; Japanese falls back to Noto Sans Mono CJK JP (kanji are exactly two cells wide).
+font-family = JetBrainsMono Nerd Font
+font-family = Noto Sans Mono CJK JP
+font-family = Noto Color Emoji
+# kanji and kana in the shell's Japanese face (mockup 01: the .term font stack falls back to Zen Kaku Gothic New);
+# Noto Sans Mono CJK JP stays as the fallback for anything Zen Kaku does not cover
+font-codepoint-map = U+3000-U+30FF,U+4E00-U+9FFF,U+FF00-U+FFEF=Zen Kaku Gothic New
+font-size = 10
+font-feature = calt
+font-feature = liga
+font-thicken = false
+# 13 px with line height 1,5 (mockup 01: font 400 13px/1.5); JetBrains Mono's own is 1,32
+adjust-cell-height = 14%
+
+# ── Window ──────────────────────────────────────────────────────────────────────────────────────
+# niri draws the border/focus ring (server-side decorations); no GTK header bar. Tabs still show a bar.
+window-decoration = server
+gtk-titlebar = false
+gtk-tabs-location = top
+gtk-wide-tabs = false
+window-padding-x = 14
+window-padding-y = 11
+window-padding-balance = true
+window-padding-color = background
+# background-opacity: in the effects include (Ajustes › Apariencia › opacidad de la terminal; 1 in Shinobi/Oni)
+window-inherit-working-directory = true
+window-save-state = never
+resize-overlay = never
+unfocused-split-opacity = 0.82
+confirm-close-surface = false
+quit-after-last-window-closed = false
+
+# ── Cursor & mouse ──────────────────────────────────────────────────────────────────────────────
+cursor-style = bar
+cursor-style-blink = false
+# a 1 px bar at 1,75 lands on two pixel columns at half strength (nearly invisible): 2 px
+adjust-cursor-thickness = 2
+mouse-hide-while-typing = true
+mouse-scroll-multiplier = 1.5
+copy-on-select = true
+clipboard-read = ask
+clipboard-paste-protection = true
+link-url = true
+right-click-action = context-menu
+
+# ── Shell integration · notifications ───────────────────────────────────────────────────────────
+shell-integration = fish
+shell-integration-features = cursor,sudo,title,ssh-env,no-ssh-terminfo
+scrollback-limit = 50000000
+# a command that took ≥10 s and finished while you looked elsewhere → desktop notification (Fumi)
+notify-on-command-finish = unfocused
+notify-on-command-finish-action = no-bell,notify
+notify-on-command-finish-after = 10s
+bell-features = no-system,no-audio,attention,title,no-border
+# no «Configuración recargada» toast: the shell reloads Ghostty by itself (theme, 忍 Shinobi, effects) — D-059
+app-notifications = no-clipboard-copy,no-config-reload
+
+# ── Keys (Ctrl+Shift for the terminal; Super belongs to niri) ───────────────────────────────────
+# tabs: Ctrl+Shift+T new · Ctrl+Tab / Ctrl+Shift+Tab · Alt+1…9 · Ctrl+Shift+W close   (Ghostty defaults)
+# splits: Ctrl+Shift+O → right · Ctrl+Shift+E ↓ · Ctrl+Alt+arrows move · Ctrl+Shift+Enter zoom
+keybind = ctrl+shift+d=new_split:right
+keybind = ctrl+shift+s=new_split:down
+keybind = ctrl+shift+x=close_surface
+# niri owns Super+Ctrl: resize splits with Ctrl+Alt+Shift+arrows and walk them with Ctrl+Alt+[ ]
+keybind = super+ctrl+shift+arrow_up=unbind
+keybind = super+ctrl+shift+arrow_down=unbind
+keybind = super+ctrl+shift+arrow_left=unbind
+keybind = super+ctrl+shift+arrow_right=unbind
+keybind = super+ctrl+[=unbind
+keybind = super+ctrl+]=unbind
+keybind = ctrl+alt+shift+arrow_up=resize_split:up,24
+keybind = ctrl+alt+shift+arrow_down=resize_split:down,24
+keybind = ctrl+alt+shift+arrow_left=resize_split:left,24
+keybind = ctrl+alt+shift+arrow_right=resize_split:right,24
+keybind = ctrl+alt+equal=equalize_splits
+# search the scrollback (Ctrl+Shift+F, Esc ends) · Enter / Shift+Enter walk the matches
+keybind = ctrl+shift+f=start_search
+keybind = ctrl+shift+g=navigate_search:next
+keybind = ctrl+shift+h=navigate_search:previous
+# prompts: jump between them (shell integration marks them)
+keybind = ctrl+shift+arrow_up=jump_to_prompt:-1
+keybind = ctrl+shift+arrow_down=jump_to_prompt:1
+keybind = ctrl+shift+k=clear_screen
+keybind = ctrl+shift+p=toggle_command_palette

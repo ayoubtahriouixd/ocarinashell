@@ -1,0 +1,30 @@
+# 蛇 Snake — local AI server (fase 15, docs/SNAKE.md). Never enabled: `ocarina-snake start` starts it on demand and
+# `ocarina-snake serve` stops itself after snake.keepAliveMin minutes without use, on Shinobi/Oni or with low RAM.
+# No network at all (PrivateNetwork: only its own loopback): llama-server listens on a unix socket in
+# %t/ocarinashell/snake, so no other host, container or browser page can reach it (models come from disk).
+[Unit]
+Description=蛇 Snake · IA local de OcarinaShell
+Documentation=file://%h/ocarinashell/docs/SNAKE.md
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/ocarina-snake serve
+Environment=PYTHONUNBUFFERED=1 FLM_DISABLE_UPDATE_CHECK=1
+Restart=no
+TimeoutStopSec=20
+# the stop signal goes to `ocarina-snake serve` only, which hands ONE SIGTERM to llama-server: with the default
+# (control-group) both got it, llama-server saw a «second interrupt», aborted and left a core dump (fase 17)
+KillMode=mixed
+# below the desktop: the shell and the apps stay smooth while it thinks
+Nice=5
+CPUWeight=60
+IOSchedulingClass=best-effort
+IOSchedulingPriority=6
+# confinement: reads the models, writes only its runtime dir; no network (IPAddressDeny= needs root in a user unit)
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%t/ocarinashell
+PrivateNetwork=yes

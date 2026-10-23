@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Prepare a GitHub release of the kit.
+"""Prepare a GitHub release of OcarinaShell.
 
     python3 tools/release.py v1.0.0 [--repo usuario/ocarinashell]
 
 --repo writes the repository into every file that still has the __GITHUB_REPO__ placeholder (README.md, install.sh,
 CHANGELOG.md…). Then it builds, in dist/:
-  ocarinashell-kit-<version>.zip   root folder ocarinashell/; the repo's files (tracked + new, minus .gitignore),
+  ocarinashell-<version>.zip   root folder ocarinashell/; the repo's files (tracked + new, minus .gitignore),
                                    reproducible: sorted entries and the date of the version
-  SHA256SUMS                       zip + install.sh
+  SHA256SUMS                       the zip's checksum
   RELEASE-NOTES.md                 that version's CHANGELOG section + how to install
 Standard library only.
 """
@@ -38,8 +38,8 @@ def files():
 
 
 def current_repo():
-    m = re.search(r'REPO="\$\{OCARINA_REPO:-([^}]+)\}"', (K / "install.sh").read_text())
-    return m.group(1) if m and m.group(1) != PLACEHOLDER else None
+    # GitHub Actions says where it runs; by hand, the public repository
+    return os.environ.get("GITHUB_REPOSITORY") or "ayoubtahriouixd/ocarinashell"
 
 
 def set_repo(repo):
@@ -70,29 +70,26 @@ def notes(version, repo):
     m = re.search(rf"^## \[{re.escape(version.lstrip('v'))}\][^\n]*\n(.*?)(?=^## \[|^\[[^\]]+\]: |\Z)", log, re.S | re.M)
     if not m:
         sys.exit(f"CHANGELOG.md no tiene la sección [{version.lstrip('v')}]")
-    raw = f"https://raw.githubusercontent.com/{repo}/main/install.sh"
     return (m.group(1).strip() + f"""
 
 ### Instalar
 
 ```bash
-curl -fsSL {raw} | bash
+git clone https://github.com/{repo} ~/ocarinashell
+cd ~/ocarinashell && ./install.sh
 ```
 
-¿Prefieres revisarlo antes? `curl -fsSLO {raw} && less install.sh && bash install.sh`.
-Sin `curl`: descarga `ocarinashell-kit-{version}.zip` y `SHA256SUMS`, comprueba con
-`sha256sum -c SHA256SUMS --ignore-missing` y sigue el README.
+`./install.sh --demo` enseña todo el recorrido sin cambiar nada. Sin git: descarga `ocarinashell-{version}.zip` y
+`SHA256SUMS`, comprueba con `sha256sum -c SHA256SUMS --ignore-missing`, descomprime en `~/ocarinashell` y ejecuta
+`./install.sh`.
 
-Después: `cd ~/ocarinashell && claude --permission-mode acceptEdits` y escribe `/fase 0`.
-
-### Actualizar un kit ya instalado
+### Actualizar
 
 ```bash
-curl -fsSL {raw} | bash -s -- --update
+cd ~/ocarinashell && git pull && ./install.sh
 ```
 
-Fusiona esta versión con tu progreso de las fases. Si algo choca, se detiene sin tocar nada: entonces pídele a Claude
-Code «fusiona la versión {version} del kit» (o `/actualizar-kit`, desde la 1.1.0).
+Tus ajustes viven fuera del repo (`~/.config/ocarinashell`, `~/.local/state/ocarinashell`): actualizar no los toca.
 """)
 
 
@@ -117,7 +114,7 @@ def main():
 
     dist = K / "dist"
     dist.mkdir(exist_ok=True)
-    zpath = dist / f"ocarinashell-kit-{a.version}.zip"
+    zpath = dist / f"ocarinashell-{a.version}.zip"
     names = files()
     with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         for n in names:
@@ -127,7 +124,7 @@ def main():
             zi.compress_type = zipfile.ZIP_DEFLATED
             z.writestr(zi, p.read_bytes(), compresslevel=9)
     sums = []
-    for p in (zpath, K / "install.sh"):
+    for p in (zpath,):
         sums.append(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}")
     (dist / "SHA256SUMS").write_text("\n".join(sums) + "\n")
     (dist / "RELEASE-NOTES.md").write_text(notes(a.version, repo))

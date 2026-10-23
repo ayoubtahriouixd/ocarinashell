@@ -4,3 +4,19 @@ __pycache__/
 dist/
 docs/img/.tour/
 .ocarinashell-*/
+# copias de seguridad que crean scripts/install.sh e install-system.sh (viven fuera del repo, por si acaso)
+*.ocarina-bak-*
+# cachés de herramientas
+.cache/
+*.swp
+# *.qsb (shaders compilados) SÍ se versionan. Las capturas de docs/evidencias/ se versionan salvo las > 2 MB:
+# compártelas con `magick in.png -resize 50% out.png` o súbelas aparte.
+.qmlls.ini
+
+# ── personal, never published (Ayoub, cierre de la fase 17) ──
+# 守 Mamori's log of this machine (it keeps writing it here, locally; no commits)
+docs/MANTENIMIENTO.md
+docs/mantenimiento/
+# phase evidence screenshots: they show this desktop with Ayoub's own wallpaper and music (the README uses docs/img/real)
+docs/evidencias/**/*.png
+docs/evidencias/**/*.jpg

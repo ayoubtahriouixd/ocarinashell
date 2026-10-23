@@ -1,0 +1,17 @@
+# OcarinaShell · lock before the system sleeps (lid, Dengen, `systemctl suspend`, idle). swayidle takes logind's
+# sleep delay inhibitor (-w): the laptop does not sleep until `ocarina lock --wait` returns with Kagi (or swaylock)
+# confirmed on screen, so on resume the desktop is never visible. `loginctl lock-session` also locks. docs/historia/fases/fase-06
+[Unit]
+Description=OcarinaShell · bloquear antes de suspender (swayidle)
+PartOf=graphical-session.target
+After=graphical-session.target
+Requisite=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/swayidle -w before-sleep '%h/.local/bin/ocarina lock --wait' lock '%h/.local/bin/ocarina lock'
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target

@@ -1,0 +1,12 @@
+# Capa 4 (fase 14): red con la shell parada
+## Modo seguro
+- Barra mínima con la causa del journal + panel 診 Diagnóstico + Reintentar/Terminal/Ver errores/Bloquear (simulacro d:
+  Ayoub vio la causa, abrió el diagnóstico y «Reintentar» devolvió la shell normal).
+## Respaldos del CLI (systemctl --user stop ocarinashell)
+- ocarina audio up/down → wpctl: Volume 0.35 → 0.40 → 0.35
+- ocarina brightness up/down → brightnessctl: 74400 → 99200 → 74400
+- ocarina media toggle ×2 → playerctl (sin errores)
+## swaylock (bloqueo de emergencia)
+- /usr/bin/swaylock instalado; ~/.config/swaylock/config generado por ocarina-theme (tema Sumi): color=0e0e0f,
+  inside-color=161617, ring-color=444448, key-hl-color=e60033, font=Geist. Lo usan `ocarina lock` (sin shell), el
+  botón «Bloquear» del modo seguro y Kagi como relevo (fase 6).

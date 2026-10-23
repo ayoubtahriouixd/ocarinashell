@@ -1,0 +1,7 @@
+[Unit]
+Description=Plymouth failsafe quit (OcarinaShell greeter)
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+ExecStart=-/usr/bin/plymouth quit

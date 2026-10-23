@@ -1,0 +1,6 @@
+Kabegami · índice y miniaturas (bin/ocarina-thumbs) — 2026-10-15
+200 JPEG 2880×1800 (~2,4 MB cada uno) en una carpeta de prueba, caché vacía (XDG_CACHE_HOME aparte):
+  primera vez:  1,449 s total (vipsthumbnail en paralelo, 14 hilos; 1348 % CPU)   criterio < 10 s ✔
+  segunda vez:  0,049 s total (todo en caché por ruta+mtime)                       «instantáneo» ✔
+Fondos reales del usuario (6 incluidos): 0,19 s en frío · 0,04 s con caché · 141 ms medidos dentro de la shell
+(IPC kabegami indexMs, incluye arrancar el proceso y publicar el modelo).

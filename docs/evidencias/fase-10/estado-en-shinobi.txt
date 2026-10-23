@@ -1,0 +1,13 @@
+brillo=16 %
+pantalla.eDP-1=2880x1800@60
+perfil=power-saver
+turbo=False
+epp=power
+gpu=auto
+carga=75-80
+wifi-ahorro.wlan0=on
+bluetooth=false
+teclado=0
+tema=shinobi
+niri.shinobi=1
+efectos={"cursor":false,"motion":false}

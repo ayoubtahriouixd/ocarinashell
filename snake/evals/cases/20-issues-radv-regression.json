@@ -1,0 +1,14 @@
+{
+ "id": "issues-radv-regression",
+ "category": "issues",
+ "task": "scan-issues",
+ "input": "Incidencias abiertas (mesa 26.2.5 está en el lote):\n1. [radv] gfx1152 (Radeon 860M/880M): GPU hang and black screen after resume with mesa 26.2.5, bisected to commit 3f2a… — confirmed, 14 reactions — https://gitlab.freedesktop.org/mesa/mesa/-/issues/14021\n2. [anv] Arc A770 flickering in Chrome with 26.2.5 — https://gitlab.freedesktop.org/mesa/mesa/-/issues/14018\n3. [nvk] Turing: crash in vkcube — https://gitlab.freedesktop.org/mesa/mesa/-/issues/14002",
+ "expect": {
+  "regression_risk": "high",
+  "relevant": {
+   "contains": [
+    "14021"
+   ]
+  }
+ }
+}

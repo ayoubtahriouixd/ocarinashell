@@ -1,0 +1,491 @@
+#!/usr/bin/env bash
+# ocarina — OcarinaShell CLI. Every niri bind calls this (docs/01-ARQUITECTURA §7).
+# It talks to the shell over IPC (`qs -c ocarina ipc call …`) and, if the shell is not running or does not answer,
+# falls back to plain tools so the keys never die: wpctl, brightnessctl, playerctl, swaylock, notify-send.
+# Phase 1 version: fallbacks for everything that exists before the shell; the rest is filled in phase by phase.
+set -euo pipefail
+
+self="$(readlink -f "${BASH_SOURCE[0]}")"
+repo="$(cd "$(dirname "$self")/.." && pwd)"
+version="2.0.0"
+step_audio=5
+step_bright=5
+
+have() { command -v "$1" >/dev/null 2>&1; }
+shell_up() { systemctl --user is-active --quiet ocarinashell 2>/dev/null; }
+# ipc <target> <function> [args…]: true only if the shell answered
+ipc() { shell_up && have qs && timeout 1.5 qs -c ocarina ipc call "$@" >/dev/null 2>&1; }
+# ipc_print: the same, printing the answer
+ipc_print() { shell_up && have qs && timeout 1.5 qs -c ocarina ipc call "$@"; }
+# Lightweight OSD while the shell does not exist (no-op without a notification server)
+note() {
+  have notify-send || return 0
+  timeout 1 notify-send -a OcarinaShell -t 1500 -h string:x-canonical-private-synchronous:ocarina-osd "$@" \
+    >/dev/null 2>&1 || true
+}
+pending() { note "OcarinaShell" "$1 llega en la fase $2."; }
+usage() { sed -n '/^# usage:/,/^# end usage/p' "$self" | sed '1d;$d;s/^# \{0,1\}//'; }
+# usage:
+# ocarina audio up|down|mute|mic             volumen y silencio (salida) · micrófono
+# ocarina media toggle|next|prev|up|down     reproductor activo (MPRIS)
+# ocarina brightness up|down [paso] [--output S|--all] · set <N> · list
+# ocarina lock [--wait|test]                 bloquear (respaldo: swaylock) · test = modo prueba (Esc sale)
+# ocarina session save|restore|status        復元 Fukugen: guardar / restaurar la sesión
+# ocarina settings [página]                  設定 Ajustes (apariencia, pantalla, fondos, energia…)
+# ocarina displays [arrange|identify|mirror on|off|profile <nombre>|list]   配置 Haichi
+# ocarina launcher|engawa|notifications|notes|clipboard|tasks|rules|power|cheatsheet
+# ocarina shinobi|oni [on|off|toggle|status]  忍 ahorro extremo · 鬼 rendimiento extremo (oni auto-on|auto-off: GameMode)
+# ocarina play [--preset fsr|1200|native|off] [--no-hud] <orden…>   lanzar un juego con GameMode + gamescope (+ HUD)
+# ocarina nameraka|fluido [on|off|toggle|status|x2|x4|x6|custom|next|fps <N>|calibrate|self-test]   滑 vídeo fluido
+# ocarina play --steam [preset]              las opciones de lanzamiento de Steam de ese preset (Ajustes › Oni las copia)
+# ocarina fune [status|start|pause|resume|stop|desktop|app <id> [archivo]|scan|apps|webapp <nombre> <url>|wine …|
+#              update|maintenance|backup|smoke]   船 apps de Windows (sin argumentos: el panel)
+# ocarina snake [ask "…"|listen|status|start|stop|eval|models|fetch|actions|help]   蛇 IA local (sin argumentos: el asistente; listen: por voz)
+# ocarina read [--translate]                 読 Yomu: leer (y traducir) una zona de la pantalla
+# ocarina rename-workspace|wallpaper|record|quickterm|pick-color
+# ocarina notes ["texto"]                    Techō · con texto, lo apunta en la nota abierta
+# ocarina doctor [--quiet] · doctor --smoke|--post-update [--json]   salud · pruebas de humo (pasivas | tras actualizar)
+# ocarina update [--check]                   守 Mamori con Ayoub delante (= ocarina mamori run --interactive); --check: el plan
+# ocarina apps                               器 cajón de apps de la ocarina (sin la shell: Torii)
+# ocarina mamori [status|run|plan|pause <días>|resume|hold <pkg> <días>|unhold <pkg>|rollback|report|…]   守 mantenimiento (sin argumentos: su página)
+# ocarina rollback [--yes]                   deshace la última transacción de pacman (su par pre/post de snapper)
+# ocarina backup [status|now|list [ruta]|restore <ruta> [n]|check]   控 snapshots de ~ (restaura en ~/Restaurado/)
+# ocarina restart · logs [-f] · version
+# end usage
+
+# 守 undo the last pacman transaction (docs/06 capa 5): the root part is ocarina-maint (whitelisted, only the LAST
+# pre/post pair, /boot kept coherent); then the shell restarts and the smoke tests run again.
+rollback() {
+  local maint=/usr/local/libexec/ocarina-maint pair pre post desc yes=0
+  [[ "${1:-}" == --yes || "${1:-}" == -y ]] && yes=1
+  [[ -x "$maint" ]] || { echo "falta $maint: sudo bash ~/ocarinashell/scripts/root/fase-14.sh" >&2; return 1; }
+  pair="$(sudo -n "$maint" last-pair 2>/dev/null || sudo "$maint" last-pair)" || return 1
+  pre="$(jq -r '.pre // empty' <<<"$pair")"; post="$(jq -r '.post // empty' <<<"$pair")"; desc="$(jq -r '.description // ""' <<<"$pair")"
+  [[ -n "$pre" && -n "$post" ]] || { echo "no hay ninguna transacción de pacman completa que deshacer" >&2; return 1; }
+  echo "Última transacción: #$pre → #$post · $desc"
+  if ((!yes)); then
+    read -r -p "¿Deshacerla (snapper undochange #$pre..#$post)? [s/N] " ans
+    [[ "$ans" =~ ^[sSyY]$ ]] || { echo "Nada cambiado."; return 0; }
+  fi
+  sudo -n "$maint" rollback "$pre" "$post" 2>/dev/null || sudo "$maint" rollback "$pre" "$post" || return 1
+  systemctl --user restart ocarinashell || true
+  bash "$repo/scripts/smoke-test.sh" --quiet
+}
+
+# 鬼 gamescope templates (docs/JUEGOS.md): the 860M cannot move modern games at 2880×1800, so the default renders at
+# exactly half and upscales with FSR (an integer ratio keeps it sharp). Sizes come from the internal panel.
+panel_size() {
+  local s
+  s="$(niri msg --json outputs 2>/dev/null | python3 -c 'import json,sys
+o=json.load(sys.stdin); n=next((k for k in o if k.startswith("eDP")), next(iter(o), None))
+m=o[n]["modes"][o[n]["current_mode"]] if n else None
+print("%d %d %d" % (m["width"], m["height"], round(m["refresh_rate"] / 1000)) if m else "")' 2>/dev/null || true)"
+  echo "${s:-2880 1800 120}"
+}
+gamescope_args() {   # $1 = preset, $2 = hud (1/0) → prints the words before the game's command
+  local W H R w h
+  read -r W H R <<<"$(panel_size)"
+  case "$1" in
+    fsr)    w=$((W / 2)); h=$((H / 2)) ;;
+    1200)   h=1200; w=$(( (W * 1200 / H) / 2 * 2 )) ;;
+    native) w=$W; h=$H ;;
+    off)    if [[ "$2" == 1 ]]; then echo "MANGOHUD=1 gamemoderun"; else echo "gamemoderun"; fi; return ;;
+    *) echo "preset desconocido: $1 (fsr|1200|native|off)" >&2; return 1 ;;
+  esac
+  # nested in niri: SDL backend + grabbed cursor (niri wiki «Application issues»: the Wayland backend does not lock
+  # the pointer reliably, gamescope #1711)
+  local a="gamemoderun gamescope -W $W -H $H -w $w -h $h"
+  [[ "$1" != native ]] && a+=" -F fsr"
+  a+=" -r $R --adaptive-sync -f --force-grab-cursor --backend sdl"
+  [[ "$2" == 1 ]] && a+=" --mangoapp"
+  echo "$a --"
+}
+play() {
+  local preset="" hud=1
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --preset) preset="${2:?falta el preset}"; shift 2 ;;
+      --no-hud) hud=0; shift ;;
+      --steam)  preset="${2:-}"; [[ -n "$preset" ]] || preset="$(settings_get oni.gamescopePreset fsr)"
+                echo "$(gamescope_args "$preset" "$hud") %command%"; return ;;
+      --) shift; break ;;
+      *) break ;;
+    esac
+  done
+  [[ $# -gt 0 ]] || { echo "uso: ocarina play [--preset fsr|1200|native|off] [--no-hud] <orden…>" >&2; return 1; }
+  [[ -n "$preset" ]] || preset="$(settings_get oni.gamescopePreset fsr)"
+  local words; words="$(gamescope_args "$preset" "$hud")" || return 1
+  local -a pre; read -r -a pre <<<"$words"
+  if [[ "${pre[0]}" == MANGOHUD=1 ]]; then export MANGOHUD=1; pre=("${pre[@]:1}"); fi
+  exec "${pre[@]}" "$@"
+}
+settings_get() {   # $1 = dotted path, $2 = fallback
+  python3 - "$1" "$2" <<'PY2' 2>/dev/null || echo "$2"
+import json, os, sys
+p = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "ocarinashell/settings.json")
+try:
+    v = json.load(open(p, encoding="utf-8"))
+    for k in sys.argv[1].split("."):
+        v = v[k]
+    print(v if isinstance(v, str) and v else sys.argv[2])
+except Exception:
+    print(sys.argv[2])
+PY2
+}
+
+# 滑 Nameraka without the shell: one JSON line to the helper's socket (systemd starts it), answer printed
+nk_socket="${XDG_RUNTIME_DIR:-/run/user/$UID}/ocarinashell/nameraka.sock"
+nk_send() {   # $1 = JSON command; prints the first answer; fails after 300 ms without one
+  python3 -I - "$nk_socket" "$1" <<'PY2'
+import socket, sys
+s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+s.settimeout(0.3)
+try:
+    s.connect(sys.argv[1])
+    s.sendall((sys.argv[2] + "\n").encode())
+    buf = b""
+    while b"\n" not in buf:
+        d = s.recv(65536)
+        if not d:
+            break
+        buf += d
+    print(buf.split(b"\n", 1)[0].decode())
+except OSError:
+    sys.exit(1)
+PY2
+}
+nameraka() {
+  local a="${1:-toggle}" nk="$HOME/.local/libexec/ocarinashell/nameraka"
+  case "$a" in
+    on|off|toggle)
+      ipc nameraka "$a" && return
+      if [[ "$a" == off ]]; then
+        # the shell is down: tell the helper directly, and if it does not answer, stop it (the overlay goes with it)
+        nk_send '{"cmd":"stop"}' >/dev/null || systemctl --user stop ocarina-nameraka.service
+      else
+        echo "la shell no responde: Fluido se maneja desde Engawa" >&2; return 1
+      fi ;;
+    x2|x4|x6|custom|next) ipc nameraka mode "$a" || nk_send "{\"cmd\":\"set\",\"mode\":\"$a\"}" >/dev/null ;;
+    fps)  [[ "${2:-}" =~ ^[0-9]+$ ]] || { echo "uso: ocarina nameraka fps <N> (0 = los Hz)" >&2; return 1; }
+          ipc nameraka fps "$2" ;;
+    status) ipc_print nameraka status || nk_send '{"cmd":"status"}' || echo '{"state":"off","daemon":false}' ;;
+    calibrate)
+      echo "Calibrando lsfg-vk en esta pantalla (≈ 1 min, la GPU al máximo)…"
+      # the answer comes when it finishes: one long connection
+      python3 -I - "$nk_socket" <<'PY2'
+import json, socket, sys
+s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+s.settimeout(240)
+s.connect(sys.argv[1])
+s.sendall(b'{"cmd":"calibrate"}\n')
+buf = b""
+while True:
+    d = s.recv(65536)
+    if not d:
+        break
+    buf += d
+    for line in buf.split(b"\n"):
+        try:
+            e = json.loads(line)
+        except ValueError:
+            continue
+        if e.get("ev") == "calibrated":
+            print("Calibración guardada." if e.get("ok") else "La calibración falló.")
+            sys.exit(0 if e.get("ok") else 1)
+        if e.get("ev") == "error":
+            print(e.get("msg")); sys.exit(1)
+PY2
+      ;;
+    self-test) "$nk" self-test ;;
+    *) echo "uso: ocarina nameraka [on|off|toggle|status|x2|x4|x6|custom|next|fps <N>|calibrate|self-test]" >&2; return 1 ;;
+  esac
+}
+
+audio() {
+  local a="${1:-}"
+  case "$a" in
+    up)   ipc audio increment "$step_audio" && return
+          wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ "${step_audio}%+" ;;
+    down) ipc audio decrement "$step_audio" && return
+          wpctl set-volume @DEFAULT_AUDIO_SINK@ "${step_audio}%-" ;;
+    mute) ipc audio mute && return
+          wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle ;;
+    mic)  ipc audio micmute && return
+          wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle ;;
+    *) echo "uso: ocarina audio up|down|mute|mic" >&2; return 1 ;;
+  esac
+  local v; v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null || true)
+  if [[ "$a" == mic ]]; then
+    if wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null | grep -q MUTED; then note "Micrófono" "Silenciado"
+    else note "Micrófono" "Activo"; fi
+  elif [[ "$v" == *MUTED* ]]; then note "Volumen" "Silenciado"
+  else
+    local pct; pct=$(awk '{printf "%d", $2*100 + 0.5}' <<<"$v")
+    note -h "int:value:$pct" "Volumen" "$pct %"
+  fi
+}
+
+media() {
+  local a="${1:-}" fn="" pc=""
+  case "$a" in
+    toggle) fn=playPause; pc=play-pause ;;
+    next)   fn=next;      pc=next ;;
+    prev)   fn=previous;  pc=previous ;;
+    stop)   fn=stop;      pc=stop ;;
+    up)     ipc media increment 0.03 && return; have playerctl && playerctl volume 0.03+ ; return 0 ;;
+    down)   ipc media decrement 0.03 && return; have playerctl && playerctl volume 0.03- ; return 0 ;;
+    *) echo "uso: ocarina media toggle|next|prev|stop|up|down" >&2; return 1 ;;
+  esac
+  ipc media "$fn" && return
+  have playerctl && playerctl "$pc" 2>/dev/null || true
+}
+
+# Fallback brightness when the shell is down. Internal panel → brightnessctl (logind, no root); external monitors
+# → DDC/CI with `ddcutil --bus N` using the map the shell keeps in brightness.json (no detection needed);
+# software-dimmed outputs need the shell and are skipped. Target: --output S | --all | the output niri has focused.
+bright_state="${XDG_STATE_HOME:-$HOME/.local/state}/ocarinashell/brightness.json"
+bright_targets() {   # bright_targets <output|all|""> → lines "name kind bus label"
+  local want="$1"
+  if [[ -z "$want" ]]; then want=$(niri msg --json focused-output 2>/dev/null | jq -r '.name // empty'); fi
+  if [[ -r "$bright_state" ]]; then
+    jq -r --arg w "${want:-eDP-1}" '.outputs[] | select($w == "all" or .name == $w)
+      | "\(.name) \(.kind) \(.bus // "-") \(.label // .name)"' "$bright_state" 2>/dev/null
+  fi | grep . || echo "eDP-1 internal - Portátil"
+}
+bright_apply() {   # bright_apply <kind> <bus> <op> <value>  (op: + - =)
+  local kind="$1" bus="$2" op="$3" v="$4"
+  case "$kind" in
+    internal)
+      case "$op" in
+        +) brightnessctl -q -c backlight set "${v}%+" ;;
+        -) brightnessctl -q -c backlight --min-value=1% set "${v}%-" ;;
+        =) brightnessctl -q -c backlight --min-value=1% set "${v}%" ;;
+      esac ;;
+    ddc)
+      [[ "$bus" =~ ^[0-9]+$ ]] && have ddcutil || return 0
+      case "$op" in
+        +) timeout 5 ddcutil --bus "$bus" --noverify setvcp 10 + "$v" ;;
+        -) timeout 5 ddcutil --bus "$bus" --noverify setvcp 10 - "$v" ;;
+        =) timeout 5 ddcutil --bus "$bus" --noverify setvcp 10 "$v" ;;
+      esac >/dev/null 2>&1 || true ;;
+    *) return 0 ;;   # soft dimming lives in the shell
+  esac
+}
+
+brightness() {
+  local a="${1:-}"; shift || true
+  local step="$step_bright" output="" val=""
+  while (($#)); do
+    case "$1" in
+      --all) output=all ;;
+      --output) output="${2:?falta la salida}"; shift ;;
+      [0-9]*) if [[ "$a" == set ]]; then val="$1"; else step="$1"; fi ;;
+      *) echo "opción desconocida: $1" >&2; return 1 ;;
+    esac
+    shift
+  done
+  local op v
+  case "$a" in
+    up)   ipc brightness increment "$step" "$output" && return; op=+; v=$step ;;
+    down) ipc brightness decrement "$step" "$output" && return; op=-; v=$step ;;
+    set)  [[ -n "$val" ]] || { echo "uso: ocarina brightness set <0-100> [--output S|--all]" >&2; return 1; }
+          ipc brightness set "$val" "$output" && return; op="="; v=$val ;;
+    list) if shell_up && have qs; then timeout 1.5 qs -c ocarina ipc call brightness list && return; fi
+          if [[ -r "$bright_state" ]]; then jq -c '.outputs' "$bright_state"
+          else brightnessctl -m -c backlight | awk -F, '{printf "[{\"name\":\"eDP-1\",\"label\":\"Portátil\",\"kind\":\"internal\",\"pct\":%d}]\n", $4}'
+          fi
+          return ;;
+    *) echo "uso: ocarina brightness up|down [paso] [--output S|--all] · set <N> · list" >&2; return 1 ;;
+  esac
+  local kind bus label shown=""
+  while read -r _ kind bus label; do
+    bright_apply "$kind" "$bus" "$op" "$v"
+    [[ "$kind" == internal ]] && shown="$label $(brightnessctl -m -c backlight | awk -F, '{print $4+0}') %"
+  done < <(bright_targets "$output")
+  [[ -n "$shown" ]] && note -h "int:value:${shown##* }" "Brillo" "$shown"
+  return 0
+}
+
+lock() {
+  case "${1:-}" in
+    test) ipc lock test || pending "El bloqueo de prueba" 6 ;;
+    --wait)
+      # before-sleep (ocarina-sleep.service): return only once the lock is ON SCREEN, so resuming never shows the
+      # desktop. Kagi confirmed by the compositor within 2.5 s, or swaylock (-f returns once locked).
+      if ipc lock lock; then
+        for _ in $(seq 25); do
+          [[ "$(timeout 1 qs -c ocarina ipc call lock isLocked 2>/dev/null)" == true ]] && return 0; sleep 0.1
+        done
+      fi
+      pgrep -u "$USER" -x swaylock >/dev/null || swaylock -f ;;
+    "") ipc lock lock || swaylock -f ;;
+    *) echo "uso: ocarina lock [--wait|test]" >&2; return 1 ;;
+  esac
+}
+
+cmd="${1:-}"; shift || true
+# 本番 Honban: a Ghostty window titled «ssh · host»; for production hosts the niri rule (bin/ocarina-honban, kept
+# fresh here too, so it works without the shell) draws the red ring, and the first connection of the day says so
+honban() {
+  local host="${1:-}"
+  [[ -n "$host" && "$host" != -* ]] || { echo "uso: ocarina ssh <host>" >&2; return 1; }
+  if have ocarina-honban; then
+    ocarina-honban apply --quiet || true
+    if ocarina-honban is-prod "$host"; then
+      local dir="${XDG_STATE_HOME:-$HOME/.local/state}/ocarinashell/honban" today
+      today="$(date +%F)"
+      mkdir -p "$dir"
+      if [[ "$host" =~ ^[A-Za-z0-9._@-]+$ && "$(cat "$dir/$host" 2>/dev/null)" != "$today" ]]; then
+        printf '%s\n' "$today" > "$dir/$host"
+        have notify-send && notify-send -a "本番 Honban" -u low -i network-server \
+          "本番 · $host" "Primera conexión de hoy a producción: ventana con anillo rojo." || true
+      fi
+    fi
+  fi
+  exec ghostty +new-window --title="ssh · $host" -e ssh -- "$host"
+}
+
+case "$cmd" in
+  audio)            audio "$@" ;;
+  media)            media "$@" ;;
+  brightness)       brightness "$@" ;;
+  lock)             lock "$@" ;;
+  settings)         if [[ -n "${1:-}" ]]; then ipc settings open "$1"; else ipc settings toggle; fi \
+                      || echo "la shell no responde: los ajustes viven en ~/.config/ocarinashell/settings.json" >&2 ;;
+  engawa)           if [[ -n "${1:-}" ]]; then ipc engawa open "$1"; else ipc engawa toggle; fi || pending "Engawa (centro de control)" 4 ;;
+  notifications)
+    case "${1:-}" in
+      dnd)   ipc notifications dnd "${2:-toggle}" || echo "la shell no responde" >&2 ;;
+      clear) ipc notifications clear || echo "la shell no responde" >&2 ;;
+      *)     ipc notifications toggle || pending "Fumi (notificaciones)" 4 ;;
+    esac ;;
+  koyomi|calendar)  ipc koyomi toggle || echo "la shell no responde" >&2 ;;
+  focus)
+    case "${1:-}" in
+      stop|off) ipc focus stop ;;
+      status)   ipc focus status ;;
+      ""|[0-9]*) ipc focus start "${1:-0}" ;;
+      *) echo "uso: ocarina focus [<minutos>|stop|status]" >&2; exit 1 ;;
+    esac || echo "la shell no responde" >&2 ;;
+  nightlight)       ipc nightlight set "${1:-auto}" || echo "la shell no responde" >&2 ;;
+  caffeine|awake)   ipc idle inhibit || echo "la shell no responde" >&2 ;;
+  notes|note)
+    if [[ $# -gt 0 ]]; then        # quick note: appended to the open note; without the shell, to notas/apuntes.md
+      ipc techo append "$*" || {
+        d="${XDG_DATA_HOME:-$HOME/.local/share}/ocarinashell/notas"
+        mkdir -p "$d" && printf '%s\n' "$*" >> "$d/apuntes.md"
+      }
+    else
+      ipc techo toggle || echo "la shell no responde" >&2
+    fi ;;
+  clipboard)        ipc kura toggle || echo "la shell no responde" >&2 ;;
+  rules)            ipc mado toggle || echo "la shell no responde" >&2 ;;
+  # the power button: without the shell it does what niri used to do (suspend; ocarina-sleep locks first)
+  session)
+    case "${1:-status}" in
+      save|restore|status) shell_up && have qs && timeout 3 qs -c ocarina ipc call session "$1" \
+                             || echo "la shell no responde" >&2 ;;
+      *) echo "uso: ocarina session save|restore|status" >&2; exit 1 ;;
+    esac ;;
+  power)
+    case "${1:-}" in
+      farewell) ipc power farewell "${2:-shutdown}" ;;          # test: the farewell overlay only, nothing runs
+      *)        ipc power toggle || systemctl suspend ;;
+    esac ;;
+  rename-workspace) ipc workspace rename || echo "la shell no responde" >&2 ;;
+  wallpaper)
+    case "${1:-browse}" in
+      browse) ipc kabegami browse || pending "Kabegami (explorador de fondos)" 7 ;;
+      next)   ipc kabegami next || echo "la shell no responde" >&2 ;;
+      *)      [[ -r "$1" ]] || { echo "no puedo leer $1" >&2; exit 1; }
+              ipc kabegami set "$(readlink -f "$1")" || echo "la shell no responde" >&2 ;;
+    esac ;;
+  displays|pantallas)
+    case "${1:-arrange}" in
+      arrange|identify|list|keep|revert) ipc displays "$1" ;;
+      mirror)  case "${2:-on}" in on) ipc displays mirror true ;; off) ipc displays mirror false ;;
+                 *) echo "uso: ocarina displays mirror on|off" >&2; exit 1 ;; esac ;;
+      profile) [[ -n "${2:-}" ]] || { echo "uso: ocarina displays profile <nombre>" >&2; exit 1; }
+               ipc displays profile "$2" ;;
+      *) echo "uso: ocarina displays [arrange|identify|mirror on|off|profile <nombre>|list|keep|revert]" >&2; exit 1 ;;
+    esac || { echo "la shell no responde: «niri msg outputs» muestra las pantallas" >&2; exit 1; } ;;
+  shinobi)
+    case "${1:-toggle}" in
+      on|off|toggle) ipc shinobi "${1:-toggle}" || { echo "la shell no responde (忍 Shinobi vive en ella)" >&2; exit 1; } ;;
+      status) ipc_print shinobi status || { echo "la shell no responde (忍 Shinobi vive en ella)" >&2; exit 1; } ;;
+      *) echo "uso: ocarina shinobi [on|off|toggle|status]" >&2; exit 1 ;;
+    esac ;;
+  oni)
+    case "${1:-toggle}" in
+      on|off|toggle) ipc oni "${1:-toggle}" || { echo "la shell no responde (鬼 Oni vive en ella)" >&2; exit 1; } ;;
+      status) ipc_print oni status || { echo "la shell no responde (鬼 Oni vive en ella)" >&2; exit 1; } ;;
+      # GameMode runs these at the start and end of a game: they never fail (a game must start whatever happens)
+      auto-on)  ipc oni autoOn || true ;;
+      auto-off) ipc oni autoOff || true ;;
+      *) echo "uso: ocarina oni [on|off|toggle|status|auto-on|auto-off]" >&2; exit 1 ;;
+    esac ;;
+  play)             play "$@" ;;
+  # Mod+F: niri maximizes the column; a Windows app (船 Fune, app-id fune-windows) cannot be resized by niri, so
+  # Windows maximizes/restores it itself through the Fune agent
+  maximize)
+    if [[ "$(niri msg --json focused-window 2>/dev/null | jq -r '.app_id // empty')" == fune-windows ]]; then
+      case "$(ocarina-fune toggle 2>/dev/null)" in
+        max)      exec niri msg action set-column-width 100% ;;
+        restored) exec niri msg action set-column-width 50% ;;
+      esac
+    fi
+    exec niri msg action maximize-column ;;
+  nameraka|fluido)  nameraka "$@" ;;
+  fune)
+    case "${1:-}" in
+      ""|panel) ipc fune toggle || exec ocarina-fune status ;;
+      *)        exec ocarina-fune "$@" ;;
+    esac ;;
+  # 蛇 Snake: no arguments → the assistant; «ask "…"» → the assistant with that question; the rest → ocarina-snake
+  snake)
+    case "${1:-}" in
+      "")  ipc snake toggle || exec "$repo/bin/ocarina-snake" status ;;
+      listen) ipc snake listen || { echo "la voz necesita la shell (ocarina restart)" >&2; exit 1; } ;;
+      ask) shift; [[ $# -gt 0 ]] || { echo "uso: ocarina snake ask \"pregunta\"" >&2; exit 1; }
+           ipc snake ask "$*" || exec "$repo/bin/ocarina-snake" assist -- "$*" ;;
+      *)   exec "$repo/bin/ocarina-snake" "$@" ;;
+    esac ;;
+  record)
+    case "${1:-toggle}" in
+      region) ipc record region ;;
+      *)      ipc record toggle ;;
+    esac || pending "Grabar pantalla (sin la shell)" 4 ;;
+  pick-color)       ipc iro pick || exec niri msg pick-color ;;
+  read)             ipc yomu region "$([[ "${1:-}" == --translate ]] && echo true || echo false)" || pending "読 Yomu" 15 ;;
+  tasks)            ipc mihari toggle || exec ghostty +new-window -e btop ;;
+  cheatsheet)       ipc cheatsheet toggle || exec niri msg action show-hotkey-overlay ;;
+  quickterm)        exec ocarina-quickterm ;;
+  ssh)              honban "$@" ;;
+  apps)             ipc apps toggle || exec "$repo/bin/ocarina" launcher ;;      # 器 the ocarina's drawer
+  launcher)         if (($#)); then ipc launcher open "$1" "${2:-}"; else ipc launcher toggle; fi || pending "Torii (lanzador)" 5 ;;
+  doctor)
+    case "${1:-}" in
+      --post-update) shift; exec bash "$repo/scripts/smoke-test.sh" --post-update "$@" ;;   # docs/06 capa 5
+      --smoke)       shift; exec bash "$repo/scripts/smoke-test.sh" "$@" ;;                 # passive, nothing on screen
+      *)             exec bash "$repo/scripts/doctor.sh" "$@" ;;
+    esac ;;
+  # 守 Mamori (fase 16): `ocarina update` is a cycle with Ayoub watching; --check only shows the plan
+  update)
+    case "${1:-}" in
+      --check) exec "$repo/bin/ocarina-mamori" plan --refresh ;;
+      "")      exec "$repo/bin/ocarina-mamori" run --interactive ;;
+      *)       echo "uso: ocarina update [--check]" >&2; exit 1 ;;
+    esac ;;
+  mamori)
+    case "${1:-}" in
+      "") ipc mamori open || exec "$repo/bin/ocarina-mamori" status ;;
+      *)  exec "$repo/bin/ocarina-mamori" "$@" ;;
+    esac ;;
+  backup)           exec "$repo/bin/ocarina-backup" "$@" ;;
+  rollback)         rollback "$@" ;;
+  restart)          systemctl --user restart ocarinashell ;;
+  logs)             exec journalctl --user -u ocarinashell -o cat --no-pager "$@" ;;
+  version)          echo "ocarina $version"; ipc shell version || true ;;
+  ""|-h|--help|help) usage ;;
+  *) echo "ocarina: subcomando desconocido «$cmd» (ocarina help)" >&2; exit 1 ;;
+esac

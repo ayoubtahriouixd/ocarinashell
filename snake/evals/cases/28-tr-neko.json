@@ -1,0 +1,18 @@
+{
+ "id": "tr-neko",
+ "category": "translate",
+ "task": "translate",
+ "input": "吾輩は猫である。名前はまだ無い。",
+ "expect": {
+  "translation_es": {
+   "contains": [
+    "gato",
+    "nombre"
+   ]
+  },
+  "reading_hiragana": {
+   "similar": "わがはいはねこである。なまえはまだない。",
+   "threshold": 0.7
+  }
+ }
+}

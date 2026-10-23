@@ -1,0 +1,12 @@
+# 守 Mamori · self-repair when the shell fell into safe mode (ocarinashell-safe.service starts this). Waits a little:
+# the normal shell has just failed several times in a row, an instant retry would fail the same way.
+[Unit]
+Description=守 Mamori · reparar la shell
+After=ocarinashell-safe.service
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/sleep 45
+ExecStart=%h/.local/bin/ocarina-mamori heal
+Nice=10
+TimeoutStartSec=10min

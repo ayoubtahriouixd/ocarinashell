@@ -1,0 +1,10 @@
+# Simulacro k (fase 14): borrar un fichero y recuperarlo con 控 Hikae (snapper home)
+$ head -c 3000000 /dev/urandom > ~/prueba-hikae-fase14.bin  (sha256 df2fdc8b…2ba9c87)
+$ ocarina backup now "simulacro k"  → snapshot #2 de ~ hecho
+$ rm ~/prueba-hikae-fase14.bin
+$ ocarina backup list ~/prueba-hikae-fase14.bin  →  #2  2026-10-17 13:43  2,9M  ocarina backup: simulacro k
+$ ocarina backup restore ~/prueba-hikae-fase14.bin  →  ~/Restaurado/2026-10-17_1343-#2/prueba-hikae-fase14.bin
+sha256 antes   df2fdc8bdb4719ce60ca6294e12ea236d9a621721ba1791f8dc5b675b2ba9c87
+sha256 después df2fdc8bdb4719ce60ca6294e12ea236d9a621721ba1791f8dc5b675b2ba9c87 → IDÉNTICO
+- segunda restauración: «ya restaurado antes» (nunca encima) · /etc/passwd: «solo rutas dentro de tu carpeta personal»
+- ocarina backup check: ✓ snapshots de ~ al día

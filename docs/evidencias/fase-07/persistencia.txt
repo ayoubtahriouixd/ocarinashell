@@ -1,0 +1,17 @@
+ajuste                             en vivo  tras reiniciar  comprobación
+windows.gaps                       ✔        ✔               overrides.kdl: gaps 16
+windows.focusRingWidth             ✔        ✔               overrides.kdl: focus-ring width 3
+input.repeatRate                   ✔        ✔               overrides.kdl: repeat-rate 41
+input.touchpad.speed               ✔        ✔               overrides.kdl: touchpad accel 0.30
+input.layouts                      ✔        ✔               xkb es,us + Alt+Mayús
+appearance.animSpeed               ✔        ✔               Motion.scale 0,8 · niri slowdown 0,8
+appearance.radius                  ✔        ✔               Theme.radius.panel 26,4
+appearance.fontScale               ✔        ✔               Theme.font.scale 1,1
+bar.showSeconds                    ✔        ✔               reloj con segundos
+notifications.timeout              ✔        ✔               avisos 9 s
+power.lowBattery                   ✔        ✔               umbral guardado
+display.brightness.timeCurve       ✔        ✔               curva día/noche activa
+island.wheelVolume                 ✔        ✔               rueda sin volumen
+lock.showMedia                     ✔        ✔               bloqueo sin reproductor
+wallpaper.favorites                ✔        ✔               favoritos
+valores originales restaurados: ✔ · niri: sin errores

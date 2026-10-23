@@ -1,0 +1,11 @@
+{
+ "id": "cl-niri-pickcolor-json",
+ "category": "changelog",
+ "task": "review-changelog",
+ "input": "niri 26.10 — release notes\nBreaking changes:\n- `niri msg --json pick-color` now returns `{\"color\": [r, g, b]}` with floats in 0–1 instead of `{\"PickedColor\": {\"rgb\": [...]}}`.\n- `focus-ring.active-color` is no longer accepted in window-rules; use `focus-ring.active-gradient`.\nNew: blur behind layer surfaces, per-output VRR on demand.\nAPIs de niri usadas en el repo (git grep):\nshell/services/Iro.qml:44: command: [\"niri\", \"msg\", \"-j\", \"pick-color\"]   (lee d?.PickedColor ?? d y luego c.rgb)\nconfig/niri/ocarina/rules.kdl: focus-ring { active-color \"#e60033\" } dentro de window-rule",
+ "expect": {
+  "breaking": true,
+  "affects_repo": true,
+  "recommendation": "hold"
+ }
+}

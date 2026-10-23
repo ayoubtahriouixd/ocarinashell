@@ -1,0 +1,8 @@
+  SIM before NaN false
+  SIM after 25.2 true error=HTTP 0 days=3
+  ✓ sin red de verdad dentro del espacio aislado
+  ✓ temperatura desde la caché: 25.2 °C (available=true)
+  ✓ el fallo de red queda en Weather.error (HTTP 0)
+  ✓ la caché sigue intacta (no se sobrescribe con nada)
+  ✓ sin errores QML
+resultado: 5 bien · 0 mal

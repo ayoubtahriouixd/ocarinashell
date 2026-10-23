@@ -1,0 +1,18 @@
+# 守 Mamori · one cycle; the instance is what started it: timer · retry · shell (15 min idle) · boot · answer.
+# Runs as Ayoub; root only through /usr/local/libexec/ocarina-maint (sudoers: that file alone). No NoNewPrivileges:
+# sudo needs its setuid bit for the helper. One cycle at a time (flock in the runtime dir).
+[Unit]
+Description=守 Mamori · ciclo de mantenimiento (%i)
+Documentation=file://%h/ocarinashell/docs/06-ACTUALIZACIONES.md
+After=graphical-session.target network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/ocarina-mamori run --trigger %i
+Environment=PYTHONUNBUFFERED=1
+# below everything: the desktop stays smooth while it works
+Nice=19
+CPUWeight=20
+IOSchedulingClass=idle
+# a full cycle with Snake research, an upgrade and an AUR build fits; a stuck one is killed (the next resumes)
+TimeoutStartSec=4h

@@ -1,0 +1,109 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><title>14 · Hiroba · la isla abierta — OcarinaShell</title><link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="mock.css"></head><body class="t-kurenai" style="margin:0"><div class="screen" style="background-image:url(../../wallpapers/kurenai-yoru.jpg)"><div class="win inactive" style="left:14px;top:60px;width:780px;height:955px"><div class="body" style=""><div class="term"><span class="c2">❯</span> fastfetch
+<div class="ff"><img src="../../logo/png/ocarinashell-mark-512.png" alt=""><div><span class="c1 b">ayoub</span><span class="c8">@</span><span class="c1 b">p14s</span><br><span class="c8">──────────────────────────────</span><br><span class="c1 disp">系</span> <span class="c3">OS        </span><span class="c15">CachyOS x86_64</span><br><span class="c1 disp">核</span> <span class="c3">Kernel    </span><span class="c15">linux-cachyos 6.18</span><br><span class="c1 disp">稼</span> <span class="c3">Uptime    </span><span class="c15">3 h 12 min</span><br><span class="c1 disp">包</span> <span class="c3">Paquetes  </span><span class="c15">1284 (pacman) · 12 (flatpak)</span><br><span class="c1 disp">殻</span> <span class="c3">Shell     </span><span class="c15">fish 4.1</span><br><span class="c1 disp">窓</span> <span class="c3">WM        </span><span class="c15">niri 26.04 (Wayland)</span><br><span class="c1 disp">色</span> <span class="c3">Tema      </span><span class="c15">紅 Kurenai · OcarinaShell</span><br><span class="c1 disp">端</span> <span class="c3">Terminal  </span><span class="c15">Ghostty 1.3</span><br><span class="c1 disp">脳</span> <span class="c3">CPU       </span><span class="c15">Ryzen AI 7 PRO 350 (16) @ 5.0 GHz</span><br><span class="c1 disp">絵</span> <span class="c3">GPU       </span><span class="c15">Radeon 860M</span><br><span class="c1 disp">記</span> <span class="c3">Memoria   </span><span class="c15">7.9 GiB / 30.6 GiB (26 %)</span><br><span class="c1 disp">盤</span> <span class="c3">Disco (/) </span><span class="c15">212 GiB / 952 GiB · btrfs</span><br><span class="c1 disp">電</span> <span class="c3">Batería   </span><span class="c15">78 % · descargando</span><br><span class="c1 disp">言</span> <span class="c3">Idioma    </span><span class="c15">es_ES.UTF-8</span><br><br><span class="blocks"><i style="background:var(--t0)"></i><i style="background:var(--t1)"></i><i style="background:var(--t2)"></i><i style="background:var(--t3)"></i><i style="background:var(--t4)"></i><i style="background:var(--t5)"></i><i style="background:var(--t6)"></i><i style="background:var(--t7)"></i></span><br><span class="blocks"><i style="background:var(--t8)"></i><i style="background:var(--t9)"></i><i style="background:var(--t10)"></i><i style="background:var(--t11)"></i><i style="background:var(--t12)"></i><i style="background:var(--t13)"></i><i style="background:var(--t14)"></i><i style="background:var(--t15)"></i></span></div></div>
+<span class="c8">╭─</span> <span class="c1 b">~/ocarinashell</span> <span class="c8">on</span> <span class="c5"><span class="disp">枝</span> main</span> <span class="c3"><span class="disp">変</span>2 <span class="disp">新</span>1</span><span class="c8" style="float:right">21:38</span>
+<span class="c8">╰─</span><span class="c1">❯</span> <span class=cursor></span></div></div></div><div class="win focus" style="left:808px;top:60px;width:824px;height:955px"><div class="body" style=""><div class="nv">
+  <div class="tabs"><span class="tab on"><i class="ms s16">description</i> Workspaces.qml</span><span class="tab"><i class="ms s16">description</i> Theme.qml</span>
+    <span class="tab"><i class="ms s16">description</i> 02-DISENO.md</span><span style="margin-left:auto" class="disp">紅</span></div>
+  <div class="buf"><div class="gut"> 13
+ 12
+ 11
+ 10
+  9
+  8
+  7
+  6
+  5
+  4
+  3
+  2
+  1
+<b> 14</b>
+  1
+  2
+  3
+  4
+  5
+  6
+  7
+  8
+  9
+ 10
+ 11
+ 12
+ 13
+ 14
+ 15</div><div class="code"><div class="cl" style="top:260px"></div><span class="c5">pragma</span> ComponentBehavior: Bound
+<span class="c5">import</span> <span class="c3">QtQuick</span>
+<span class="c5">import</span> <span class="c3">qs.services</span>
+<span class="c5">import</span> <span class="c3">qs.components</span>
+
+<span class="c8 i">// 一 二 三 … — the active seal slides with a spring (Motion.spring.hanko)</span>
+<span class="c3">Row</span> {
+    <span class="c4">id</span>: <span class="c6">root</span>
+    <span class="c5">required property</span> <span class="c3">ShellScreen</span> <span class="c4">screen</span>
+    <span class="c4">spacing</span>: <span class="c6">Theme</span>.gap.xs
+
+    <span class="c3">Repeater</span> {
+        <span class="c4">model</span>: <span class="c6">Niri</span>.workspacesOn(<span class="c6">root</span>.screen)
+        <span class="c4">delegate</span>: <span class="c3">WorkspaceCell</span> {
+            <span class="c5">required property</span> <span class="c3">var</span> <span class="c4">modelData</span>
+            <span class="c4">numeral</span>: <span class="c6">Glossary</span>.numeral(modelData.idx)
+            <span class="c4">active</span>: modelData.isActive
+            <span class="c4">windows</span>: modelData.windowCount
+            <span class="c4">urgent</span>: modelData.isUrgent
+            <span class="c4">onClicked</span>: <span class="c6">Niri</span>.focusWorkspace(modelData.id)
+        }
+    }
+
+    <span class="c3">HankoIndicator</span> {
+        <span class="c4">target</span>: <span class="c6">root</span>.activeCell
+        <span class="c4">spring</span>: <span class="c6">Motion</span>.spring.hanko
+        <span class="c4">visible</span>: <span class="c6">Niri</span>.available
+    }
+}</div></div>
+  <div class="sl"><span class="nvmode"><b>常</b> NORMAL</span><span class="git"><b>枝</b> main <b class="c3">変</b>2</span>
+    <span>shell/modules/obi/Workspaces.qml</span><span class="diag" style="color:var(--t3)"><b>警</b> 1</span>
+    <span class="r">qml · utf-8 · 14:9 · 48 %</span></div>
+  <div class="cmd">:w  <span class="c8">"Workspaces.qml" 29L, 912B escritos · validado con qmllint ✓</span></div>
+</div></div></div><div class="obi isles">
+  <div class="cap l"><img class="brand" src="../../logo/svg/ocarinashell-mark-flat.svg" alt=""><span class="sep"></span>
+    <div class="ws"><div class="c busy">一<span class=dots><i></i></span></div><div class="c on">二<span class=dots><i></i><i></i></span></div><div class="c busy">三<span class=dots><i></i></span></div><div class="c ">四</div><div class="c ">五</div></div><span class="sep"></span>
+    <div class="title"><i class="ms">code</i><span class="ell">nvim · shell/modules/hiroba/Hiroba.qml</span></div></div>
+  <div class="cap r"><div class="tray"><i class="ms">cloud_done</i><i class="ms">forum</i></div><span class="sep"></span>
+    <div class="clu"><i class="ms f">wifi</i><i class="ms">bluetooth</i><i class="ms f">volume_up</i>
+      <span class="bat"><svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="7.2" fill="none" stroke="rgba(127,127,127,.35)" stroke-width="2.2"/><circle cx="9" cy="9" r="7.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="35.29 45.24" transform="rotate(-90 9 9)"/></svg>78</span><span class="prof">均</span></div>
+    <div class="bell dot"><i class="ms">notifications</i></div></div>
+</div><div class="hb-scrim"></div><div class="hiroba"><span class="wm">菊</span><span class="notch"></span>
+  <div class="hb-row" style="grid-template-columns:300px 1fr 300px;height:158px"><div class="hb-card hb-me"><div class="who"><span class="av">歩<i></i></span>
+    <div><div class="hi">こんにちは · buenas tardes</div><div class="nm">Ayoub</div>
+    <div class="up">encendido 3 h 12 min</div></div></div>
+  <div class="acts"><span><i class="ms">lock</i></span><span><i class="ms">logout</i></span><span><i class="ms">settings</i></span>
+    <span class="red"><i class="ms">power_settings_new</i></span></div></div><div class="hb-clock"><div class="t">15<em>:</em>20</div>
+  <div class="k"><b>神無月</b> · 十五日 · 木曜日</div><div class="es">jueves, 15 de octubre de 2026</div></div><div class="hb-card hb-sun"><div class="hb-lbl"><b>日</b>sol y luna</div><svg viewBox="0 0 300 104">
+  <defs><radialGradient id="sg"><stop offset="0" stop-color="var(--accent2)" stop-opacity=".55"/><stop offset="1" stop-color="var(--accent2)" stop-opacity="0"/></radialGradient>
+  <linearGradient id="ag" x1="0" x2="1"><stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="var(--accent2)"/></linearGradient></defs>
+  <line x1="6" y1="92" x2="294" y2="92" stroke="rgba(255,255,255,.14)" stroke-dasharray="2 5"/>
+  <path d="M 18 92 A 132 80 0 0 1 282 92" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="2" stroke-dasharray="3 6"/>
+  <path d="M 18 92 A 132 80 0 0 1 249.1 39.1" fill="none" stroke="url(#ag)" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="249.1" cy="39.1" r="26" fill="url(#sg)"/>
+  <circle cx="249.1" cy="39.1" r="8" fill="var(--accent2)"/>
+  <text x="249.1" y="23.1" text-anchor="middle" font-family="Geist" font-weight="600" font-size="11" fill="#f4efe6">15:20</text>
+</svg>
+  <div class="ends"><span><b>日の出</b>06:34</span><span style="text-align:right"><b>日の入</b>17:57</span></div>
+  <div class="moon"><b>三日月</b>Luna creciente · 19 %</div></div></div>
+  <div class="hb-row" style="grid-template-columns:318px 1fr 300px;height:318px"><div class="hb-card hb-cal"><div class="hd"><span class="k">神無月</span><span class="m">octubre 2026</span>
+  <span class="nav"><i class="ms">chevron_left</i><i class="ms">chevron_right</i></span></div><div class="grid"><div class="w sun">日</div><div class="w">月</div><div class="w">火</div><div class="w">水</div><div class="w">木</div><div class="w">金</div><div class="w">土</div><div class="d o">27</div><div class="d o">28</div><div class="d o">29</div><div class="d o">30</div><div class="d ">1</div><div class="d ">2</div><div class="d ">3</div><div class="d  sun">4</div><div class="d ">5</div><div class="d ">6</div><div class="d ">7</div><div class="d ">8</div><div class="d ">9</div><div class="d ">10</div><div class="d  sun">11</div><div class="d ">12</div><div class="d ">13</div><div class="d ">14</div><div class="d  today">15</div><div class="d ">16</div><div class="d ">17</div><div class="d  sun ev">18</div><div class="d ">19</div><div class="d ">20</div><div class="d ">21</div><div class="d ">22</div><div class="d  ev">23</div><div class="d ">24</div><div class="d  sun">25</div><div class="d ">26</div><div class="d ">27</div><div class="d ">28</div><div class="d ">29</div><div class="d ">30</div><div class="d ">31</div><div class="d o">1</div><div class="d o">2</div><div class="d o">3</div><div class="d o">4</div><div class="d o">5</div><div class="d o">6</div><div class="d o">7</div></div></div><div class="hb-card hb-season"><div class="hb-lbl"><b>七十二候</b>microestación · 寒露</div>
+  <div class="ko"><span class="big">菊花開</span><div><div class="rd">きくのはなひらく</div><div class="es">Florecen los crisantemos</div></div>
+    <div class="left">4<small>días</small></div></div>
+  <div class="sep"></div>
+  <div class="now"><span class="wk">晴</span><span class="tp">24°</span><div class="ds"><b>Despejado</b><span>Casablanca</span></div>
+    <div class="days"><div><b>金</b><i>曇</i>26°/18°</div><div><b>土</b><i>霧</i>26°/19°</div><div><b>日</b><i>晴</i>28°/19°</div></div></div>
+  <div class="hours"><div class="n"><span>ahora</span><i>晴</i><b>24°</b></div><div class=""><span>16</span><i>晴</i><b>24°</b></div><div class=""><span>17</span><i>晴</i><b>23°</b></div><div class=""><span>18</span><i>曇</i><b>21°</b></div><div class=""><span>19</span><i>曇</i><b>20°</b></div><div class=""><span>20</span><i>曇</i><b>19°</b></div><div class=""><span>21</span><i>霧</i><b>18°</b></div><div class=""><span>22</span><i>霧</i><b>18°</b></div></div></div><div class="hb-card hb-music"><div class="art"><div class="cover" style="width:128px;height:128px;border-radius:18px;background:radial-gradient(circle at 70% 30%,#f6e9c9 0 9%,transparent 10%),linear-gradient(180deg,#1d3a5c 0%,#14365a 45%,#0e2440 46%,#163f63 70%,#0b1c33 100%)"><span style="position:absolute;left:18px;top:15px;font:600 26px/1.05 var(--disp);color:#f6e9c9;writing-mode:vertical-rl">月の道</span></div>
+    <div class="eqv"><i style="height:12px"></i><i style="height:22px"></i><i style="height:16px"></i><i style="height:26px"></i><i style="height:10px"></i><i style="height:19px"></i></div></div>
+  <div class="tt">Tsuki no Michi</div><div class="ar">Hana to Kaze · 月の道</div>
+  <div class="pg"><span class="f" style="width:43%"></span><span class="k" style="left:43%"></span></div><div class="tm"><span>1:42</span><span>3:58</span></div>
+  <div class="ctl"><span class="dim"><i class="ms">shuffle</i></span><i class="ms f">skip_previous</i><span class="play"><i class="ms f">pause</i></span>
+    <i class="ms f">skip_next</i><span class="dim"><i class="ms">repeat</i></span></div>
+  <div class="dev"><i class="ms s16">speaker</i>Altavoces del portátil · Spotify</div></div></div>
+  <div class="hb-row hb-sys"><div class="hb-card hb-stat"><div class="h"><b>脳</b>CPU</div><div class="v">7<small>%</small></div><svg viewBox="0 0 100 36" preserveAspectRatio="none"><polygon points="0,36 0.0,31.8 8.3,32.3 16.7,31.5 25.0,30.1 33.3,32.0 41.7,32.3 50.0,30.9 58.3,27.8 66.7,31.5 75.0,32.0 83.3,32.3 91.7,31.8 100.0,32.0 100,36" fill="var(--accent)" opacity=".16"/><polyline points="0.0,31.8 8.3,32.3 16.7,31.5 25.0,30.1 33.3,32.0 41.7,32.3 50.0,30.9 58.3,27.8 66.7,31.5 75.0,32.0 83.3,32.3 91.7,31.8 100.0,32.0" fill="none" stroke="var(--accent)" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg></div><div class="hb-card hb-stat"><div class="h"><b>絵</b>GPU</div><div class="v">3<small>%</small></div><svg viewBox="0 0 100 36" preserveAspectRatio="none"><polygon points="0,36 0.0,33.4 8.3,33.2 16.7,33.4 25.0,32.6 33.3,31.5 41.7,32.9 50.0,33.2 58.3,33.4 66.7,33.2 75.0,33.4 83.3,32.9 91.7,33.2 100.0,33.2 100,36" fill="var(--accent)" opacity=".16"/><polyline points="0.0,33.4 8.3,33.2 16.7,33.4 25.0,32.6 33.3,31.5 41.7,32.9 50.0,33.2 58.3,33.4 66.7,33.2 75.0,33.4 83.3,32.9 91.7,33.2 100.0,33.2" fill="none" stroke="var(--accent)" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg></div><div class="hb-card hb-stat"><div class="h"><b>記</b>Memoria</div><div class="v">4,3<small>/ 23 GB</small></div><svg viewBox="0 0 100 36" preserveAspectRatio="none"><polygon points="0,36 0.0,29.0 8.3,29.0 16.7,28.7 25.0,28.7 33.3,28.7 41.7,28.4 50.0,28.7 58.3,28.7 66.7,28.7 75.0,28.7 83.3,28.7 91.7,28.7 100.0,28.7 100,36" fill="var(--info)" opacity=".16"/><polyline points="0.0,29.0 8.3,29.0 16.7,28.7 25.0,28.7 33.3,28.7 41.7,28.4 50.0,28.7 58.3,28.7 66.7,28.7 75.0,28.7 83.3,28.7 91.7,28.7 100.0,28.7" fill="none" stroke="var(--info)" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg></div><div class="hb-card hb-stat"><div class="h"><b>熱</b>Temperatura</div><div class="v">42<small>°C</small></div><svg viewBox="0 0 100 36" preserveAspectRatio="none"><polygon points="0,36 0.0,21.7 8.3,22.0 16.7,22.0 25.0,21.1 33.3,19.7 41.7,20.8 50.0,21.7 58.3,22.0 66.7,22.2 75.0,22.2 83.3,22.0 91.7,22.2 100.0,22.2 100,36" fill="var(--warning)" opacity=".16"/><polyline points="0.0,21.7 8.3,22.0 16.7,22.0 25.0,21.1 33.3,19.7 41.7,20.8 50.0,21.7 58.3,22.0 66.7,22.2 75.0,22.2 83.3,22.0 91.7,22.2 100.0,22.2" fill="none" stroke="var(--warning)" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg></div><div class="hb-card hb-stat"><div class="h"><b>電</b>Batería</div><div class="v">82<small>% · 6,1 W</small></div><svg viewBox="0 0 100 36" preserveAspectRatio="none"><polygon points="0,36 0.0,17.2 8.3,16.1 16.7,15.0 25.0,14.1 33.3,13.3 41.7,12.7 50.0,12.2 58.3,11.9 66.7,11.6 75.0,11.3 83.3,11.0 91.7,11.0 100.0,11.0 100,36" fill="var(--success)" opacity=".16"/><polyline points="0.0,17.2 8.3,16.1 16.7,15.0 25.0,14.1 33.3,13.3 41.7,12.7 50.0,12.2 58.3,11.9 66.7,11.6 75.0,11.3 83.3,11.0 91.7,11.0 100.0,11.0" fill="none" stroke="var(--success)" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg></div><div class="hb-card hb-stat"><div class="h"><b>網</b>Red</div><div class="v">1,2<small>MB/s ↓</small></div><svg viewBox="0 0 100 36" preserveAspectRatio="none"><polygon points="0,36 0.0,31.2 8.3,27.0 16.7,29.8 25.0,21.4 33.3,14.4 41.7,25.6 50.0,29.8 58.3,31.2 66.7,22.8 75.0,17.2 83.3,27.0 91.7,28.4 100.0,25.6 100,36" fill="var(--info)" opacity=".16"/><polyline points="0.0,31.2 8.3,27.0 16.7,29.8 25.0,21.4 33.3,14.4 41.7,25.6 50.0,29.8 58.3,31.2 66.7,22.8 75.0,17.2 83.3,27.0 91.7,28.4 100.0,25.6" fill="none" stroke="var(--info)" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg></div></div>
+</div></div></body></html>

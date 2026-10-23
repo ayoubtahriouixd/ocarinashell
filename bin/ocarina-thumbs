@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+"""ocarina-thumbs — 壁紙 Kabegami index: lists the wallpapers in the given folders and makes 480 px thumbnails.
+
+  ocarina-thumbs [--prune] DIR…
+
+Prints one JSON object per line: {"path", "thumb", "mtime", "dir"} — cached ones first (instant), then each new
+thumbnail as soon as it is ready. Thumbnails live in ~/.cache/ocarinashell/thumbs/<sha1(path, mtime)>.jpg, made with
+vipsthumbnail in parallel (ImageMagick as a fallback); a picture that cannot be read is skipped. With --prune,
+thumbnails that no listed picture uses any more are deleted (Mamori). Python stdlib only.
+"""
+import hashlib
+import json
+import os
+import shutil
+import subprocess
+import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+
+EXT = {".jpg", ".jpeg", ".png", ".webp", ".avif", ".jxl", ".bmp", ".tif", ".tiff"}
+CACHE = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "ocarinashell/thumbs"
+SIZE = 480
+MAX_DEPTH = 3
+
+
+def scan(root):
+    root = Path(root).expanduser()
+    out = []
+    if not root.is_dir():
+        return out
+    base = len(root.parts)
+    for d, dirs, files in os.walk(root, followlinks=True):
+        if len(Path(d).parts) - base >= MAX_DEPTH:
+            dirs[:] = []
+        dirs[:] = [x for x in dirs if not x.startswith(".")]
+        for f in files:
+            p = Path(d) / f
+            if p.suffix.lower() in EXT and not f.startswith("."):
+                try:
+                    out.append((str(p), int(p.stat().st_mtime), str(root)))
+                except OSError:
+                    pass
+    return out
+
+
+def thumb_path(path, mtime):
+    return CACHE / (hashlib.sha1(f"{path}\0{mtime}".encode()).hexdigest()[:24] + ".jpg")
+
+
+def make(path, dest):
+    tmp = dest.with_suffix(".part.jpg")
+    if shutil.which("vipsthumbnail"):
+        cmd = ["vipsthumbnail", path, "--size", f"{SIZE}x", "-o", f"{tmp}[Q=82,strip]"]
+    else:
+        cmd = ["magick", path + "[0]", "-auto-orient", "-thumbnail", f"{SIZE}x", "-quality", "82", "-strip", str(tmp)]
+    try:
+        r = subprocess.run(cmd, capture_output=True, timeout=60)
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    if r.returncode != 0 or not tmp.exists():
+        tmp.unlink(missing_ok=True)
+        return False
+    tmp.replace(dest)
+    return True
+
+
+def emit(path, thumb, mtime, root):
+    sys.stdout.write(json.dumps({"path": path, "thumb": str(thumb), "mtime": mtime, "dir": root},
+                                ensure_ascii=False) + "\n")
+    sys.stdout.flush()
+
+
+def main(argv):
+    prune = "--prune" in argv
+    dirs = [a for a in argv if a != "--prune"]
+    CACHE.mkdir(parents=True, exist_ok=True)
+    seen, todo, used = set(), [], set()
+    for root in dirs:
+        for path, mtime, r in sorted(scan(root)):
+            real = os.path.realpath(path)
+            if real in seen:
+                continue
+            seen.add(real)
+            t = thumb_path(path, mtime)
+            used.add(t.name)
+            if t.exists():
+                emit(path, t, mtime, r)
+            else:
+                todo.append((path, t, mtime, r))
+    if todo:
+        with ThreadPoolExecutor(max_workers=max(2, min(8, (os.cpu_count() or 4) // 2))) as ex:
+            futs = {ex.submit(make, p, t): (p, t, m, r) for p, t, m, r in todo}
+            for f in as_completed(futs):
+                p, t, m, r = futs[f]
+                if f.result():
+                    emit(p, t, m, r)
+    if prune:
+        for f in CACHE.glob("*.jpg"):
+            if f.name not in used:
+                f.unlink(missing_ok=True)
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except BrokenPipeError:
+        sys.exit(0)

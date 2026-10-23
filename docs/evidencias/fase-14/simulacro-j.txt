@@ -1,0 +1,9 @@
+  ✓ arranque normal con el kernel de siempre                       → ok
+  ✓ arranque por LTS tras instalar un kernel nuevo                 → lts-after-new-kernel
+  ✓ falta la marca del arranque anterior tras un kernel nuevo      → missing-mark
+  ✓ falta la marca pero sin kernel nuevo (apagó en el greeter)    → ok
+  ✓ LTS elegido a propósito (ningún kernel nuevo)                → ok
+  ✓ kernel nuevo que ya arrancó bien y luego LTS a propósito     → ok
+  ✓ primera marca de todas                                         → ok
+  ✓ mark: escribe alert.json para Mamori y añade la marca
+casos: 8 bien · 0 mal

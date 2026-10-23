@@ -1,0 +1,27 @@
+# Simulacro e · unidad fallida
+# 2026-10-17 21:11
+
+antes: failed
+$ ocarina-mamori heal   (código 0)
+  · Unidad fallida: ocarina-simulacro-e.service
+  · quickshell se ha cerrado 6 veces hoy
+  · nameraka se ha cerrado 8 veces hoy
+  · llama-server se ha cerrado 3 veces hoy
+守 salud: 4 problema(s) revisado(s)
+
+--- historial ---
+{"at": 1792271303, "kind": "repair", "title": "Reparado: ocarina-simulacro-e.service", "detail": "Estaba fallida; reiniciada una vez y responde", "result": "ok"}
+{"at": 1792271379, "kind": "repair", "title": "Snake diagnosticó: quickshell se cierra solo (6 veces en 24 h)", "detail": "El registro indica un bloqueo repetido dentro de libgallium (Mesa) que provoca que varios hilos esperen en pthread_cond. Se trata de un fallo conocido de Mesa/driver. La solución más segura es actualizar Mesa a la última versión disponible o, si el problema continúa, degradar a la versión anterior. ", "result": "attention", "cause": "Mesa/driver hang in libgallium causing repeated pthread_cond waits", "fix": {"kind": "action", "steps": ["Verifica si hay actualizaciones disponibles para Mesa (pacman -Syu mesa) y aplica la última versión.", "Si el problema persiste, prueba con la versión anterior de Mesa (pacman -S mesa=26.2.3) para comprobar si el fallo desaparece.", "Reinicia el sistema después de cambiar la versión de Mesa."]}, "suspicious": false}
+{"at": 1792271441, "kind": "repair", "title": "Snake diagnosticó: nameraka se cierra solo (8 veces en 24 h)", "detail": "El registro indica que varios hilos se quedan bloqueados en `pthread_cond_wait` dentro de `libvulkan_radeon.so`. Esto es típico de un fallo o deadlock en el driver de Vulkan de AMD. La solución más segura es actualizar Mesa/driver a la última versión disponible en CachyOS, ya que los parches recient", "result": "attention", "cause": "Vulkan driver (libvulkan_radeon) deadlock/hang", "fix": {"kind": "patch", "steps": ["Actualizar Mesa y el driver de AMD a la última versión disponible en el repositorio de CachyOS.", "Si la actualización no soluciona el problema, probar con la versión de Mesa que incluya el parche de la rama \"mesa-23.1\" (o la más reciente) que corrige los deadlocks en libvulkan_radeon.", "Reiniciar el sistema después de la actualización y verificar que la aplicación ya no se cuelga."]}, "suspicious": false}
+{"at": 1792271486, "kind": "repair", "title": "Snake diagnosticó: llama-server se cierra solo (3 veces en 24 h)", "detail": "El stack trace indica que los hilos de la librería de servidor están esperando en una condición, lo cual es comportamiento normal cuando no hay trabajo pendiente. No se detecta un fallo crítico ni se requiere acción.", "result": "attention", "cause": "El registro muestra varios hilos de la librería libllama-server-impl.so bloqueados en `pthread_cond_wait` dentro de `httplib::ThreadPool::worker`. No hay indicios de errores de memoria, fallos de segmentación ni excepciones. Los hilos de `libgomp` también están en espera, lo que sugiere que el hilo‑", "fix": {"kind": "none", "steps": []}, "suspicious": false}
+
+--- journal ---
+aplazado: micrófono en uso (¿una llamada?)
+[repair/ok] Reparado: ocarina-simulacro-e.service · Estaba fallida; reiniciada una vez y responde
+[repair/attention] Snake diagnosticó: quickshell se cierra solo (6 veces en 24 h) · El registro indica un bloqueo repetido dentro de libgallium (Mesa) que provoca que varios hilos esperen en pthread_cond. Se trata de un fallo conocido de Mesa/driver. La solución más segura es actualizar Mesa a la última versión disponible o, si el problema continúa, degradar a la versión anterior.
+[repair/attention] Snake diagnosticó: nameraka se cierra solo (8 veces en 24 h) · El registro indica que varios hilos se quedan bloqueados en `pthread_cond_wait` dentro de `libvulkan_radeon.so`. Esto es típico de un fallo o deadlock en el driver de Vulkan de AMD. La solución más segura es actualizar Mesa/driver a la última versión disponible en CachyOS, ya que los parches recient
+[repair/attention] Snake diagnosticó: llama-server se cierra solo (3 veces en 24 h) · El stack trace indica que los hilos de la librería de servidor están esperando en una condición, lo cual es comportamiento normal cuando no hay trabajo pendiente. No se detecta un fallo crítico ni se requiere acción.
+
+después: active
+
+VEREDICTO: SUPERADO: reiniciada una vez y verificada

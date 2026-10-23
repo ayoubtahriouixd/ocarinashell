@@ -1,0 +1,48 @@
+// OcarinaShell greeter compositor (fase 13). scripts/root/greeter.sh swaps #0b0a0c for #f4f1ec in the light variant
+// (Theme.colors.bootDark/bootLight): the first frame after Plymouth is the same colour.
+// No binds at all: nothing here can open a terminal or quit to anything but the session.
+
+hotkey-overlay {
+    skip-at-startup
+}
+prefer-no-csd
+
+input {
+    keyboard {
+        xkb {
+            layout "es"
+        }
+        numlock
+    }
+    touchpad {
+        tap
+        natural-scroll
+    }
+    disable-power-key-handling      // greetd's logind decides; the greeter has its own Apagar button
+}
+
+// the mode the kernel and Plymouth already use (the panel's preferred one): no modeset at the hand-over
+output "eDP-1" {
+    mode "2880x1800@60.000"
+    scale 1.75
+}
+
+layout {
+    background-color "#0b0a0c"
+    focus-ring {
+        off
+    }
+}
+
+cursor {
+    hide-after-inactive-ms 2500
+}
+
+gestures {
+    hot-corners {
+        off
+    }
+}
+
+// qs ends when greetd has the session (Greetd.launch); then niri ends and greeter-launch returns to greetd
+spawn-sh-at-startup "qs -p /usr/local/share/ocarinashell/greeter; niri msg action quit --skip-confirmation"

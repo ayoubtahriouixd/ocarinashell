@@ -1,0 +1,24 @@
+{
+ "id": "diag-gtt-exhausted",
+ "category": "diagnose",
+ "task": "diagnose",
+ "_origin": "Caso real de la fase 15 (2026-10-17): cargar un modelo de 17,7 GB en Vulkan agotó la GTT y cayeron Ghostty, Xwayland, qs y niri.",
+ "input": "Varias apps se cerraron a la vez a las 18:31 (ghostty, Xwayland, qs, niri). journalctl -k:\noct 17 18:31:02 kernel: amdgpu 0000:c4:00.0: amdgpu: Not enough memory for command submission!\noct 17 18:31:02 kernel: [drm:amdgpu_cs_ioctl [amdgpu]] *ERROR* Failed to process the buffer list -12!\noct 17 18:31:03 kernel: amdgpu: GTT: 13824M usado de 13824M\njournalctl --user:\noct 17 18:30:55 ocarina-snake: cargando qwen3.6-35b-a3b (17,7 GB) en Vulkan\noct 17 18:31:02 ghostty: error: vkQueueSubmit failed: VK_ERROR_DEVICE_LOST\noct 17 18:31:02 qs: QRhi: Device lost\nMesa 26.2.1, kernel 7.2.10 (sin cambios en 3 días).",
+ "expect": {
+  "category": [
+   "gpu"
+  ],
+  "fix.kind": [
+   "action",
+   "manual"
+  ],
+  "cause": {
+   "contains": [
+    "gtt|memoria de la gpu|memoria gráfica|vram"
+   ],
+   "notContains": [
+    "actualizar mesa"
+   ]
+  }
+ }
+}

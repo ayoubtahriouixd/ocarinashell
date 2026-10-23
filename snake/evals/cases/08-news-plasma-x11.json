@@ -1,0 +1,13 @@
+{
+ "id": "news-plasma-x11",
+ "category": "news",
+ "task": "triage-news",
+ "input": "Título: Plasma 6.4.0 will need manual intervention if you are on X11\nFecha: 2025-06-16\nOn Plasma 6.4 the wayland session will be the only one installed when the user does not manually specify kwin-x11.\nWith the recent split of kwin into kwin-wayland and kwin-x11, users running the old X11 session needs to manually install plasma-x11-session, or choose between plasma-meta and plasma-x11-session.\n(Contexto: este equipo no usa Plasma; usa niri en Wayland.)",
+ "expect": {
+  "news_asks_manual_steps": true,
+  "applies_here": [
+   "no",
+   "unknown"
+  ]
+ }
+}

@@ -1,0 +1,9 @@
+  t≈3 s: proxy cortado (socket de niri «reiniciado»)
+  t≈6 s: proxy de vuelta
+  t≈8 s: niri recarga su config
+  ✓ conectado al principio (2.75 true 2 1)
+  ✓ ve la caída: available=false en t=3.75 s
+  ✓ reconecta sola en t=6.75 s (0.8 s tras volver el socket)
+  ✓ tras la recarga de config: estado completo (2 espacios, 1 salidas)
+  ✓ sin errores QML durante la caída
+resultado: 5 bien · 0 mal

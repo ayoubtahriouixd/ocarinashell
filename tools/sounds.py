@@ -7,6 +7,7 @@ A-minor pentatonic (A C D E G), so any two sounds played together stay consonant
   startup   7-note phrase (greeter / session start)     notify    E5 → A5
   critical  E5 E5 A5, a little louder                    lock      E5 → C5 → A4 (closing)
   unlock    A4 → C5 → E5 → A5 (opening)                  tick      G5, 60 ms, almost dry (volume release)
+  farewell  E5 → A4, soft and long (before power off)
 Played with `pw-play`; never in Shinobi, Do Not Disturb or while locked (except unlock).
 
 usage: python3 tools/sounds.py [outdir=assets/sounds]
@@ -134,6 +135,9 @@ SOUNDS = {
     "unlock": dict(events=[(0.0, "A4", 0.09, .80, -.2), (0.10, "C5", 0.09, .82, -.07), (0.20, "E5", 0.09, .86, .07),
                            (0.30, "A5", 0.48, .92, .2)], wet=0.28, peak_db=-6.5),
     "tick": dict(events=[(0.0, "G5", 0.06, .6, 0.0)], wet=0.0, tail=0.05, peak_db=-15.0),
+    # the farewell (Dengen → power off / reboot / log out): one soft falling breath, quieter than everything else
+    "farewell": dict(events=[(0.0, "E5", 0.30, .62, .1), (0.34, "A4", 1.10, .58, -.05)], wet=0.40, tail=1.5,
+                     peak_db=-11.0),
 }
 
 
