@@ -13,7 +13,6 @@ los dotfiles OcarinaShell, terminados, probados a fondo y listos para instalar.
 [![versión](https://img.shields.io/github/v/release/ayoubtahriouixd/ocarinashell?style=flat-square&color=e60033&label=versi%C3%B3n)](https://github.com/ayoubtahriouixd/ocarinashell/releases/latest)
 [![comprobaciones](https://img.shields.io/github/actions/workflow/status/ayoubtahriouixd/ocarinashell/comprobaciones.yml?branch=main&style=flat-square&label=comprobaciones)](https://github.com/ayoubtahriouixd/ocarinashell/actions/workflows/comprobaciones.yml)
 ![CachyOS · niri · Quickshell](https://img.shields.io/badge/CachyOS-niri%20%C2%B7%20Quickshell-1b181d?style=flat-square)
-![Claude Code](https://img.shields.io/badge/construido%20con-Claude%20Code-d97757?style=flat-square)
 
 **[Instalar](#instalar)** · [Capturas](#capturas) · [Qué incluye](#incluye) · [Primeros pasos](#empezar) · [Seguridad](#seguridad) · [Preguntas](#preguntas)
 
